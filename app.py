@@ -260,17 +260,8 @@ def inicio():
         <a href="/entrar" class="botao secundario">Entrar na minha conta</a>
     </div></body></html>
     ''')
-
-
-
-
-     
-        
-        
-
     
-
-@app.route("/feed", methods=["GET","POST"])
+    @app.route("/feed", methods=["GET","POST"])
 def feed():
     if "id" not in session: return redirect(url_for("entrar"))
     conn = bd()
