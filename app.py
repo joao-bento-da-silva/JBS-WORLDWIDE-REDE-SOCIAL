@@ -1,7 +1,6 @@
  # ==================================================
-# © 2026 JBS TECNOLOGIA — REDE SOCIAL FINAL E ESTÁVEL
-# VERSÃO CORRIGIDA: CADASTRO, LOGIN E PUBLICAÇÕES SALVAS PARA SEMPRE
-# SEM ERROS DE SINTAXE, COMPATÍVEL COM RENDER
+# © 2026 JBS TECNOLOGIA — REDE SOCIAL FINAL COMPLETA
+# VERSÃO COM: VÍDEO + FOTO + PUBLICAÇÕES SALVAS PARA SEMPRE
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -12,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ==================== SEGURANÇA — CHAVES FORA DO CÓDIGO ====================
+# ==================== SEGURANÇA ====================
 app.secret_key = os.environ.get("CHAVE_INTERNA_SEGURANCA")
 app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
@@ -21,7 +20,7 @@ BANCO_DADOS = "jbs_rede.db"
 PASTA_MIDIA = "midia_publicacoes"
 os.makedirs(PASTA_MIDIA, exist_ok=True)
 
-# ==================== FUNÇÕES BÁSICAS ====================
+# ==================== FUNÇÕES ====================
 def conectar_banco():
     conn = sqlite3.connect(BANCO_DADOS)
     conn.row_factory = sqlite3.Row
@@ -30,7 +29,7 @@ def conectar_banco():
 def usuario_logado():
     return "usuario_id" in session
 
-# ==================== CRIAR BANCO DE DADOS ====================
+# ==================== CRIAR BANCO ====================
 def iniciar_banco():
     conn = conectar_banco()
     c = conn.cursor()
@@ -147,16 +146,15 @@ def cadastrar():
         senha = request.form.get("senha","").strip()
 
         if not nome or not email or not senha:
-            return "Preencha todos os campos corretamente <br><a href='/cadastrar'>Voltar</a>"
+            return "Preencha todos os campos <br><a href='/cadastrar'>Voltar</a>"
 
         conn = conectar_banco()
-        c = conn.cursor()
         try:
-            c.execute("INSERT INTO usuarios (nome,email,senha) VALUES (?,?,?)", (nome,email,senha))
+            conn.execute("INSERT INTO usuarios (nome,email,senha) VALUES (?,?,?)", (nome,email,senha))
             conn.commit()
             return redirect(url_for("entrar"))
         except sqlite3.IntegrityError:
-            return "Esse e-mail já está cadastrado <br><a href='/cadastrar'>Voltar</a>"
+            return "E-mail já cadastrado <br><a href='/cadastrar'>Voltar</a>"
         finally:
             conn.close()
 
@@ -166,7 +164,7 @@ def cadastrar():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cadastrar Conta</title>
+        <title>Cadastrar</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
             body{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -174,19 +172,18 @@ def cadastrar():
             h2{text-align:center;margin-bottom:30px;color:#84cc16;}
             input{width:100%;padding:15px;margin:10px 0 20px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
             button{width:100%;padding:15px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
-            button:hover{background:#65a30d;}
             a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:20px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <h2>Criar Nova Conta</h2>
+            <h2>Criar Conta</h2>
             <form method="POST">
-                <input type="text" name="nome" placeholder="Seu nome completo" required>
-                <input type="email" name="email" placeholder="Seu melhor e-mail" required>
-                <input type="password" name="senha" placeholder="Crie uma senha segura" required>
-                <button type="submit">Finalizar Cadastro</button>
-                <a href="/">Voltar ao início</a>
+                <input type="text" name="nome" placeholder="Seu nome" required>
+                <input type="email" name="email" placeholder="Seu e-mail" required>
+                <input type="password" name="senha" placeholder="Senha segura" required>
+                <button type="submit">Cadastrar</button>
+                <a href="/">Voltar</a>
             </form>
         </div>
     </body>
@@ -201,15 +198,13 @@ def entrar():
         senha = request.form.get("senha","").strip()
 
         conn = conectar_banco()
-        c = conn.cursor()
-        c.execute("SELECT id FROM usuarios WHERE email = ? AND senha = ?", (email, senha))
-        usuario = c.fetchone()
+        usuario = conn.execute("SELECT id FROM usuarios WHERE email = ? AND senha = ?", (email,senha)).fetchone()
         conn.close()
 
         if usuario:
             session["usuario_id"] = usuario["id"]
             return redirect(url_for("feed"))
-        return "E-mail ou senha incorretos <br><a href='/entrar'>Voltar</a>"
+        return "E-mail ou senha errados <br><a href='/entrar'>Voltar</a>"
 
     return render_template_string('''
     <!DOCTYPE html>
@@ -217,7 +212,7 @@ def entrar():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Acessar Conta</title>
+        <title>Entrar</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
             body{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -225,26 +220,24 @@ def entrar():
             h2{text-align:center;margin-bottom:30px;color:#84cc16;}
             input{width:100%;padding:15px;margin:10px 0 20px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
             button{width:100%;padding:15px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
-            button:hover{background:#65a30d;}
             a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:20px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <h2>Acessar Minha Conta</h2>
+            <h2>Acessar Conta</h2>
             <form method="POST">
-                <input type="email" name="email" placeholder="Seu e-mail cadastrado" required>
+                <input type="email" name="email" placeholder="Seu e-mail" required>
                 <input type="password" name="senha" placeholder="Sua senha" required>
                 <button type="submit">Entrar</button>
                 <a href="/cadastrar">Não tem conta? Crie uma</a>
-                <a href="/">Voltar ao início</a>
             </form>
         </div>
     </body>
     </html>
     ''')
 
-# ==================== FEED PRINCIPAL ====================
+# ==================== FEED COM FOTO E VÍDEO ====================
 @app.route("/feed")
 def feed():
     if not usuario_logado():
@@ -268,7 +261,7 @@ def feed():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Feed — JBS Rede Social</title>
+        <title>Feed</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
             body{background:#0f172a;color:white;}
@@ -278,12 +271,11 @@ def feed():
             .conteudo{max-width:700px;margin:30px auto;padding:0 20px;}
             .botao-publicar{margin-bottom:30px;text-align:center;}
             .botao-publicar a{padding:12px 30px;background:#84cc16;color:#0f172a;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;}
-            .botao-publicar a:hover{background:#65a30d;}
             .publicacao{background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;margin-bottom:25px;}
             .publicacao .nome{font-weight:bold;color:#84cc16;margin-bottom:10px;}
             .publicacao .data{color:#64748b;font-size:13px;margin-bottom:15px;}
             .publicacao .texto{color:#e2e8f0;line-height:1.6;margin-bottom:15px;}
-            .publicacao .midia{max-width:100%;border-radius:8px;margin-bottom:15px;}
+            .midia{max-width:100%;border-radius:8px;margin-bottom:15px;}
             .acoes{display:flex;gap:20px;color:#94a3b8;font-size:15px;}
         </style>
     </head>
@@ -301,11 +293,17 @@ def feed():
                 <div class="nome">{{p.nome}}</div>
                 <div class="data">{{p.data_publicacao}}</div>
                 {% if p.texto %}<div class="texto">{{p.texto}}</div>{% endif %}
-                {% if p.arquivo %}<img src="/midia/{{p.arquivo}}" class="midia" alt="Arquivo">{% endif %}
-                <div class="acoes">
-                    <span>❤️ {{p.total_curtidas}}</span>
-                    <span>💬 Comentários</span>
-                </div>
+                {% if p.arquivo %}
+                    {% if p.tipo_arquivo in ['mp4','mov','avi','webm'] %}
+                    <video controls class="midia">
+                        <source src="/midia/{{p.arquivo}}">
+                        Vídeo não suportado
+                    </video>
+                    {% else %}
+                    <img src="/midia/{{p.arquivo}}" class="midia" alt="Imagem">
+                    {% endif %}
+                {% endif %}
+                <div class="acoes">❤️ {{p.total_curtidas}} | 💬 Comentários</div>
             </div>
             {% endfor %}
         </div>
@@ -313,7 +311,7 @@ def feed():
     </html>
     ''', publicacoes=publicacoes)
 
-# ==================== PUBLICAR NOVA POSTAGEM ====================
+# ==================== PUBLICAR — ACEITA FOTO E VÍDEO ====================
 @app.route("/publicar", methods=["GET","POST"])
 def publicar():
     if not usuario_logado():
@@ -331,7 +329,7 @@ def publicar():
             arquivo.save(caminho)
             tipo_arq = nome_arq.rsplit('.',1)[-1].lower()
 
-        # SALVA DIRETO NO BANCO — NUNCA MAIS SOME!
+        # SALVA NO BANCO — NUNCA MAIS SOME
         conn = conectar_banco()
         conn.execute('''
             INSERT INTO publicacoes (usuario_id, texto, arquivo, tipo_arquivo)
@@ -356,7 +354,6 @@ def publicar():
             h2{text-align:center;margin-bottom:25px;color:#84cc16;}
             textarea, input{width:100%;padding:14px;margin:8px 0 18px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
             button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
-            button:hover{background:#65a30d;}
             a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:15px;}
         </style>
     </head>
@@ -367,14 +364,14 @@ def publicar():
                 <textarea name="texto" rows="5" placeholder="Escreva sua mensagem..." required></textarea>
                 <input type="file" name="arquivo" accept="image/*,video/*">
                 <button type="submit">Publicar</button>
-                <a href="/feed">Voltar ao feed</a>
+                <a href="/feed">Voltar</a>
             </form>
         </div>
     </body>
     </html>
     ''')
 
-# ==================== EXIBIR ARQUIVOS DE MÍDIA ====================
+# ==================== EXIBIR ARQUIVOS ====================
 @app.route("/midia/<nome>")
 def ver_midia(nome):
     return send_from_directory(PASTA_MIDIA, nome)
@@ -385,7 +382,7 @@ def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
-# ==================== EXECUÇÃO CORRETA ====================
+# ==================== EXECUÇÃO ====================
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=porta, debug=False)
