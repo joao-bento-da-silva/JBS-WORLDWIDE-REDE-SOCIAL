@@ -370,13 +370,18 @@ def feed():
     
     # Buscar todas as publicações
     conn = conectar_banco()
-    publicacoes = conn.execute('''
-        SELECT p.*, u.nome,
-        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id=p.id) AS total_curtidas,
-        CASE WHEN EXISTS(SELECT 1 FROM curtidas WHERE publicacao_id=p.id AND usuario_id=?) THEN 1 ELSE 0 END AS curtiu
-        FROM publicacoes p JOIN usuarios u ON p.usuario_id=u.id
-        ORDER BY p.destacada DESC, p.data_publicacao DESC
-    ''', (id_usuario,)).fetchall()
+    
+publicacoes = conn.execute('''
+    SELECT p.*, u.nome,
+        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id = p.id) AS total_curtidas,
+        CASE WHEN EXISTS(SELECT 1 FROM curtidas WHERE publicacao_id = p.id AND usuario_id = ?)
+        THEN 1 ELSE 0 END AS curtiu
+    FROM publicacoes p
+    JOIN usuarios u ON p.usuario_id = u.id
+    ORDER BY p.destacada DESC, p.data_publicacao DESC
+''', (sessao["usuario_id"],)).fetchall()
+
+    
     conn.close()
     
     html_publicacoes = ""
