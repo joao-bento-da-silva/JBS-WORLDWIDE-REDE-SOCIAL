@@ -1,9 +1,9 @@
-  # ==================================================
-# © 2026 JBS TECNOLOGIA — REDE SOCIAL CORRIGIDA
-# NÃO PERDE CADASTRO, NÃO APAGA POSTAGENS, TUDO PERMANENTE
+ # ==================================================
+# © 2026 JBS TECNOLOGIA — REDE SOCIAL COM IDENTIDADE OFICIAL
+# MESMO ESTILO DO GERADOR DE AUTORIDADE + NUNCA MAIS PERDE DADOS
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
 import sqlite3
 import os
 from datetime import datetime
@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ==================== SEGURANÇA — IGUAL AO GERADOR ====================
+# ==================== SEGURANÇA ====================
 app.secret_key = os.environ.get("CHAVE_REDE_SOCIAL", "SEGURANCA_REDE_JBS_2026")
 
 # ==================== BANCO PERMANENTE ====================
@@ -29,7 +29,7 @@ def conectar_banco():
 def usuario_logado():
     return "usuario_id" in session
 
-# ==================== CRIAR TABELAS ====================
+# ==================== TABELAS ====================
 conn = conectar_banco()
 c = conn.cursor()
 
@@ -54,18 +54,49 @@ c.execute('''CREATE TABLE IF NOT EXISTS postagens (
 conn.commit()
 conn.close()
 
-# ==================== INICIO ====================
+# ==================== TELA INICIAL — MESMO ESTILO DO GERADOR ====================
 @app.route("/")
 def inicio():
     if usuario_logado():
         return redirect(url_for("feed"))
+
     return render_template_string('''
-    <html style="background:#0f172a;color:white;padding:30px;">
-        <h1 style="color:#84cc16;text-align:center;">JBS REDE SOCIAL</h1><br>
-        <div style="text-align:center;">
-            <a href="/cadastrar" style="color:#84cc16;font-size:18px;margin-right:20px;">Criar Conta</a>
-            <a href="/entrar" style="color:#84cc16;font-size:18px;">Entrar</a>
+    <!DOCTYPE html>
+    <html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>JBS REDE SOCIAL</title>
+        <style>
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{
+                background: linear-gradient(135deg,#050510 0%,#0f172a 50%,#1e293b 100%);
+                color:white;min-height:100vh;
+                background-image: radial-gradient(circle at 20% 30%, rgba(132,204,22,0.08) 0%, transparent 55%),
+                                  radial-gradient(circle at 80% 70%, rgba(59,130,246,0.06) 0%, transparent 55%);
+                display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;
+            }
+            .marca{font-size:46px;font-weight:bold;color:#84cc16;margin-bottom:12px;text-align:center;}
+            .slogan{font-size:19px;color:#cbd5e1;margin-bottom:50px;text-align:center;}
+            .botoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;width:100%;max-width:500px;}
+            .btn{
+                display:block;padding:18px 25px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:18px;text-align:center;
+                transition:all 0.3s ease;border:none;
+            }
+            .btn.verde{background:#84cc16;color:#050510;box-shadow:0 0 20px rgba(132,204,22,0.3);}
+            .btn.verde:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(132,204,22,0.5);}
+            .btn.escuro{background:rgba(30,41,59,0.8);color:white;border:1px solid rgba(132,204,22,0.3);}
+            .btn.escuro:hover{background:rgba(51,65,85,0.9);transform:translateY(-2px);}
+        </style>
+    </head>
+    <body>
+        <div class="marca">JBS REDE SOCIAL</div>
+        <div class="slogan">Conectando pessoas, ideias e projetos — da mesma família do Gerador de Autoridade</div>
+        <div class="botoes">
+            <a href="/cadastrar" class="btn verde">Criar Conta</a>
+            <a href="/entrar" class="btn escuro">Entrar</a>
         </div>
+    </body>
     </html>
     ''')
 
@@ -82,17 +113,25 @@ def cadastrar():
             conn.commit()
             return redirect(url_for("entrar"))
         except:
-            return "E-mail já cadastrado <br><a href='/cadastrar' style='color:#84cc16;'>Voltar</a>"
+            return render_template_string('''
+            <html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
+                <h2 style="color:#84cc16;">Criar Nova Conta</h2><br>
+                <p style="color:#f87171;">E-mail já cadastrado!</p>
+                <br><a href="/cadastrar" style="color:#84cc16;">Tentar outro</a> | <a href="/" style="color:#84cc16;">Voltar</a>
+            </html>
+            ''')
         finally: conn.close()
+
     return render_template_string('''
     <html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
-        <h2>Criar Conta</h2>
+        <h2 style="color:#84cc16;">Criar Nova Conta</h2><br>
         <form method="POST">
-            <input type="text" name="nome" required placeholder="Seu nome" style="padding:10px;width:100%;margin:5px 0;"><br>
-            <input type="email" name="email" required placeholder="Seu e-mail" style="padding:10px;width:100%;margin:5px 0;"><br>
-            <input type="password" name="senha" required placeholder="Sua senha" style="padding:10px;width:100%;margin:5px 0;"><br>
-            <button style="padding:10px 25px;background:#84cc16;color:black;border:none;border-radius:5px;">Cadastrar</button>
+            <input type="text" name="nome" required placeholder="Seu nome completo" style="padding:12px;width:100%;margin:8px 0;border-radius:8px;border:none;"><br>
+            <input type="email" name="email" required placeholder="Seu melhor e-mail" style="padding:12px;width:100%;margin:8px 0;border-radius:8px;border:none;"><br>
+            <input type="password" name="senha" required placeholder="Crie uma senha forte" style="padding:12px;width:100%;margin:8px 0;border-radius:8px;border:none;"><br>
+            <button style="padding:12px 30px;background:#84cc16;color:black;border:none;border-radius:8px;font-weight:bold;margin-top:10px;">Cadastrar</button>
         </form>
+        <br><a href="/" style="color:#84cc16;">Voltar ao início</a>
     </html>
     ''')
 
@@ -109,19 +148,27 @@ def entrar():
             session["usuario_id"] = user["id"]
             session["nome"] = user["nome"]
             return redirect(url_for("feed"))
-        return "Dados incorretos <br><a href='/entrar' style='color:#84cc16;'>Voltar</a>"
+        return render_template_string('''
+        <html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
+            <h2 style="color:#84cc16;">Entrar na Sua Conta</h2><br>
+            <p style="color:#f87171;">E-mail ou senha incorretos!</p>
+            <br><a href="/entrar" style="color:#84cc16;">Tentar novamente</a> | <a href="/" style="color:#84cc16;">Voltar</a>
+        </html>
+        ''')
+
     return render_template_string('''
     <html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
-        <h2>Entrar</h2>
+        <h2 style="color:#84cc16;">Entrar</h2><br>
         <form method="POST">
-            <input type="email" name="email" required placeholder="E-mail" style="padding:10px;width:100%;margin:5px 0;"><br>
-            <input type="password" name="senha" required placeholder="Senha" style="padding:10px;width:100%;margin:5px 0;"><br>
-            <button style="padding:10px 25px;background:#84cc16;color:black;border:none;border-radius:5px;">Entrar</button>
+            <input type="email" name="email" required placeholder="Seu e-mail" style="padding:12px;width:100%;margin:8px 0;border-radius:8px;border:none;"><br>
+            <input type="password" name="senha" required placeholder="Sua senha" style="padding:12px;width:100%;margin:8px 0;border-radius:8px;border:none;"><br>
+            <button style="padding:12px 30px;background:#84cc16;color:black;border:none;border-radius:8px;font-weight:bold;margin-top:10px;">Acessar</button>
         </form>
+        <br><a href="/cadastrar" style="color:#84cc16;">Criar conta</a> | <a href="/" style="color:#84cc16;">Voltar</a>
     </html>
     ''')
 
-# ==================== FEED E PUBLICAÇÃO ====================
+# ==================== FEED — COM IDENTIDADE JBS ====================
 @app.route("/feed", methods=["GET","POST"])
 def feed():
     if not usuario_logado():
@@ -150,40 +197,40 @@ def feed():
     conn.close()
 
     html = '''
-    <html style="background:#0f172a;color:white;padding:20px;max-width:800px;margin:0 auto;">
-        <div style="background:#1e293b;padding:20px;border-radius:12px;margin-bottom:30px;">
-            <h2>Olá {nome}!</h2><br>
+    <html style="background:#0f172a;color:white;padding:20px;max-width:850px;margin:0 auto;">
+        <div style="background:#1e293b;padding:25px;border-radius:12px;margin-bottom:30px;border-left:4px solid #84cc16;">
+            <h1 style="font-size:34px;color:#84cc16;margin-bottom:15px;">Olá {nome}!</h1>
+            <p style="color:#94a3b8;margin-bottom:20px;">Compartilhe suas ideias, projetos e conquistas</p>
             <form method="POST" enctype="multipart/form-data">
-                <textarea name="texto" placeholder="O que você está pensando?" rows="4" style="width:100%;padding:12px;border-radius:8px;border:none;font-size:16px;"></textarea><br><br>
-                <input type="file" name="imagem" accept="image/*" style="margin-bottom:10px;"><br>
+                <textarea name="texto" placeholder="O que você está pensando?" rows="5" style="width:100%;padding:15px;border-radius:8px;border:none;font-size:17px;color:#111;"></textarea><br><br>
+                <input type="file" name="imagem" accept="image/*" style="margin-bottom:15px;color:#cbd5e1;"><br>
                 <button type="submit" style="padding:12px 35px;background:#84cc16;color:black;border:none;border-radius:8px;font-weight:bold;font-size:17px;">Publicar</button>
             </form>
         </div>
     '''.format(nome=session["nome"])
 
     for p in postagens:
-        parte_imagem = f"<br><img src='/ver_imagem/{p['imagem']}' style='max-width:100%;border-radius:8px;margin:10px 0;'>" if p["imagem"] else ""
+        parte_imagem = f"<br><img src='/ver_imagem/{p['imagem']}' style='max-width:100%;border-radius:8px;margin:12px 0;'>" if p["imagem"] else ""
         html += f'''
-        <div style="background:#1e293b;padding:20px;border-radius:12px;margin-bottom:20px;">
-            <h3>{p['nome']}</h3>
-            <p style="margin:10px 0;font-size:16px;">{p['texto'] or ""}</p>
+        <div style="background:#1e293b;padding:20px;border-radius:12px;margin-bottom:20px;border-left:3px solid #84cc16;">
+            <h3 style="font-size:20px;color:#e2e8f0;margin-bottom:8px;">{p['nome']}</h3>
+            <p style="font-size:17px;line-height:1.6;color:#cbd5e1;">{p['texto'] or ""}</p>
             {parte_imagem}
-            <div style="margin-top:15px;">
+            <div style="margin-top:15px;font-size:16px;">
                 <a href="/curtir/{p['id']}" style="color:#ef4444;text-decoration:none;">❤️ {p['curtidas']} Curtir</a>
                 <span style="color:#94a3b8;margin-left:15px;">{p['data_hora']}</span>
             </div>
         </div>
         '''
 
-    html += f"<br><a href='/sair' style='color:#ef4444;'>Sair da conta</a></html>"
+    html += "<br><a href='/sair' style='color:#ef4444;font-size:17px;text-decoration:none;'>Sair da conta</a></html>"
     return html
 
-# ==================== VER IMAGEM ====================
+# ==================== DEMAIS FUNÇÕES ====================
 @app.route("/ver_imagem/<nome>")
 def ver_imagem(nome):
     return send_from_directory(PASTA_MIDIAS, nome)
 
-# ==================== CURTIR ====================
 @app.route("/curtir/<id_post>")
 def curtir(id_post):
     if not usuario_logado():
@@ -194,7 +241,6 @@ def curtir(id_post):
     conn.close()
     return redirect(url_for("feed"))
 
-# ==================== SAIR ====================
 @app.route("/sair")
 def sair():
     session.clear()
