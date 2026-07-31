@@ -1,6 +1,6 @@
  # ==================================================
 # © 2026 JBS TECNOLOGIA
-# VERSAO FINAL — SEM ERRO NO RENDER | DATA ESCRITA | DESIGN OFICIAL
+# VERSÃO DEFINITIVA — DESIGN LIMPO + TUDO FUNCIONAL
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -60,47 +60,47 @@ def calcular_idade(data_nasc):
 IDIOMAS = {
     "pt": {
         "titulo": "JBS WORLDWIDE",
-        "subtitulo": "Inovacao e Credibilidade",
-        "criar_conta": "Criar Nova Conta",
+        "subtitulo": "Conectando Pessoas e Ideias",
+        "criar_conta": "Criar conta",
         "entrar": "Entrar",
         "nome": "Nome completo",
-        "nascimento": "Data de nascimento (dia/mes/ano)",
+        "nascimento": "Data de nascimento (dia/mês/ano)",
         "email": "Seu e-mail",
-        "senha": "Crie uma senha",
-        "acessar": "Acessar Conta",
-        "ja_possui": "Ja tenho conta",
-        "nao_possui": "Nao tenho conta ainda",
-        "o_que_pensa": "O que voce esta pensando?",
+        "senha": "Senha",
+        "acessar": "Continuar",
+        "ja_possui": "Já tem uma conta? Entrar",
+        "nao_possui": "Não tem conta? Criar nova",
+        "o_que_pensa": "O que você está pensando?",
         "publicar": "Publicar",
         "sair": "Sair",
         "erro_preencher": "Preencha todos os campos corretamente",
-        "erro_idade": "E preciso ter pelo menos 13 anos para criar conta",
-        "erro_data": "Escreva a data assim: dia/mes/ano (ex: 29/11/1963)",
-        "erro_email_existe": "Este e-mail ja esta cadastrado",
+        "erro_idade": "É preciso ter pelo menos 13 anos",
+        "erro_data": "Escreva assim: dia/mês/ano (ex: 29/11/1963)",
+        "erro_email_existe": "Este e-mail já está cadastrado",
         "erro_dados": "E-mail ou senha incorretos",
-        "sucesso_cadastro": "Conta criada! Faca login para continuar",
-        "erro_conteudo": "Conteudo nao permitido"
+        "sucesso_cadastro": "Conta criada com sucesso! Faça login",
+        "erro_conteudo": "Conteúdo não permitido"
     },
     "en": {
         "titulo": "JBS WORLDWIDE",
-        "subtitulo": "Innovation and Trust",
-        "criar_conta": "Create New Account",
-        "entrar": "Sign In",
+        "subtitulo": "Connecting People & Ideas",
+        "criar_conta": "Create account",
+        "entrar": "Sign in",
         "nome": "Full name",
         "nascimento": "Date of birth (day/month/year)",
         "email": "Your email",
-        "senha": "Create a password",
-        "acessar": "Sign In",
-        "ja_possui": "Already have an account",
-        "nao_possui": "Do not have an account yet",
-        "o_que_pensa": "What is on your mind?",
+        "senha": "Password",
+        "acessar": "Continue",
+        "ja_possui": "Already have an account? Sign in",
+        "nao_possui": "Don't have an account? Create one",
+        "o_que_pensa": "What's on your mind?",
         "publicar": "Post",
-        "sair": "Sign Out",
-        "erro_preencher": "Please fill all fields correctly",
+        "sair": "Sign out",
+        "erro_preencher": "Fill all fields correctly",
         "erro_idade": "You must be at least 13 years old",
-        "erro_data": "Write date like: day/month/year (ex: 29/11/1963)",
-        "erro_email_existe": "This email is already registered",
-        "erro_dados": "Incorrect email or password",
+        "erro_data": "Use: day/month/year (ex: 29/11/1963)",
+        "erro_email_existe": "Email already registered",
+        "erro_dados": "Wrong email or password",
         "sucesso_cadastro": "Account created! Sign in",
         "erro_conteudo": "Content not allowed"
     }
@@ -114,7 +114,7 @@ def mudar(lang):
     if lang in IDIOMAS: session["idioma"] = lang
     return redirect(request.referrer or url_for("inicio"))
 
-# ==================== BANCO DE DADOS ====================
+# ==================== BANCO ====================
 def iniciar_banco():
     try:
         if not os.path.exists(DATABASE):
@@ -148,7 +148,7 @@ iniciar_banco()
 def conectar(): return sqlite3.connect(DATABASE)
 def logado(): return "usuario_id" in session
 
-# ==================== PAGINA INICIAL ====================
+# ==================== PÁGINA INICIAL — LIMPA E ELEGANTE ====================
 @app.route("/")
 def inicio():
     t = IDIOMAS[pegar_idioma()]
@@ -156,32 +156,38 @@ def inicio():
     return render_template_string(f'''
     <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{t["titulo"]}</title><style>
-    *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial}}
-    body{{background:linear-gradient(135deg,#020617 0%,#051020 40%,#03141a 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}}
-    body::before{{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 25% 25%, rgba(34,197,94,0.06) 0%, transparent 55%),radial-gradient(circle at 75% 75%, rgba(59,130,246,0.08) 0%, transparent 55%);z-index:0}}
-    .caixa{{position:relative;z-index:1;text-align:center;max-width:540px;width:90%;padding:45px 35px;background:rgba(8,18,35,0.9);border-radius:18px;border:1px solid rgba(34,197,94,0.25);box-shadow:0 0 50px rgba(59,130,246,0.12), 0 0 50px rgba(34,197,94,0.12)}}
-    .logo{{font-size:30px;font-weight:800;color:#22c55e;margin-bottom:12px;letter-spacing:3px;text-align:left}}
-    h1{{font-size:52px;color:#22c55e;margin-bottom:18px}}
-    p{{font-size:19px;margin-bottom:40px;line-height:1.8;color:#cbd5e1}}
-    .botao{{display:block;width:100%;padding:18px;margin:14px auto;border-radius:14px;text-decoration:none;font-weight:bold;font-size:19px;transition:all 0.3s ease}}
-    .primario{{background:linear-gradient(90deg,#22c55e,#15803d);color:#020617;border:none;box-shadow:0 4px 20px rgba(34,197,94,0.35)}}
-    .primario:hover{{transform:translateY(-3px);box-shadow:0 8px 25px rgba(34,197,94,0.45)}}
-    .secundario{{border:2px solid #22c55e;color:#22c55e;background:transparent}}
-    .secundario:hover{{background:rgba(34,197,94,0.1)}}
-    .lang{{position:absolute;top:25px;right:25px;z-index:2}}
-    .lang a{{color:#60a5fa;margin:0 8px;text-decoration:none;font-weight:500}}
+    *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif}}
+    body{{
+        min-height:100vh;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(rgba(10,20,40,0.88), rgba(10,20,40,0.88)),
+        url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+        background-size:cover;background-position:center;background-attachment:fixed;
+        color:#f0f4f8
+    }}
+    .caixa{{width:90%;max-width:420px;padding:50px 40px;background:rgba(8,16,32,0.92);border-radius:16px;border:1px solid rgba(96,165,250,0.15)}}
+    .logo{{font-size:28px;font-weight:700;color:#38bdf8;margin-bottom:8px}}
+    h1{{font-size:36px;margin-bottom:10px;color:#e2e8f0}}
+    p{{font-size:17px;margin-bottom:35px;color:#94a3b8;line-height:1.6}}
+    .link{{display:block;text-align:center;padding:14px 20px;margin:10px 0;border-radius:10px;text-decoration:none;font-weight:500;font-size:16px;transition:0.2s}}
+    .principal{{background:#2563eb;color:white}}
+    .principal:hover{{background:#1d4ed8}}
+    .secundario{{border:1px solid #475569;color:#cbd5e1}}
+    .secundario:hover{{background:rgba(148,163,184,0.1)}}
+    .lang{{position:absolute;top:20px;right:20px}}
+    .lang a{{color:#94a3b8;margin:0 6px;text-decoration:none;font-size:14px}}
+    .lang a:hover{{color:#38bdf8}}
     </style></head><body>
     <div class="lang"><a href="/mudar-idioma/pt">PT</a> | <a href="/mudar-idioma/en">EN</a></div>
     <div class="caixa">
         <div class="logo">JBS TECNOLOGIA</div>
         <h1>{t["titulo"]}</h1>
         <p>{t["subtitulo"]}</p>
-        <a href="/cadastrar" class="botao primario">{t["criar_conta"]}</a>
-        <a href="/entrar" class="botao secundario">{t["entrar"]}</a>
+        <a href="/cadastrar" class="link principal">{t["criar_conta"]}</a>
+        <a href="/entrar" class="link secundario">{t["entrar"]}</a>
     </div></body></html>
     ''')
 
-# ==================== CADASTRO — SEM CALENDARIO, ESCREVE DIRETO ====================
+# ==================== CADASTRO — SIMPLES E DIRETO ====================
 @app.route("/cadastrar", methods=["GET","POST"])
 def cadastrar():
     t = IDIOMAS[pegar_idioma()]; erro=""
@@ -213,15 +219,24 @@ def cadastrar():
     <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{t["criar_conta"]}</title><style>
     *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial}}
-    body{{background:linear-gradient(135deg,#020617 0%,#051020 40%,#03141a 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center}}
-    .caixa{{width:90%;max-width:480px;background:rgba(8,18,35,0.9);padding:40px;border-radius:18px;border:1px solid rgba(34,197,94,0.25);box-shadow:0 0 50px rgba(59,130,246,0.12)}}
-    h2{{text-align:center;color:#22c55e;margin-bottom:28px;font-size:28px}}
-    .erro{{background:#b91c1c;color:white;padding:16px;border-radius:12px;margin-bottom:22px;text-align:center;font-weight:bold;border:1px solid rgba(220,38,38,0.35)}}
-    input{{width:100%;padding:16px;margin:12px 0;background:rgba(10,30,55,0.8);border:1px solid rgba(96,165,250,0.3);border-radius:12px;color:white;font-size:17px}}
-    input:focus{{outline:none;border-color:#22c55e;box-shadow:0 0 10px rgba(34,197,94,0.35)}}
-    button{{width:100%;padding:16px;background:linear-gradient(90deg,#22c55e,#15803d);border:none;border-radius:12px;font-weight:bold;font-size:19px;color:#020617;box-shadow:0 4px 20px rgba(34,197,94,0.35);margin-top:10px}}
-    a{{display:block;text-align:center;color:#60a5fa;margin-top:20px;text-decoration:none;font-size:16px}}
-    </style></head><body><div class="caixa">
+    body{{
+        min-height:100vh;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(rgba(10,20,40,0.88), rgba(10,20,40,0.88)),
+        url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+        background-size:cover;background-position:center;color:#f0f4f8
+    }}
+    .caixa{{width:90%;max-width:420px;padding:40px 35px;background:rgba(8,16,32,0.92);border-radius:16px}}
+    h2{{text-align:center;margin-bottom:25px;color:#e2e8f0}}
+    .erro{{background:rgba(220,38,38,0.2);color:#fecaca;padding:12px;border-radius:8px;margin-bottom:18px;text-align:center}}
+    input{{width:100%;padding:13px;margin:8px 0;background:rgba(15,28,48,0.8);border:1px solid #334155;border-radius:8px;color:white;font-size:15px}}
+    input:focus{{outline:none;border-color:#38bdf8}}
+    .botao{{width:100%;padding:13px;background:#2563eb;border:none;border-radius:8px;color:white;font-size:16px;font-weight:500;margin-top:8px}}
+    .botao:hover{{background:#1d4ed8}}
+    .troca{{text-align:center;margin-top:18px}}
+    .troca a{{color:#94a3b8;text-decoration:none;font-size:14px}}
+    .troca a:hover{{color:#38bdf8}}
+    </style></head><body>
+    <div class="caixa">
     <h2>{t["criar_conta"]}</h2>
     {f'<div class="erro">{erro}</div>' if erro else ''}
     <form method="POST">
@@ -229,9 +244,9 @@ def cadastrar():
     <input type="text" name="nascimento" placeholder="{t["nascimento"]}" required>
     <input type="email" name="email" placeholder="{t["email"]}" required>
     <input type="password" name="senha" placeholder="{t["senha"]}" required minlength="6">
-    <button>{t["criar_conta"]}</button>
-    <a href="/entrar">{t["ja_possui"]}</a>
-    <a href="/">Voltar</a>
+    <button class="botao">{t["acessar"]}</button>
+    <div class="troca"><a href="/entrar">{t["ja_possui"]}</a></div>
+    <div class="troca"><a href="/">Voltar</a></div>
     </form></div></body></html>
     ''')
 
@@ -249,28 +264,39 @@ def entrar():
             session["usuario_id"] = u[0]
             return redirect(url_for("feed"))
         erro = t["erro_dados"]
+    
     return render_template_string(f'''
     <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{t["entrar"]}</title><style>
     *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial}}
-    body{{background:linear-gradient(135deg,#020617 0%,#051020 40%,#03141a 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center}}
-    .caixa{{width:90%;max-width:480px;background:rgba(8,18,35,0.9);padding:40px;border-radius:18px;border:1px solid rgba(34,197,94,0.25);box-shadow:0 0 50px rgba(59,130,246,0.12)}}
-    h2{{text-align:center;color:#22c55e;margin-bottom:28px;font-size:28px}}
-    .ok{{background:#166534;color:white;padding:16px;border-radius:12px;margin-bottom:22px;text-align:center;border:1px solid rgba(22,163,74,0.35)}}
-    .erro{{background:#b91c1c;color:white;padding:16px;border-radius:12px;margin-bottom:22px;text-align:center;border:1px solid rgba(220,38,38,0.35)}}
-    input{{width:100%;padding:16px;margin:12px 0;background:rgba(10,30,55,0.8);border:1px solid rgba(96,165,250,0.3);border-radius:12px;color:white;font-size:17px}}
-    button{{width:100%;padding:16px;background:linear-gradient(90deg,#22c55e,#15803d);border:none;border-radius:12px;font-weight:bold;font-size:19px;color:#020617;box-shadow:0 4px 20px rgba(34,197,94,0.35);margin-top:10px}}
-    a{{display:block;text-align:center;color:#60a5fa;margin-top:20px;text-decoration:none}}
-    </style></head><body><div class="caixa">
+    body{{
+        min-height:100vh;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(rgba(10,20,40,0.88), rgba(10,20,40,0.88)),
+        url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+        background-size:cover;background-position:center;color:#f0f4f8
+    }}
+    .caixa{{width:90%;max-width:420px;padding:40px 35px;background:rgba(8,16,32,0.92);border-radius:16px}}
+    h2{{text-align:center;margin-bottom:25px;color:#e2e8f0}}
+    .ok{{background:rgba(22,163,74,0.2);color:#bbf7d0;padding:12px;border-radius:8px;margin-bottom:18px;text-align:center}}
+    .erro{{background:rgba(220,38,38,0.2);color:#fecaca;padding:12px;border-radius:8px;margin-bottom:18px;text-align:center}}
+    input{{width:100%;padding:13px;margin:8px 0;background:rgba(15,28,48,0.8);border:1px solid #334155;border-radius:8px;color:white;font-size:15px}}
+    input:focus{{outline:none;border-color:#38bdf8}}
+    .botao{{width:100%;padding:13px;background:#2563eb;border:none;border-radius:8px;color:white;font-size:16px;font-weight:500;margin-top:8px}}
+    .botao:hover{{background:#1d4ed8}}
+    .troca{{text-align:center;margin-top:18px}}
+    .troca a{{color:#94a3b8;text-decoration:none;font-size:14px}}
+    .troca a:hover{{color:#38bdf8}}
+    </style></head><body>
+    <div class="caixa">
     <h2>{t["entrar"]}</h2>
     {f'<div class="ok">{msg}</div>' if msg else ''}
     {f'<div class="erro">{erro}</div>' if erro else ''}
     <form method="POST">
     <input type="email" name="email" placeholder="{t["email"]}" required>
-    <input type="password" name="senha" placeholder="Senha" required>
-    <button>{t["acessar"]}</button>
-    <a href="/cadastrar">{t["nao_possui"]}</a>
-    <a href="/">Voltar</a>
+    <input type="password" name="senha" placeholder="{t["senha"]}" required>
+    <button class="botao">{t["acessar"]}</button>
+    <div class="troca"><a href="/cadastrar">{t["nao_possui"]}</a></div>
+    <div class="troca"><a href="/">Voltar</a></div>
     </form></div></body></html>
     ''')
 
@@ -314,32 +340,34 @@ def feed():
     
     html_pubs = ""
     for p in pubs:
-        html_pubs += f"<div style='background:rgba(8,18,35,0.9);padding:22px;border-radius:16px;margin-bottom:22px;border:1px solid rgba(96,165,250,0.25);box-shadow:0 2px 15px rgba(0,0,0,0.3)'>"
-        html_pubs += f"<strong style='color:#22c55e;font-size:18px;'>{p[1]}</strong>"
-        html_pubs += f"<p style='margin:16px 0;color:#e2e8f0;line-height:1.7;'>{p[2] if p[2] else ''}</p>"
+        html_pubs += f"<div style='background:rgba(12,24,44,0.9);padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid rgba(51,65,85,0.5)'>"
+        html_pubs += f"<strong style='color:#38bdf8;font-size:16px;'>{p[1]}</strong>"
+        html_pubs += f"<p style='margin:12px 0;color:#cbd5e1;line-height:1.6;'>{p[2] if p[2] else ''}</p>"
         if p[5]:
             if p[6] in ["png","jpg","jpeg","gif","webp"]:
-                html_pubs += f"<img src='/midia/{p[5]}' style='max-width:100%;border-radius:12px;margin:12px 0;'>"
+                html_pubs += f"<img src='/midia/{p[5]}' style='max-width:100%;border-radius:10px;margin:10px 0;'>"
             else:
-                html_pubs += f"<video controls src='/midia/{p[5]}' style='max-width:100%;border-radius:12px;margin:12px 0;'></video>"
-        html_pubs += f"<br><small style='color:#94a3b8;'>Quem ve: {p[3]} | Faixa etaria: {p[4]}</small></div>"
+                html_pubs += f"<video controls src='/midia/{p[5]}' style='max-width:100%;border-radius:10px;margin:10px 0;'></video>"
+        html_pubs += f"<br><small style='color:#64748b;'>{p[3]} | {p[4]}</small></div>"
     
     return render_template_string(f'''
     <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Feed — JBS WORLDWIDE</title><style>
     *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial}}
-    body{{background:linear-gradient(135deg,#020617 0%,#051020 40%,#03141a 100%);color:white;padding:25px;max-width:780px;margin:0 auto}}
-    .topo{{display:flex;justify-content:space-between;align-items:center;padding-bottom:22px;border-bottom:1px solid rgba(34,197,94,0.25)}}
-    .topo h1{{color:#22c55e;font-size:26px}}
-    .sair{{color:#ef4444;text-decoration:none;font-weight:bold;font-size:17px}}
-    .form{{background:rgba(8,18,35,0.9);padding:22px;border-radius:16px;margin:28px 0;border:1px solid rgba(34,197,94,0.25)}}
-    textarea, select, input{{width:100%;padding:14px;margin:10px 0;background:rgba(10,30,55,0.8);border:1px solid rgba(96,165,250,0.3);border-radius:10px;color:white;font-size:16px}}
-    button{{padding:14px 28px;background:linear-gradient(90deg,#22c55e,#15803d);border:none;border-radius:10px;font-weight:bold;font-size:17px;color:#020617;box-shadow:0 4px 15px rgba(34,197,94,0.35)}}
+    body{{background:#081020;color:#e2e8f0;padding:20px;max-width:650px;margin:0 auto}}
+    .topo{{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid #1e293b}}
+    .topo h1{{font-size:22px;color:#38bdf8}}
+    .sair{{color:#94a3b8;text-decoration:none;font-size:14px}}
+    .sair:hover{{color:#f87171}}
+    .form{{background:rgba(12,24,44,0.9);padding:18px;border-radius:12px;margin-bottom:24px;border:1px solid #1e293b}}
+    textarea, select, input{{width:100%;padding:12px;margin:6px 0;background:rgba(15,28,48,0.8);border:1px solid #334155;border-radius:8px;color:white;font-size:15px}}
+    button{{padding:10px 24px;background:#2563eb;border:none;border-radius:8px;color:white;font-size:15px;font-weight:500}}
+    button:hover{{background:#1d4ed8}}
     </style></head><body>
     <div class="topo"><h1>JBS WORLDWIDE</h1><a href="/sair" class="sair">{t["sair"]}</a></div>
     <div class="form">
     <form method="POST" enctype="multipart/form-data">
-    <textarea name="texto" rows="4" placeholder="{t["o_que_pensa"]}"></textarea>
+    <textarea name="texto" rows="3" placeholder="{t["o_que_pensa"]}"></textarea>
     <select name="visibilidade">
     {"".join([f"<option value='{v[0]}'>{v[1]}</option>" for v in VISIBILIDADE])}
     </select>
