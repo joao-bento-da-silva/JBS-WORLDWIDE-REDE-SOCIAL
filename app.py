@@ -153,10 +153,12 @@ def entrar():
         erro = "E-mail ou senha incorretos"
 
 
-# ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
+#
+   # ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
 @app.route("/")
 def inicio():
-    if logado(): return redirect(url_for("feed"))
+    if logado():
+        return redirect(url_for("feed"))
     return render_template_string('''
     <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JBS REDE</title>
@@ -260,6 +262,9 @@ def inicio():
         <a href="/entrar" class="botao secundario">Entrar na minha conta</a>
     </div></body></html>
     ''')
+     
+        
+        
 
     
 
