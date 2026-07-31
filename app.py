@@ -152,33 +152,116 @@ def entrar():
             return redirect(url_for("feed"))
         erro = "E-mail ou senha incorretos"
 
-    return render_template_string(f'''
-    <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Entrar</title>
+
+# ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
+@app.route("/")
+def inicio():
+    if logado(): return redirect(url_for("feed"))
+    return render_template_string('''
+    <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JBS REDE</title>
     <style>
-    *{{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI'}}
-    body{{background:#0a0f1a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center}}
-    .box{{width:90%;max-width:420px;background:#111827;border-radius:20px;padding:40px 30px}}
-    h2{{text-align:center;margin-bottom:25px;color:#3b82f6}}
-    .ok{{background:rgba(22,163,74,0.15);color:#86efac;padding:12px;border-radius:8px;margin-bottom:15px;text-align:center}}
-    .err{{background:rgba(220,38,38,0.15);color:#fca5a5;padding:12px;border-radius:8px;margin-bottom:15px;text-align:center}}
-    input{{width:100%;padding:14px;margin:8px 0;background:#0a0f1a;border:1px solid #374151;border-radius:10px;color:#fff}}
-    .btn{{width:100%;padding:14px;background:#2563eb;border:none;border-radius:10px;color:#fff;font-weight:600}}
-    .lnk{{text-align:center;margin-top:20px}}
-    .lnk a{{color:#94a3b8}}
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI', Roboto, sans-serif}
+    body{
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color:#f8fafc;
+        min-height:100vh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+        position:relative;
+        overflow:hidden;
+    }
+    body::before{
+        content:"";
+        position:absolute;
+        width:600px;
+        height:600px;
+        background:rgba(59,130,246,0.08);
+        border-radius:50%;
+        top:-200px;
+        right:-150px;
+    }
+    body::after{
+        content:"";
+        position:absolute;
+        width:500px;
+        height:500px;
+        background:rgba(16,185,129,0.06);
+        border-radius:50%;
+        bottom:-150px;
+        left:-100px;
+    }
+    .caixa{
+        width:100%;
+        max-width:440px;
+        background:rgba(15,23,42,0.85);
+        backdrop-filter:blur(12px);
+        border-radius:24px;
+        padding:55px 40px;
+        text-align:center;
+        border:1px solid rgba(59,130,246,0.15);
+        box-shadow:0 20px 60px rgba(0,0,0,0.35);
+        position:relative;
+        z-index:1;
+    }
+    .logo{
+        font-size:42px;
+        font-weight:800;
+        background:linear-gradient(90deg, #3b82f6, #10b981);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        margin-bottom:12px;
+    }
+    .slogan{
+        color:#94a3b8;
+        font-size:17px;
+        margin-bottom:40px;
+        line-height:1.6;
+    }
+    .botao{
+        display:block;
+        width:100%;
+        padding:16px;
+        border-radius:14px;
+        text-decoration:none;
+        font-weight:600;
+        margin:12px 0;
+        border:none;
+        font-size:16px;
+        transition:all 0.3s ease;
+        letter-spacing:0.3px;
+    }
+    .principal{
+        background:linear-gradient(90deg, #2563eb, #3b82f6);
+        color:#ffffff;
+        box-shadow:0 4px 15px rgba(37,99,235,0.3);
+    }
+    .principal:hover{
+        transform:translateY(-2px);
+        box-shadow:0 6px 20px rgba(37,99,235,0.4);
+    }
+    .secundario{
+        background:transparent;
+        color:#cbd5e1;
+        border:1px solid rgba(148,163,184,0.3);
+    }
+    .secundario:hover{
+        background:rgba(59,130,246,0.1);
+        border-color:#3b82f6;
+        color:#bfdbfe;
+    }
     </style></head><body>
-    <div class="box">
-        <h2>Entrar</h2>
-        {f'<div class="ok">{ok}</div>' if ok else ''}
-        {f'<div class="err">{erro}</div>' if erro else ''}
-        <form method="POST">
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
-            <button class="btn">Entrar</button>
-            <div class="lnk"><a href="/cadastrar">Criar nova conta</a></div>
-        </form>
+    <div class="caixa">
+        <div class="logo">JBS REDE</div>
+        <p class="slogan">Conectando pessoas e ideias</p>
+        <a href="/cadastrar" class="botao principal">Criar nova conta</a>
+        <a href="/entrar" class="botao secundario">Entrar na minha conta</a>
     </div></body></html>
     ''')
+
+    
 
 @app.route("/feed", methods=["GET","POST"])
 def feed():
