@@ -1,6 +1,6 @@
  # ==================================================
-# © 2026 JBS TECNOLOGIA — REDE SOCIAL FINAL COMPLETA
-# VERSÃO COM: VÍDEO + FOTO + PUBLICAÇÕES SALVAS PARA SEMPRE
+# © 2026 JBS TECNOLOGIA — REDE SOCIAL COM DESIGN BONITO
+# VERSÃO FINAL: FOTO + VÍDEO + PUBLICAÇÕES + VISUAL PROFISSIONAL
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -68,18 +68,6 @@ def iniciar_banco():
         )
     ''')
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS comentarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            publicacao_id INTEGER NOT NULL,
-            usuario_id INTEGER NOT NULL,
-            texto TEXT NOT NULL,
-            data_comentario DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (publicacao_id) REFERENCES publicacoes(id),
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    ''')
-
     conn.commit()
     conn.close()
 
@@ -99,37 +87,35 @@ def inicio():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>JBS Rede Social</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-            body{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:white;min-height:100vh;}
-            .cabecalho{padding:30px;text-align:center;border-bottom:1px solid #334155;}
-            .cabecalho h1{color:#84cc16;font-size:36px;margin-bottom:10px;}
-            .cabecalho p{color:#94a3b8;}
-            .conteudo{max-width:900px;margin:50px auto;padding:20px;}
-            .apresentacao{text-align:center;margin-bottom:60px;}
-            .apresentacao h2{font-size:30px;margin-bottom:20px;color:#e2e8f0;}
-            .apresentacao p{font-size:18px;line-height:1.7;color:#cbd5e1;}
-            .botoes{display:flex;gap:25px;justify-content:center;flex-wrap:wrap;}
-            .botao{padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:18px;transition:0.3s;}
-            .botao.primario{background:#84cc16;color:#0f172a;}
-            .botao.primario:hover{background:#65a30d;transform:scale(1.05);}
-            .botao.secundario{background:#334155;color:white;border:1px solid #475569;}
-            .botao.secundario:hover{background:#475569;}
-            .rodape{text-align:center;padding:25px;color:#64748b;font-size:14px;margin-top:50px;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{background:linear-gradient(180deg,#0a0f1a 0%,#121a2b 100%);color:#e2e8f0;min-height:100vh;}
+            .cabecalho{padding:25px 20px;background:rgba(0,0,0,0.3);border-bottom:1px solid #1e293b;}
+            .cabecalho h1{color:#84cc16;font-size:32px;text-align:center;font-weight:800;letter-spacing:1px;}
+            .conteudo{max-width:650px;margin:40px auto;padding:0 20px;}
+            .boasvindas{text-align:center;margin-bottom:50px;}
+            .boasvindas h2{font-size:28px;margin-bottom:15px;color:#ffffff;}
+            .boasvindas p{font-size:17px;line-height:1.8;color:#94a3b8;}
+            .grupo-botoes{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;}
+            .botao{padding:15px 35px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:17px;border:none;cursor:pointer;transition:all 0.3s ease;}
+            .botao.verde{background:#84cc16;color:#050505;box-shadow:0 0 15px rgba(132,204,22,0.3);}
+            .botao.verde:hover{background:#65a30d;transform:translateY(-2px);}
+            .botao.escuro{background:#1e293b;color:#ffffff;border:1px solid #334155;}
+            .botao.escuro:hover{background:#334155;transform:translateY(-2px);}
+            .rodape{text-align:center;padding:30px;color:#64748b;font-size:14px;}
         </style>
     </head>
     <body>
         <div class="cabecalho">
             <h1>JBS TECNOLOGIA</h1>
-            <p>Sua Rede Social Conectada e Segura</p>
         </div>
         <div class="conteudo">
-            <div class="apresentacao">
-                <h2>Bem-vindo(a)</h2>
-                <p>Conecte-se, compartilhe ideias, fotos e vídeos com segurança.<br>Tudo feito para você pela JBS TECNOLOGIA.</p>
+            <div class="boasvindas">
+                <h2>Bem-vindo à sua rede social</h2>
+                <p>Conecte-se, compartilhe fotos, vídeos e ideias com segurança.<br>Tudo feito com a qualidade JBS TECNOLOGIA.</p>
             </div>
-            <div class="botoes">
-                <a href="/cadastrar" class="botao primario">Criar Nova Conta</a>
-                <a href="/entrar" class="botao secundario">Acessar Minha Conta</a>
+            <div class="grupo-botoes">
+                <a href="/cadastrar" class="botao verde">Criar Nova Conta</a>
+                <a href="/entrar" class="botao escuro">Entrar na Conta</a>
             </div>
         </div>
         <div class="rodape">© 2026 JBS TECNOLOGIA — Todos os direitos reservados</div>
@@ -146,7 +132,7 @@ def cadastrar():
         senha = request.form.get("senha","").strip()
 
         if not nome or not email or not senha:
-            return "Preencha todos os campos <br><a href='/cadastrar'>Voltar</a>"
+            return "Preencha todos os campos corretamente <br><a href='/cadastrar' style='color:#84cc16;'>Voltar</a>"
 
         conn = conectar_banco()
         try:
@@ -154,7 +140,7 @@ def cadastrar():
             conn.commit()
             return redirect(url_for("entrar"))
         except sqlite3.IntegrityError:
-            return "E-mail já cadastrado <br><a href='/cadastrar'>Voltar</a>"
+            return "Esse e-mail já está cadastrado <br><a href='/cadastrar' style='color:#84cc16;'>Voltar</a>"
         finally:
             conn.close()
 
@@ -164,26 +150,29 @@ def cadastrar():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cadastrar</title>
+        <title>Cadastrar Conta</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-            body{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-            .caixa{width:100%;max-width:450px;background:#1e293b;padding:35px;border-radius:15px;border:1px solid #334155;}
-            h2{text-align:center;margin-bottom:30px;color:#84cc16;}
-            input{width:100%;padding:15px;margin:10px 0 20px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
-            button{width:100%;padding:15px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{background:linear-gradient(180deg,#0a0f1a 0%,#121a2b 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+            .caixa{width:100%;max-width:480px;background:#121a2b;padding:40px;border-radius:16px;border:1px solid #1e293b;box-shadow:0 0 25px rgba(0,0,0,0.5);}
+            h2{text-align:center;margin-bottom:30px;color:#84cc16;font-size:26px;}
+            .campo{margin-bottom:20px;}
+            input{width:100%;padding:16px;background:#0a0f1a;border:1px solid #334155;border-radius:10px;color:white;font-size:16px;}
+            input:focus{outline:none;border-color:#84cc16;}
+            button{width:100%;padding:16px;background:#84cc16;color:#050505;border:none;border-radius:10px;font-weight:bold;font-size:17px;cursor:pointer;transition:0.3s;}
+            button:hover{background:#65a30d;}
             a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:20px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <h2>Criar Conta</h2>
+            <h2>Criar Sua Conta</h2>
             <form method="POST">
-                <input type="text" name="nome" placeholder="Seu nome" required>
-                <input type="email" name="email" placeholder="Seu e-mail" required>
-                <input type="password" name="senha" placeholder="Senha segura" required>
-                <button type="submit">Cadastrar</button>
-                <a href="/">Voltar</a>
+                <div class="campo"><input type="text" name="nome" placeholder="Seu nome completo" required></div>
+                <div class="campo"><input type="email" name="email" placeholder="Seu melhor e-mail" required></div>
+                <div class="campo"><input type="password" name="senha" placeholder="Crie uma senha segura" required></div>
+                <button type="submit">Finalizar Cadastro</button>
+                <a href="/">Voltar ao início</a>
             </form>
         </div>
     </body>
@@ -204,7 +193,7 @@ def entrar():
         if usuario:
             session["usuario_id"] = usuario["id"]
             return redirect(url_for("feed"))
-        return "E-mail ou senha errados <br><a href='/entrar'>Voltar</a>"
+        return "E-mail ou senha incorretos <br><a href='/entrar' style='color:#84cc16;'>Voltar</a>"
 
     return render_template_string('''
     <!DOCTYPE html>
@@ -212,32 +201,36 @@ def entrar():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entrar</title>
+        <title>Acessar Conta</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-            body{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-            .caixa{width:100%;max-width:450px;background:#1e293b;padding:35px;border-radius:15px;border:1px solid #334155;}
-            h2{text-align:center;margin-bottom:30px;color:#84cc16;}
-            input{width:100%;padding:15px;margin:10px 0 20px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
-            button{width:100%;padding:15px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{background:linear-gradient(180deg,#0a0f1a 0%,#121a2b 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+            .caixa{width:100%;max-width:480px;background:#121a2b;padding:40px;border-radius:16px;border:1px solid #1e293b;box-shadow:0 0 25px rgba(0,0,0,0.5);}
+            h2{text-align:center;margin-bottom:30px;color:#84cc16;font-size:26px;}
+            .campo{margin-bottom:20px;}
+            input{width:100%;padding:16px;background:#0a0f1a;border:1px solid #334155;border-radius:10px;color:white;font-size:16px;}
+            input:focus{outline:none;border-color:#84cc16;}
+            button{width:100%;padding:16px;background:#84cc16;color:#050505;border:none;border-radius:10px;font-weight:bold;font-size:17px;cursor:pointer;transition:0.3s;}
+            button:hover{background:#65a30d;}
             a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:20px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <h2>Acessar Conta</h2>
+            <h2>Acessar Minha Conta</h2>
             <form method="POST">
-                <input type="email" name="email" placeholder="Seu e-mail" required>
-                <input type="password" name="senha" placeholder="Sua senha" required>
+                <div class="campo"><input type="email" name="email" placeholder="Seu e-mail cadastrado" required></div>
+                <div class="campo"><input type="password" name="senha" placeholder="Sua senha" required></div>
                 <button type="submit">Entrar</button>
-                <a href="/cadastrar">Não tem conta? Crie uma</a>
+                <a href="/cadastrar">Não tem conta? Crie uma agora</a>
+                <a href="/">Voltar ao início</a>
             </form>
         </div>
     </body>
     </html>
     ''')
 
-# ==================== FEED COM FOTO E VÍDEO ====================
+# ==================== FEED BONITO E FUNCIONAL ====================
 @app.route("/feed")
 def feed():
     if not usuario_logado():
@@ -261,22 +254,25 @@ def feed():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Feed</title>
+        <title>Feed — JBS Rede Social</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-            body{background:#0f172a;color:white;}
-            .topo{padding:20px 30px;background:#1e293b;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;}
-            .topo h1{color:#84cc16;font-size:24px;}
-            .topo a{color:#ef4444;text-decoration:none;font-weight:bold;}
-            .conteudo{max-width:700px;margin:30px auto;padding:0 20px;}
-            .botao-publicar{margin-bottom:30px;text-align:center;}
-            .botao-publicar a{padding:12px 30px;background:#84cc16;color:#0f172a;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;}
-            .publicacao{background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;margin-bottom:25px;}
-            .publicacao .nome{font-weight:bold;color:#84cc16;margin-bottom:10px;}
-            .publicacao .data{color:#64748b;font-size:13px;margin-bottom:15px;}
-            .publicacao .texto{color:#e2e8f0;line-height:1.6;margin-bottom:15px;}
-            .midia{max-width:100%;border-radius:8px;margin-bottom:15px;}
-            .acoes{display:flex;gap:20px;color:#94a3b8;font-size:15px;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{background:linear-gradient(180deg,#0a0f1a 0%,#121a2b 100%);color:#e2e8f0;}
+            .topo{padding:20px;background:rgba(0,0,0,0.3);border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+            .topo h1{color:#84cc16;font-size:26px;font-weight:800;}
+            .topo a{color:#ef4444;text-decoration:none;font-weight:bold;padding:8px 15px;border-radius:8px;transition:0.3s;}
+            .topo a:hover{background:rgba(239,68,68,0.1);}
+            .conteudo{max-width:650px;margin:30px auto;padding:0 15px;}
+            .btn-novo{text-align:center;margin-bottom:35px;}
+            .btn-novo a{padding:14px 35px;background:#84cc16;color:#050505;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;box-shadow:0 0 15px rgba(132,204,22,0.25);transition:0.3s;}
+            .btn-novo a:hover{background:#65a30d;transform:translateY(-2px);}
+            .publicacao{background:#121a2b;padding:22px;border-radius:16px;border:1px solid #1e293b;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+            .cabecalho-pub{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;}
+            .nome-autor{font-weight:bold;color:#84cc16;font-size:18px;}
+            .data-pub{color:#64748b;font-size:13px;}
+            .texto-pub{font-size:16px;line-height:1.7;color:#e2e8f0;margin-bottom:18px;}
+            .midia{width:100%;border-radius:12px;margin-bottom:18px;}
+            .acoes-pub{display:flex;gap:25px;color:#94a3b8;font-size:15px;padding-top:10px;border-top:1px solid #1e293b;}
         </style>
     </head>
     <body>
@@ -285,33 +281,45 @@ def feed():
             <a href="/sair">Sair</a>
         </div>
         <div class="conteudo">
-            <div class="botao-publicar">
+            <div class="btn-novo">
                 <a href="/publicar">+ Nova Publicação</a>
             </div>
-            {% for p in publicacoes %}
-            <div class="publicacao">
-                <div class="nome">{{p.nome}}</div>
-                <div class="data">{{p.data_publicacao}}</div>
-                {% if p.texto %}<div class="texto">{{p.texto}}</div>{% endif %}
-                {% if p.arquivo %}
-                    {% if p.tipo_arquivo in ['mp4','mov','avi','webm'] %}
-                    <video controls class="midia">
-                        <source src="/midia/{{p.arquivo}}">
-                        Vídeo não suportado
-                    </video>
-                    {% else %}
-                    <img src="/midia/{{p.arquivo}}" class="midia" alt="Imagem">
+            {% if publicacoes %}
+                {% for p in publicacoes %}
+                <div class="publicacao">
+                    <div class="cabecalho-pub">
+                        <span class="nome-autor">{{p.nome}}</span>
+                        <span class="data-pub">{{p.data_publicacao}}</span>
+                    </div>
+                    {% if p.texto %}<div class="texto-pub">{{p.texto}}</div>{% endif %}
+                    {% if p.arquivo %}
+                        {% if p.tipo_arquivo in ['mp4','mov','avi','webm'] %}
+                        <video controls class="midia">
+                            <source src="/midia/{{p.arquivo}}">
+                            Seu navegador não suporta reproduzir esse vídeo.
+                        </video>
+                        {% else %}
+                        <img src="/midia/{{p.arquivo}}" class="midia" alt="Imagem da publicação">
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-                <div class="acoes">❤️ {{p.total_curtidas}} | 💬 Comentários</div>
-            </div>
-            {% endfor %}
+                    <div class="acoes-pub">
+                        <span>❤️ {{p.total_curtidas}}</span>
+                        <span>💬 Comentários</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align:center;padding:50px;color:#94a3b8;">
+                    <h3>Ainda não há publicações</h3>
+                    <p>Seja o primeiro a compartilhar algo!</p>
+                </div>
+            {% endif %}
         </div>
     </body>
     </html>
     ''', publicacoes=publicacoes)
 
-# ==================== PUBLICAR — ACEITA FOTO E VÍDEO ====================
+# ==================== PUBLICAR COM FOTO E VÍDEO ====================
 @app.route("/publicar", methods=["GET","POST"])
 def publicar():
     if not usuario_logado():
@@ -329,7 +337,6 @@ def publicar():
             arquivo.save(caminho)
             tipo_arq = nome_arq.rsplit('.',1)[-1].lower()
 
-        # SALVA NO BANCO — NUNCA MAIS SOME
         conn = conectar_banco()
         conn.execute('''
             INSERT INTO publicacoes (usuario_id, texto, arquivo, tipo_arquivo)
@@ -348,23 +355,25 @@ def publicar():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Nova Publicação</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-            body{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-            .caixa{width:100%;max-width:550px;background:#1e293b;padding:30px;border-radius:15px;border:1px solid #334155;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+            body{background:linear-gradient(180deg,#0a0f1a 0%,#121a2b 100%);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+            .caixa{width:100%;max-width:580px;background:#121a2b;padding:35px;border-radius:16px;border:1px solid #1e293b;box-shadow:0 0 25px rgba(0,0,0,0.5);}
             h2{text-align:center;margin-bottom:25px;color:#84cc16;}
-            textarea, input{width:100%;padding:14px;margin:8px 0 18px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;font-size:16px;}
-            button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:17px;cursor:pointer;}
-            a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:15px;}
+            textarea, input{width:100%;padding:16px;margin-bottom:20px;background:#0a0f1a;border:1px solid #334155;border-radius:10px;color:white;font-size:16px;}
+            textarea:focus, input:focus{outline:none;border-color:#84cc16;}
+            button{width:100%;padding:16px;background:#84cc16;color:#050505;border:none;border-radius:10px;font-weight:bold;font-size:17px;cursor:pointer;transition:0.3s;}
+            button:hover{background:#65a30d;}
+            a{color:#94a3b8;text-decoration:none;display:block;text-align:center;margin-top:20px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <h2>Compartilhe algo</h2>
+            <h2>Compartilhe o que quiser</h2>
             <form method="POST" enctype="multipart/form-data">
-                <textarea name="texto" rows="5" placeholder="Escreva sua mensagem..." required></textarea>
+                <textarea name="texto" rows="5" placeholder="Escreva sua mensagem aqui..." required></textarea>
                 <input type="file" name="arquivo" accept="image/*,video/*">
-                <button type="submit">Publicar</button>
-                <a href="/feed">Voltar</a>
+                <button type="submit">Publicar Agora</button>
+                <a href="/feed">Voltar ao feed</a>
             </form>
         </div>
     </body>
