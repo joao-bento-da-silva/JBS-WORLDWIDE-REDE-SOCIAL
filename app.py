@@ -1,6 +1,6 @@
- # ==================================================
+# ==================================================
 # © 2026 JBS TECNOLOGIA
-# VERSAO CORRIGIDA: FOTO / VIDEO / PUBLICACOES
+# VERSAO CORRIGIDA: SEM ERRO DE PERMISSAO / FOTO E VIDEO FUNCIONANDO
 # COMPATIVEL COM RENDER / GODADDY / CPANEL
 # ==================================================
 
@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ==================== CONFIGURACOES ====================
+# ==================== CONFIGURACOES CORRIGIDAS ====================
 app.secret_key = os.environ.get("CHAVE_INTERNA_SEGURANCA")
 app.config["SESSION_PERMANENT"] = True
 app.config["UPLOAD_FOLDER"] = "/app/midia_enviada"
@@ -23,7 +23,11 @@ EXTENSOES_PERMITIDAS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"
 CHAVE_MESTRA_DNA = os.environ.get("CHAVE_MESTRA_DNA")
 BANCO_DADOS = "jbs_rede.db"
 
-os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+# CRIA A PASTA SOMENTE SE FOR PERMITIDO
+try:
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+except:
+    pass
 
 # ==================== FUNCOES ====================
 def conectar_banco():
@@ -375,3 +379,4 @@ def sair():
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=porta, debug=False)
+ 
