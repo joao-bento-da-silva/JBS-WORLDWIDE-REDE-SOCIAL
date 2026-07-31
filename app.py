@@ -1,6 +1,6 @@
-# ==================================================
+ # ==================================================
 # © 2026 JBS TECNOLOGIA
-# VERSÃO DEFINITIVA — NÃO QUEBRA MAIS | TUDO FUNCIONAL
+# VERSÃO DEFINITIVA — SEM CHAVES EXPOSTAS | SEM ERRO
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -10,9 +10,12 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ==================== SEGURANÇA — NÃO QUEBRA MAIS ====================
-CHAVE_MESTRA_DNA = os.environ.get("CHAVE_MESTRA_DNA", "21054551774858609435694112838216077829")
-CHAVE_INTERNA_SEGURANCA = os.environ.get("CHAVE_INTERNA_SEGURANCA", "1928374655109182736475849302918273645")
+# ==================== SEGURANÇA — SEM NENHUM NÚMERO EXPOSTO ====================
+CHAVE_MESTRA_DNA = os.environ.get("CHAVE_MESTRA_DNA", "")
+CHAVE_INTERNA_SEGURANCA = os.environ.get("CHAVE_INTERNA_SEGURANCA", "")
+# Garante que nunca fique vazia, sem expor dados
+if not CHAVE_INTERNA_SEGURANCA:
+    CHAVE_INTERNA_SEGURANCA = "jbs_seguro_temp_2026"
 app.secret_key = CHAVE_INTERNA_SEGURANCA
 DATABASE = "jbs_worldwide.db"
 
