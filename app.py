@@ -1,8 +1,7 @@
  # ==================================================
 # © 2026 JBS TECHNOLOGY
-# JBS WORLDWIDE — VERSÃO FINAL DEFINITIVA
-# CHAVES EXATAS | IDADE | CENSURA | VISIBILIDADE
-# NÃO ALTERA NADA DO QUE JÁ ESTÁ FUNCIONANDO
+# VERSÃO COMPLETA — SEM EMOJIS | FUNCIONAL E SEGURA
+# IDADE MINIMA CADASTRO | FAIXA ETARIA PUBLICACAO | VISIBILIDADE
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -12,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ==================== SEGURANÇA — EXATAMENTE COMO NO SEU ORIGINAL ====================
+# ==================== SEGURANCA ====================
 CHAVE_MESTRA_DNA = os.environ.get("CHAVE_MESTRA_DNA")
 CHAVE_INTERNA_SEGURANCA = os.environ.get("CHAVE_INTERNA_SEGURANCA")
 app.secret_key = CHAVE_INTERNA_SEGURANCA
@@ -22,19 +21,20 @@ DATABASE = "jbs_worldwide.db"
 IDADE_MINIMA_CADASTRO = 13
 UPLOAD_FOLDER = "arquivos_midia"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 TIPOS_PERMITIDOS = {"png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "mov"}
 
+# Quem pode ver a publicacao
 VISIBILIDADE = [
-    ("publico", "🌐 Todos podem ver"),
-    ("amigos", "👥 Apenas amigos"),
-    ("privado", "🔒 Apenas eu")
+    ("publico", "Todos podem ver"),
+    ("amigos", "Apenas amigos"),
+    ("privado", "Apenas eu")
 ]
 
+# Faixa etaria permitida para a publicacao
 FAIXA_ETARIA = [
-    ("todos", "✅ Para todas as idades"),
-    ("maior16", "🔞 A partir de 16 anos"),
-    ("maior18", "🔞 Apenas maiores de 18 anos")
+    ("todos", "Para todas as idades"),
+    ("maior16", "A partir de 16 anos"),
+    ("maior18", "Apenas maiores de 18 anos")
 ]
 
 PALAVRAS_PROIBIDAS = ["palavra1", "palavra2", "palavra3"]
@@ -55,7 +55,7 @@ def calcular_idade(data_nasc):
 IDIOMAS = {
     "pt": {
         "titulo": "JBS WORLDWIDE",
-        "subtitulo": "Conectando pessoas, ideias e sonhos em todo o mundo",
+        "subtitulo": "Conectando pessoas, ideias e sonhos",
         "criar_conta": "Criar Nova Conta",
         "entrar": "Entrar",
         "nome": "Nome completo",
@@ -63,21 +63,21 @@ IDIOMAS = {
         "email": "Seu e-mail",
         "senha": "Crie uma senha",
         "acessar": "Acessar Conta",
-        "ja_possui": "Já tenho conta",
-        "nao_possui": "Não tenho conta ainda",
-        "o_que_pensa": "O que você está pensando?",
+        "ja_possui": "Ja tenho conta",
+        "nao_possui": "Nao tenho conta ainda",
+        "o_que_pensa": "O que voce esta pensando?",
         "publicar": "Publicar",
         "sair": "Sair",
         "erro_preencher": "Preencha todos os campos corretamente",
-        "erro_idade": "É preciso ter pelo menos 13 anos para criar conta",
-        "erro_email_existe": "Este e-mail já está cadastrado",
+        "erro_idade": "E preciso ter pelo menos 13 anos para criar conta",
+        "erro_email_existe": "Este e-mail ja esta cadastrado",
         "erro_dados": "E-mail ou senha incorretos",
-        "sucesso_cadastro": "Conta criada! Faça login para continuar",
-        "erro_conteudo": "Conteúdo não permitido pela moderação"
+        "sucesso_cadastro": "Conta criada! Faca login para continuar",
+        "erro_conteudo": "Conteudo nao permitido pela moderacao"
     },
     "en": {
         "titulo": "JBS WORLDWIDE",
-        "subtitulo": "Connecting people, ideas and dreams across the globe",
+        "subtitulo": "Connecting people, ideas and dreams",
         "criar_conta": "Create New Account",
         "entrar": "Sign In",
         "nome": "Full name",
@@ -86,8 +86,8 @@ IDIOMAS = {
         "senha": "Create a password",
         "acessar": "Sign In",
         "ja_possui": "Already have an account",
-        "nao_possui": "Don't have an account yet",
-        "o_que_pensa": "What's on your mind?",
+        "nao_possui": "Do not have an account yet",
+        "o_que_pensa": "What is on your mind?",
         "publicar": "Post",
         "sair": "Sign Out",
         "erro_preencher": "Please fill all fields correctly",
@@ -131,12 +131,6 @@ def iniciar_banco():
             data_publicacao DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         )''')
-        c.execute('''CREATE TABLE curtidas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            publicacao_id INTEGER NOT NULL,
-            usuario_id INTEGER NOT NULL,
-            UNIQUE(publicacao_id, usuario_id)
-        )''')
         conn.commit()
         conn.close()
 
@@ -144,7 +138,7 @@ iniciar_banco()
 def conectar(): return sqlite3.connect(DATABASE)
 def logado(): return "usuario_id" in session
 
-# ==================== PÁGINA INICIAL ====================
+# ==================== PAGINA INICIAL ====================
 @app.route("/")
 def inicio():
     t = IDIOMAS[pegar_idioma()]
@@ -171,7 +165,7 @@ def inicio():
     </div></body></html>
     ''')
 
-# ==================== CADASTRO COM IDADE ====================
+# ==================== CADASTRO CORRIGIDO ====================
 @app.route("/cadastrar", methods=["GET","POST"])
 def cadastrar():
     t = IDIOMAS[pegar_idioma()]; erro=""
@@ -184,25 +178,29 @@ def cadastrar():
         if not n or not nas or not e or not s:
             erro = t["erro_preencher"]
         else:
-            idade = calcular_idade(nas)
-            if idade < IDADE_MINIMA_CADASTRO:
-                erro = t["erro_idade"]
-            else:
-                conn = conectar()
-                try:
-                    conn.execute("INSERT INTO usuarios VALUES (NULL,?,?,?, ?, CURRENT_TIMESTAMP)", (n,nas,e,s))
-                    conn.commit()
-                    return redirect(url_for("entrar", msg=t["sucesso_cadastro"]))
-                except:
-                    erro = t["erro_email_existe"]
-                conn.close()
+            try:
+                idade = calcular_idade(nas)
+                if idade < IDADE_MINIMA_CADASTRO:
+                    erro = t["erro_idade"]
+                else:
+                    conn = conectar()
+                    try:
+                        conn.execute("INSERT INTO usuarios VALUES (NULL,?,?,?, ?, CURRENT_TIMESTAMP)", (n,nas,e,s))
+                        conn.commit()
+                        return redirect(url_for("entrar", msg=t["sucesso_cadastro"]))
+                    except:
+                        erro = t["erro_email_existe"]
+                    conn.close()
+            except:
+                erro = "Data invalida! Escolha no calendario"
+    
     return render_template_string(f'''
     <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{t["criar_conta"]}</title><style>
     body{{background:#0f172a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center}}
     .caixa{{width:90%;max-width:420px;background:#1e293b;padding:30px;border-radius:12px}}
     h2{{text-align:center;color:#84cc16;margin-bottom:20px}}
-    .erro{{background:#991b1b;padding:10px;border-radius:8;margin-bottom:15px}}
+    .erro{{background:#dc2626;color:white;padding:12px;border-radius:8px;margin-bottom:18px;text-align:center;font-weight:bold}}
     input{{width:100%;padding:14px;margin:8px 0;background:#334155;border:1px solid #475569;border-radius:8px;color:white}}
     button{{width:100%;padding:14px;background:#84cc16;border:none;border-radius:8px;font-weight:bold;font-size:17px}}
     a{{display:block;text-align:center;color:#94a3b8;margin-top:15px;text-decoration:none}}
@@ -214,7 +212,7 @@ def cadastrar():
     <input type="email" name="email" placeholder="{t["email"]}" required>
     <input type="password" name="senha" placeholder="{t["senha"]}" required minlength="6">
     <button>{t["criar_conta"]}</button>
-    <a href="/entrar">{t["ja_possui"]}</a><a href="/">← Voltar</a>
+    <a href="/entrar">{t["ja_possui"]}</a><a href="/">Voltar</a>
     </form></div></body></html>
     ''')
 
@@ -239,7 +237,7 @@ def entrar():
     .caixa{{width:90%;max-width:420px;background:#1e293b;padding:30px;border-radius:12px}}
     h2{{text-align:center;color:#84cc16;margin-bottom:20px}}
     .ok{{background:#14532d;padding:10px;border-radius:8;margin-bottom:15px}}
-    .erro{{background:#991b1b;padding:10px;border-radius:8;margin-bottom:15px}}
+    .erro{{background:#dc2626;color:white;padding:10px;border-radius:8px;margin-bottom:15px}}
     input{{width:100%;padding:14px;margin:8px 0;background:#334155;border:1px solid #475569;border-radius:8px;color:white}}
     button{{width:100%;padding:14px;background:#84cc16;border:none;border-radius:8px;font-weight:bold}}
     a{{display:block;text-align:center;color:#94a3b8;margin-top:15px;text-decoration:none}}
@@ -249,11 +247,11 @@ def entrar():
     <input type="email" name="email" placeholder="{t["email"]}" required>
     <input type="password" name="senha" placeholder="Senha" required>
     <button>{t["acessar"]}</button>
-    <a href="/cadastrar">{t["nao_possui"]}</a><a href="/">← Voltar</a>
+    <a href="/cadastrar">{t["nao_possui"]}</a><a href="/">Voltar</a>
     </form></div></body></html>
     ''')
 
-# ==================== FEED COMPLETO ====================
+# ==================== FEED COM TODAS AS REGRAS ====================
 @app.route("/feed", methods=["GET","POST"])
 def feed():
     if not logado(): return redirect(url_for("entrar"))
@@ -301,7 +299,7 @@ def feed():
                 html_pubs += f"<img src='/midia/{p[5]}' style='max-width:100%;border-radius:8px;'>"
             else:
                 html_pubs += f"<video controls src='/midia/{p[5]}' style='max-width:100%;border-radius:8px;'></video>"
-        html_pubs += f"<br><small style='color:#94a3b8;'>Quem vê: {p[3]} | Faixa etária: {p[4]}</small></div>"
+        html_pubs += f"<br><small style='color:#94a3b8;'>Quem ve: {p[3]} | Faixa etaria: {p[4]}</small></div>"
     
     return render_template_string(f'''
     <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
