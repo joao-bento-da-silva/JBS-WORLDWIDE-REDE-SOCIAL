@@ -151,9 +151,7 @@ def entrar():
             session["id"] = u[0]
             return redirect(url_for("feed"))
         erro = "E-mail ou senha incorretos"
-
-
-
+        
 # ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
 @app.route("/")
 def inicio():
@@ -262,6 +260,10 @@ def inicio():
         <a href="/entrar" class="botao secundario">Entrar na minha conta</a>
     </div></body></html>
     ''')
+
+
+
+
      
         
         
