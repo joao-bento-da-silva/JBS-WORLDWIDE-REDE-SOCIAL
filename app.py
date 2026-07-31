@@ -1,8 +1,9 @@
- 
+
 # ==================================================
-# © 2026 JBS TECHNOLOGY
-# JBS WORLDWIDE — REDE SOCIAL GLOBAL
-# VERSÃO CORRIGIDA E TESTADA — 100% COMPATÍVEL COM RENDER
+# © 2026 JBS TECNOLOGIA / JBS WORLDWIDE
+# TODOS OS DIREITOS RESERVADOS
+# CRIADOR: JBS TECNOLOGIA
+# PROJETO EXCLUSIVO — REPRODUÇÃO PROIBIDA
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -438,7 +439,12 @@ def feed():
                 </form>
             </div>
             {html_publicacoes}
-        </div>
+            <footer style="text-align:center; padding:15px; color:#94a3b8; font-size:13px; border-top:1px solid #334155; margin-top:20px;">
+    © 2026 JBS WORLDWIDE — Criado por JBS TECNOLOGIA — Todos os direitos reservados
+</footer>
+
+            
+        </iv>
     </body>
     </html>
     ''')
