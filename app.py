@@ -325,14 +325,29 @@ def entrar():
     </html>
     ''')
 
-# ==================== FEED COMPLETO COM MÍDIA FUNCIONAL ====================
+# ==================== FEED COM CURTIDAS FUNCIONAIS ====================
 @app.route("/feed", methods=["GET","POST"])
 def feed():
     if not logado():
         return redirect(url_for("entrar"))
     lang = pegar_idioma()
     t = IDIOMAS[lang]
-    
+    usuario_atual = session["usuario_id"]
+
+    # ==================== AÇÃO DE CURTIR ====================
+    acao = request.args.get("acao")
+    pub_id = request.args.get("pub_id")
+    if acao == "curtir" and pub_id and pub_id.isdigit():
+        conn = conectar_banco()
+        try:
+            conn.execute("INSERT INTO curtidas (publicacao_id, usuario_id) VALUES (?,?)", (pub_id, usuario_atual))
+        except:
+            conn.execute("DELETE FROM curtidas WHERE publicacao_id=? AND usuario_id=?", (pub_id, usuario_atual))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("feed"))
+
+    # ==================== PUBLICAR NOVA POSTAGEM ====================
     if request.method == "POST":
         texto = request.form.get("texto","").strip()
         arquivo = request.files.get("arquivo")
@@ -348,22 +363,25 @@ def feed():
                 tipo_arq = ext
         
         conn = conectar_banco()
-        conn.execute("INSERT INTO publicacoes (usuario_id,texto,arquivo,tipo_arquivo) VALUES (?,?,?,?)", (session["usuario_id"],texto,nome_arq,tipo_arq))
+        conn.execute("INSERT INTO publicacoes (usuario_id,texto,arquivo,tipo_arquivo) VALUES (?,?,?,?)", (usuario_atual,texto,nome_arq,tipo_arq))
         conn.commit()
         conn.close()
         return redirect(url_for("feed"))
     
+    # ==================== CARREGAR TODAS AS PUBLICAÇÕES ====================
     conn = conectar_banco()
     publicacoes = conn.execute('''
         SELECT p.*, u.nome,
-        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id=p.id) AS total_curtidas
+        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id=p.id) AS total_curtidas,
+        CASE WHEN EXISTS(SELECT 1 FROM curtidas WHERE publicacao_id=p.id AND usuario_id=?) THEN 1 ELSE 0 END AS curtiu
         FROM publicacoes p JOIN usuarios u ON p.usuario_id=u.id
         ORDER BY p.destacada DESC, p.data_publicacao DESC
-    ''').fetchall()
+    ''', (usuario_atual,)).fetchall()
     conn.close()
     
     html_publicacoes = ""
     for pub in publicacoes:
+        cor_coracao = "#ef4444" if pub["curtiu"] else "#94a3b8"
         html_publicacoes += f'''
         <div class="publicacao">
             <strong>{pub["nome"]}</strong>
@@ -375,10 +393,56 @@ def feed():
             elif pub["tipo_arquivo"] in ["mp4","webm","mov"]:
                 html_publicacoes += f'<video controls src="/midia/{pub["arquivo"]}"></video>'
         html_publicacoes += f'''
-            <br><small>{pub["data_publicacao"]} | {pub["total_curtidas"]} {t["curtir"]}</small>
+            <div style="margin-top:15px;display:flex;align-items:center;gap:8px;">
+                <a href="/feed?acao=curtir&pub_id={pub["id"]}" style="font-size:22px;text-decoration:none;color:{cor_coracao};">❤</a>
+                <span>{pub["total_curtidas"]} {t["curtir"]}</span>
+            </div>
+            <small style="color:#64748b;">{pub["data_publicacao"]}</small>
             <hr style="border-color:#334155;margin:15px 0;">
         </div>
         '''
+    
+    return render_template_string(f'''
+    <!DOCTYPE html>
+    <html lang="{lang}">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Feed — JBS WORLDWIDE</title>
+        <style>
+            *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}}
+            body{{background:#0f172a;color:white;}}
+            .topo{{padding:20px 30px;background:#1e293b;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;}}
+            .topo h1{{color:#84cc16;font-size:24px;}}
+            .sair{{color:#ef4444;text-decoration:none;font-weight:bold;}}
+            .conteudo{{max-width:700px;margin:30px auto;padding:0 20px;}}
+            .form-publicar{{background:#1e293b;padding:20px;border-radius:10px;margin-bottom:30px;}}
+            textarea, input[type="file"]{{width:100%;padding:12px;margin-bottom:12px;background:#334155;border:1px solid #475569;border-radius:8px;color:white;}}
+            button{{padding:12px 25px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;}}
+            .publicacao{{background:#1e293b;padding:20px;border-radius:10px;margin-bottom:20px;border:1px solid #334155;}}
+            .publicacao img, .publicacao video{{max-width:100%;border-radius:8px;margin:10px 0;}}
+        </style>
+    </head>
+    <body>
+        <div class="topo">
+            <h1>JBS WORLDWIDE</h1>
+            <a href="/sair" class="sair">{t["sair"]}</a>
+        </div>
+        <div class="conteudo">
+            <div class="form-publicar">
+                <h3>{t["o_que_pensa"]}</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    <textarea name="texto" rows="3" placeholder=""></textarea>
+                    <input type="file" name="arquivo" accept="image/*,video/*">
+                    <button type="submit">{t["publicar"]}</button>
+                </form>
+            </div>
+            {html_publicacoes}
+        </div>
+    </body>
+    </html>
+    ''')
+
     
     return render_template_string(f'''
     <!DOCTYPE html>
