@@ -324,14 +324,29 @@ def entrar():
     </html>
     ''')
 
-# ==================== FEED ====================
+# ===# ==================== FEED COM SISTEMA DE CURTIDAS ====================
 @app.route("/feed", methods=["GET","POST"])
 def feed():
     if not logado():
         return redirect(url_for("entrar"))
     lang = pegar_idioma()
     t = IDIOMAS[lang]
+    id_usuario = session["usuario_id"]
     
+    # Ação de curtir/descurtir
+    if "curtir" in request.args:
+        id_pub = request.args.get("curtir", type=int)
+        conn = conectar_banco()
+        ja_curtiu = conn.execute("SELECT id FROM curtidas WHERE publicacao_id=? AND usuario_id=?", (id_pub, id_usuario)).fetchone()
+        if ja_curtiu:
+            conn.execute("DELETE FROM curtidas WHERE publicacao_id=? AND usuario_id=?", (id_pub, id_usuario))
+        else:
+            conn.execute("INSERT INTO curtidas (publicacao_id, usuario_id) VALUES (?,?)", (id_pub, id_usuario))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("feed"))
+    
+    # Publicar nova postagem
     if request.method == "POST":
         texto = request.form.get("texto","").strip()
         arquivo = request.files.get("arquivo")
@@ -347,22 +362,26 @@ def feed():
                 tipo_arq = ext
         
         conn = conectar_banco()
-        conn.execute("INSERT INTO publicacoes (usuario_id,texto,arquivo,tipo_arquivo) VALUES (?,?,?,?)", (session["usuario_id"],texto,nome_arq,tipo_arq))
+        conn.execute("INSERT INTO publicacoes (usuario_id,texto,arquivo,tipo_arquivo) VALUES (?,?,?,?)", (id_usuario,texto,nome_arq,tipo_arq))
         conn.commit()
         conn.close()
         return redirect(url_for("feed"))
     
+    # Buscar todas as publicações
     conn = conectar_banco()
     publicacoes = conn.execute('''
         SELECT p.*, u.nome,
-        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id=p.id) AS total_curtidas
+        (SELECT COUNT(*) FROM curtidas WHERE publicacao_id=p.id) AS total_curtidas,
+        CASE WHEN EXISTS(SELECT 1 FROM curtidas WHERE publicacao_id=p.id AND usuario_id=?) THEN 1 ELSE 0 END AS curtiu
         FROM publicacoes p JOIN usuarios u ON p.usuario_id=u.id
         ORDER BY p.destacada DESC, p.data_publicacao DESC
-    ''').fetchall()
+    ''', (id_usuario,)).fetchall()
     conn.close()
     
     html_publicacoes = ""
     for pub in publicacoes:
+        cor_botao = "#ef4444" if pub["curtiu"] else "#6b7280"
+        icone = "❤️" if pub["curtiu"] else "🤍"
         html_publicacoes += f'''
         <div class="publicacao">
             <strong>{pub["nome"]}</strong>
@@ -374,7 +393,11 @@ def feed():
             elif pub["tipo_arquivo"] in ["mp4","webm","mov"]:
                 html_publicacoes += f'<video controls src="/midia/{pub["arquivo"]}"></video>'
         html_publicacoes += f'''
-            <br><small>{pub["data_publicacao"]} | {pub["total_curtidas"]} {t["curtir"]}</small>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+                <a href="/feed?curtir={pub["id"]}" style="font-size:18px;text-decoration:none;">{icone}</a>
+                <span style="color:{cor_botao};font-weight:500;">{pub["total_curtidas"]} {t["curtir"]}</span>
+            </div>
+            <small style="color:#94a3b8;">{pub["data_publicacao"]}</small>
             <hr style="border-color:#334155;margin:15px 0;">
         </div>
         '''
@@ -419,6 +442,7 @@ def feed():
     </body>
     </html>
     ''')
+
 
 # ==================== DEMAIS FUNÇÕES ====================
 @app.route("/sair")
