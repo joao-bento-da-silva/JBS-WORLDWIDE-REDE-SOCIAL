@@ -153,8 +153,8 @@ def entrar():
         erro = "E-mail ou senha incorretos"
 
 
-#
-   # ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
+
+# ==================== PÁGINA INICIAL — DESIGN PROFISSIONAL ====================
 @app.route("/")
 def inicio():
     if logado():
