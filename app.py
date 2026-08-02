@@ -1,6 +1,7 @@
   # ==================================================
 # © 2026 JBS TECNOLOGIA — REDE SOCIAL OFICIAL
-# VISUAL PADRÃO JBS | DADOS PERMANENTES | PRONTA PARA USO
+# VISUAL PADRÃO JBS | IMAGENS E VÍDEOS PERMITIDOS
+# DADOS PERMANENTES | PRONTA PARA USO E COMERCIALIZAÇÃO
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -15,6 +16,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_REDE_SOCIAL", "SEGURANCA_REDE_JBS_2026")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
+
+# ==================== FORMATOS PERMITIDOS ====================
+EXTENSOES_PERMITIDAS = {"png", "jpg", "jpeg", "gif", "mp4", "avi", "mov", "mkv", "webm"}
 
 # ==================== BANCO E ARQUIVOS PERMANENTES ====================
 PASTA_DADOS = "/app/dados" if os.path.exists("/app") else "."
@@ -47,7 +51,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS postagens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER NOT NULL,
     texto TEXT,
-    imagem TEXT,
+    arquivo TEXT,
+    tipo_arquivo TEXT,
     curtidas INTEGER DEFAULT 0,
     data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
@@ -87,7 +92,7 @@ def inicio():
     <body>
         <div class="caixa">
             <div class="logo">JBS REDE SOCIAL</div>
-            <div class="subtitulo">Compartilhe ideias, imagens e conecte-se</div>
+            <div class="subtitulo">Compartilhe textos, imagens e vídeos</div>
             <div class="botoes">
                 <a href="/cadastrar" class="btn primario">Criar Conta</a>
                 <a href="/entrar" class="btn secundario">Acessar Conta</a>
@@ -160,15 +165,22 @@ def feed():
 
     if request.method == "POST":
         texto = request.form.get("texto","")
-        nome_imagem = None
-        if "imagem" in request.files:
-            arq = request.files["imagem"]
+        nome_arquivo = None
+        tipo_arquivo = None
+        if "arquivo" in request.files:
+            arq = request.files["arquivo"]
             if arq.filename:
-                nome_imagem = secure_filename(f"{datetime.now().timestamp()}_{arq.filename}")
-                arq.save(os.path.join(PASTA_MIDIAS, nome_imagem))
+                ext = arq.filename.rsplit(".",1)[1].lower()
+                if ext in EXTENSOES_PERMITIDAS:
+                    nome_arquivo = secure_filename(f"{datetime.now().timestamp()}_{arq.filename}")
+                    arq.save(os.path.join(PASTA_MIDIAS, nome_arquivo))
+                    if ext in ["mp4","avi","mov","mkv","webm"]:
+                        tipo_arquivo = "video"
+                    else:
+                        tipo_arquivo = "imagem"
         
         conn = conectar_banco()
-        conn.execute("INSERT INTO postagens VALUES (NULL,?,?,?,0,?)",(session["usuario_id"],texto,nome_imagem,datetime.now()))
+        conn.execute("INSERT INTO postagens VALUES (NULL,?,?,?,?,0,?)",(session["usuario_id"],texto,nome_arquivo,tipo_arquivo,datetime.now()))
         conn.commit()
         conn.close()
         return redirect(url_for("feed"))
@@ -188,19 +200,25 @@ def feed():
             <h3 style="color:#84cc16;margin-bottom:15px;">Nova Publicação</h3>
             <form method="POST" enctype="multipart/form-data">
                 <textarea name="texto" placeholder="Compartilhe algo..." rows="4" style="width:100%;padding:12px;border-radius:8px;border:none;font-size:16px;margin-bottom:12px;"></textarea>
-                <input type="file" name="imagem" accept="image/*" style="margin-bottom:15px;color:#94a3b8;">
+                <input type="file" name="arquivo" accept="image/*,video/*" style="margin-bottom:15px;color:#94a3b8;">
                 <button style="background:#84cc16;color:black;padding:12px 35px;border-radius:8px;border:none;font-weight:bold;font-size:17px;">PUBLICAR</button>
             </form>
         </div>
     '''
 
     for p in postagens:
-        img_html = f"<br><img src='/imagem/{p['imagem']}' style='max-width:100%;border-radius:8px;margin:12px 0;'>" if p["imagem"] else ""
+        midia_html = ""
+        if p["arquivo"]:
+            if p["tipo_arquivo"] == "video":
+                midia_html = f"<br><video controls style='max-width:100%;border-radius:8px;margin:12px 0;'><source src='/midia/{p['arquivo']}' type='video/mp4'>Seu navegador não suporta reproduzir este vídeo.</video>"
+            else:
+                midia_html = f"<br><img src='/midia/{p['arquivo']}' style='max-width:100%;border-radius:8px;margin:12px 0;'>"
+
         html += f'''
         <div style="background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.2);padding:22px;border-radius:12px;margin-bottom:20px;">
             <h3 style="color:#84cc16;margin-bottom:8px;">{p['nome']}</h3>
             <p style="font-size:16px;line-height:1.6;margin-bottom:10px;">{p['texto'] or ""}</p>
-            {img_html}
+            {midia_html}
             <div style="margin-top:15px;color:#94a3b8;">
                 <a href="/curtir/{p['id']}" style="color:#ef4444;text-decoration:none;margin-right:20px;">Curtir ({p['curtidas']})</a>
                 <span>{p['data_hora']}</span>
@@ -211,9 +229,9 @@ def feed():
     html += "</html>"
     return html
 
-# ==================== EXIBIR IMAGEM ====================
-@app.route("/imagem/<nome>")
-def imagem(nome):
+# ==================== EXIBIR ARQUIVOS ====================
+@app.route("/midia/<nome>")
+def midia(nome):
     return send_from_directory(PASTA_MIDIAS, nome)
 
 # ==================== CURTIR ====================
