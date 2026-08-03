@@ -158,7 +158,8 @@ def entrar():
     <br><div style="text-align:center;"><a href="/cadastrar" style="color:#84cc16;">Novo cadastro</a></div>
     </html>'''
 
-# ==================== FEED PRINCIPAL ====================
+
+    # ==================== FEED PRINCIPAL ====================
 @app.route("/feed", methods=["GET","POST"])
 def feed():
     if not usuario_logado(): return redirect(url_for("entrar"))
@@ -205,6 +206,35 @@ def feed():
             </form>
         </div>
     '''
+
+    for p in postagens:
+        midia_html = ""
+        if p["arquivo"]:
+            #  AJUSTE DE CENTRALIZAÇÃO E LARGURA
+            if p["tipo_arquivo"] == "video":
+                midia_html = f'''<div style="width:100%;display:flex;justify-content:center;margin:12px 0;">
+                <video controls style="width:100%;max-width:100%;height:auto;border-radius:8px;"><source src='/midia/{p['arquivo']}' type='video/mp4'>Seu navegador não suporta reproduzir este vídeo.</video>
+                </div>'''
+            else:
+                midia_html = f'''<div style="width:100%;display:flex;justify-content:center;margin:12px 0;">
+                <img src='/midia/{p['arquivo']}' style="width:100%;max-width:100%;height:auto;border-radius:8px;object-fit:contain;">
+                </div>'''
+
+        html += f'''
+        <div style="background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.2);padding:22px;border-radius:12px;margin-bottom:20px;">
+            <h3 style="color:#84cc16;margin-bottom:8px;">{p['nome']}</h3>
+            <p style="font-size:16px;line-height:1.6;margin-bottom:10px;">{p['texto'] or ""}</p>
+            {midia_html}
+            <div style="margin-top:15px;color:#94a3b8;">
+                <a href="/curtir/{p['id']}" style="color:#ef4444;text-decoration:none;margin-right:20px;">Curtir ({p['curtidas']})</a>
+                <span>{p['data_hora']}</span>
+            </div>
+        </div>
+        '''
+
+    html += "</html>"
+    return html
+
 
     for p in postagens:
         midia_html = ""
