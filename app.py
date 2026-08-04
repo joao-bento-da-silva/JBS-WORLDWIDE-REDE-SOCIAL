@@ -1,6 +1,6 @@
  # ==================================================
 # © 2026 JBS TECNOLOGIA — INTELIGÊNCIA EXCLUSIVA JBS
-# VERSÃO COM FOTO DO CRIADOR E VOZ MASCULINA
+# VERSÃO FINAL: FOTO + VOZ MASCULINA + SEM CONFLITOS
 # ==================================================
 
 from flask import Flask, request, render_template_string, jsonify
@@ -34,7 +34,7 @@ def processar_pergunta(texto_usuario: str) -> str:
     else:
         return "Ainda estou aprendendo com você, mas posso ajudar com códigos, projetos técnicos, documentos, cálculos e organização. Basta explicar o que precisa com detalhes que eu ajudo a estruturar."
 
-# ==================== PÁGINA COM FOTO E VOZ ====================
+# ==================== PÁGINA COM FOTO E VOZ AJUSTADA ====================
 @app.route("/")
 def inicio():
     return render_template_string('''
@@ -63,8 +63,8 @@ def inicio():
     </head>
     <body>
         <div class="caixa">
-            <!-- FOTO DO CRIADOR -->
-            <img src="/static/criador_jbs.jpg" alt="João Bento da Silva — Criador JBS" class="foto-perfil" onerror="this.src='criador_jbs.jpg'">
+            <!-- FOTO DIRETO NA MESMA PASTA -->
+            <img src="criador_jbs.jpg" alt="João Bento da Silva — Criador JBS" class="foto-perfil" onerror="this.style.display='none'">
 
             <div class="logo">JBS</div>
             <div class="subtitulo">Inteligência Exclusiva JBS Tecnologia</div>
@@ -104,11 +104,16 @@ def inicio():
             if(!textoResposta) return;
             const voz = new SpeechSynthesisUtterance(textoResposta);
             voz.lang = "pt-BR";
-            voz.rate = 1.0;
-            voz.pitch = 0.9;
+            voz.rate = 0.95;
+            voz.pitch = 0.85; // TOM MAIS GRAVE E FIRME
 
             const vozes = window.speechSynthesis.getVoices();
-            const vozMasculina = vozes.find(v => v.lang === "pt-BR" && (v.name.toLowerCase().includes("masculino") || v.name.toLowerCase().includes("male")));
+            const vozMasculina = vozes.find(v => 
+                v.lang === "pt-BR" && 
+                (v.name.toLowerCase().includes("masculino") || 
+                 v.name.toLowerCase().includes("homem") ||
+                 v.name.toLowerCase().includes("male"))
+            );
             if(vozMasculina) voz.voice = vozMasculina;
 
             speechSynthesis.speak(voz);
