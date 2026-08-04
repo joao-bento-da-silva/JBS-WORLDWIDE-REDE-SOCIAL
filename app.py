@@ -1,6 +1,6 @@
  # ==================================================
 # © 2026 JBS TECNOLOGIA — INTELIGÊNCIA EXCLUSIVA JBS
-# VERSÃO FINAL: FOTO + VOZ MASCULINA + SEM CONFLITOS
+# VERSÃO PRONTA: FALA E ESCREVE | RESPOSTA POR VOZ
 # ==================================================
 
 from flask import Flask, request, render_template_string, jsonify
@@ -14,27 +14,17 @@ def processar_pergunta(texto_usuario: str) -> str:
     tx = texto_usuario.lower().strip()
 
     if any(p in tx for p in ["ola", "oi", "bom dia", "boa tarde", "boa noite"]):
-        return "Olá! Eu sou a JBS, a inteligência exclusiva da JBS Tecnologia. Estou aqui para ajudar com códigos, projetos, cálculos e organização de documentos. Em que posso colaborar hoje?"
-
+        return "Olá! Eu sou a JBS, a inteligência exclusiva da JBS Tecnologia. Estou aqui para ajudar com códigos, projetos, cálculos e documentos. Em que posso colaborar hoje?"
     elif any(p in tx for p in ["codigo", "programa", "python", "flask"]):
-        return "Posso criar, corrigir, organizar e explicar códigos em Python, Flask e outras linguagens. Sempre seguindo os seus padrões, mantendo tudo funcional e seguro. Basta me dizer o que precisa."
-
+        return "Posso criar, corrigir e organizar códigos seguindo os seus padrões, mantendo tudo funcional e seguro."
     elif any(p in tx for p in ["projeto", "elétrico", "automação", "veicular", "engenharia"]):
-        return "Posso ajudar a estruturar, detalhar e organizar projetos técnicos, elétricos, de automação, segurança veicular e viabilidade. Transformo a sua ideia em documento organizado e pronto para uso."
-
+        return "Posso estruturar e detalhar projetos técnicos, transformando a sua ideia em documento organizado e pronto para uso."
     elif any(p in tx for p in ["documento", "declaração", "contrato", "recibo"]):
-        return "Posso auxiliar na elaboração, revisão e organização de documentos oficiais, mantendo a formalidade, clareza e os valores de mercado que definimos."
-
-    elif any(p in tx for p in ["mudança", "cálculo", "valor", "metro cúbico", "quilômetro"]):
-        return "Posso auxiliar nos cálculos de mudança, valores por região, volume e distância, seguindo a tabela que você definiu."
-
-    elif any(p in tx for p in ["segurança", "dados", "perder", "apagar"]):
-        return "Todos os dados ficam armazenados dentro da sua própria hospedagem, com a sua chave de segurança. Nada é enviado para fora, nada é apagado sem a sua ordem. Você tem o controle total."
-
+        return "Posso auxiliar na elaboração e revisão de documentos oficiais, com clareza e formalidade."
     else:
-        return "Ainda estou aprendendo com você, mas posso ajudar com códigos, projetos técnicos, documentos, cálculos e organização. Basta explicar o que precisa com detalhes que eu ajudo a estruturar."
+        return "Ainda estou aprendendo com você, mas posso ajudar com códigos, projetos, cálculos e organização. Basta explicar o que precisa."
 
-# ==================== PÁGINA COM FOTO E VOZ AJUSTADA ====================
+# ==================== PÁGINA COMPLETA ====================
 @app.route("/")
 def inicio():
     return render_template_string('''
@@ -45,37 +35,33 @@ def inicio():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>JBS — INTELIGÊNCIA EXCLUSIVA</title>
         <style>
-            *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
-            body{min-height:100vh;background:linear-gradient(160deg,#020617 0%,#0f172a 40%,#1e293b 100%);color:#e2e8f0;}
-            .caixa{max-width:850px;margin:0 auto;padding:40px 20px;text-align:center;}
-            .foto-perfil{width:160px;height:160px;border-radius:50%;border:3px solid #84cc16;margin-bottom:15px;object-fit:cover;box-shadow:0 0 25px rgba(132,204,22,0.35);}
-            .logo{font-size:48px;font-weight:900;color:#84cc16;margin-bottom:10px;text-shadow:0 0 20px rgba(132,204,22,0.3);}
-            .subtitulo{color:#94a3b8;margin-bottom:35px;}
-            .area-entrada{background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.3);padding:25px;border-radius:12px;margin-bottom:25px;text-align:left;}
-            textarea{width:100%;padding:14px;border-radius:8px;border:none;background:rgba(15,23,42,0.8);color:white;font-size:16px;min-height:120px;}
-            .botoes{display:flex;gap:15px;margin-top:15px;flex-wrap:wrap;justify-content:center;}
-            button{padding:12px 28px;border-radius:8px;font-weight:bold;border:none;cursor:pointer;transition:all 0.2s;}
+            *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+            body{background:linear-gradient(160deg,#020617 0%,#0f172a 40%,#1e293b 100%);color:#e2e8f0;min-height:100vh;}
+            .caixa{max-width:800px;margin:0 auto;padding:40px 20px;text-align:center;}
+            .nome{font-size:52px;color:#84cc16;font-weight:900;margin-bottom:5px;text-shadow:0 0 20px rgba(132,204,22,0.3);}
+            .sub{color:#94a3b8;margin-bottom:35px;}
+            textarea{width:100%;padding:14px;border-radius:8px;border:none;background:rgba(15,23,42,0.8);color:white;min-height:120px;margin-bottom:15px;font-size:16px;}
+            .botoes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+            button{padding:12px 25px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;transition:all 0.2s;}
+            .btn-falar{background:rgba(220,38,38,0.9);color:white;}
             .btn-enviar{background:#84cc16;color:#020617;}
-            .btn-enviar:hover{transform:translateY(-2px);box-shadow:0 0 15px rgba(132,204,22,0.4);}
-            .btn-voz{background:rgba(30,41,59,0.8);color:#84cc16;border:1px solid #84cc16;}
-            .resposta{margin-top:25px;padding:20px;background:rgba(0,0,0,0.25);border-radius:10px;border-left:3px solid #84cc16;text-align:left;}
+            .btn-ouvir{background:rgba(30,41,59,0.9);color:#84cc16;border:1px solid #84cc16;}
+            .resposta{margin-top:25px;padding:20px;background:rgba(0,0,0,0.25);border-left:3px solid #84cc16;text-align:left;border-radius:8px;}
+            .gravando{color:#ef4444;font-weight:bold;margin-top:8px;display:none;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <!-- FOTO DIRETO NA MESMA PASTA -->
-            <img src="criador_jbs.jpg" alt="João Bento da Silva — Criador JBS" class="foto-perfil" onerror="this.style.display='none'">
+            <div class="nome">JBS</div>
+            <div class="sub">Inteligência Exclusiva JBS Tecnologia</div>
 
-            <div class="logo">JBS</div>
-            <div class="subtitulo">Inteligência Exclusiva JBS Tecnologia</div>
+            <textarea id="campo_texto" placeholder="Escreva ou aperte o botão e fale..."></textarea>
+            <div class="gravando" id="aviso_gravando">GRAVANDO... FALE AGORA</div>
 
-            <div class="area-entrada">
-                <p>Escreva o que precisa:</p>
-                <textarea id="pergunta" placeholder="Exemplo: crie um código para... / ajude a montar um projeto de..."></textarea>
-                <div class="botoes">
-                    <button class="btn-enviar" onclick="enviar()">ENVIAR</button>
-                    <button class="btn-voz" onclick="falarResposta()">OUVIR RESPOSTA</button>
-                </div>
+            <div class="botoes">
+                <button class="btn-falar" id="btn_fala" onclick="iniciarFala()">FALAR COM A JBS</button>
+                <button class="btn-enviar" onclick="enviar()">ENVIAR</button>
+                <button class="btn-ouvir" onclick="ouvirResposta()">OUVIR RESPOSTA</button>
             </div>
 
             <div class="resposta" id="resposta"></div>
@@ -83,55 +69,68 @@ def inicio():
 
         <script>
         let textoResposta = "";
+        let reconhecimento = null;
+
+        if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            reconhecimento = new SpeechRecognition();
+            reconhecimento.continuous = false;
+            reconhecimento.lang = "pt-BR";
+            reconhecimento.onresult = function(event){
+                const falado = event.results[0][0].transcript;
+                document.getElementById("campo_texto").value = falado;
+            };
+            reconhecimento.onstart = function(){
+                document.getElementById("aviso_gravando").style.display = "block";
+                document.getElementById("btn_fala").disabled = true;
+            };
+            reconhecimento.onend = function(){
+                document.getElementById("aviso_gravando").style.display = "none";
+                document.getElementById("btn_fala").disabled = false;
+            };
+        }
+
+        function iniciarFala(){
+            if(!reconhecimento){
+                alert("Use o navegador Google Chrome para usar a função de voz.");
+                return;
+            }
+            reconhecimento.start();
+        }
 
         function enviar(){
-            const texto = document.getElementById("pergunta").value.trim();
+            const texto = document.getElementById("campo_texto").value.trim();
             if(!texto) return;
-
-            fetch("/responder",{
+            fetch("/resp",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify({dados:texto})
             })
-            .then(res=>res.json())
-            .then(retorno=>{
-                textoResposta = retorno.resposta;
-                document.getElementById("resposta").innerHTML = `<p>${textoResposta}</p>`;
+            .then(r=>r.json())
+            .then(dados=>{
+                textoResposta = dados.resp;
+                document.getElementById("resposta").innerHTML = "<p>"+textoResposta+"</p>";
             });
         }
 
-        function falarResposta(){
+        function ouvirResposta(){
             if(!textoResposta) return;
             const voz = new SpeechSynthesisUtterance(textoResposta);
             voz.lang = "pt-BR";
-            voz.rate = 0.95;
-            voz.pitch = 0.85; // TOM MAIS GRAVE E FIRME
-
-            const vozes = window.speechSynthesis.getVoices();
-            const vozMasculina = vozes.find(v => 
-                v.lang === "pt-BR" && 
-                (v.name.toLowerCase().includes("masculino") || 
-                 v.name.toLowerCase().includes("homem") ||
-                 v.name.toLowerCase().includes("male"))
-            );
-            if(vozMasculina) voz.voice = vozMasculina;
-
+            voz.rate = 0.9;
+            voz.pitch = 0.8;
             speechSynthesis.speak(voz);
         }
-
-        window.speechSynthesis.onvoiceschanged = () => {};
         </script>
     </body>
     </html>
     ''')
 
-@app.route("/responder", methods=["POST"])
-def responder():
+@app.route("/resp", methods=["POST"])
+def resp():
     dados = request.get_json()
-    pergunta = dados.get("dados", "")
-    resposta_final = processar_pergunta(pergunta)
-    return jsonify({"resposta": resposta_final})
+    resposta = processar_pergunta(dados.get("dados", ""))
+    return jsonify({"resp": resposta})
 
 if __name__ == "__main__":
-    porta = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=porta, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)
