@@ -1,285 +1,123 @@
-  # ==================================================
-# © 2026 JBS TECNOLOGIA — REDE SOCIAL OFICIAL
-# VISUAL PADRÃO JBS | IMAGENS E VÍDEOS PERMITIDOS
-# DADOS PERMANENTES | PRONTA PARA USO E COMERCIALIZAÇÃO
+ # ==================================================
+# © 2026 JBS TECNOLOGIA — INTELIGÊNCIA EXCLUSIVA JBS
+# VERSÃO DE TESTE SEPARADA — LEVE, COM VOZ, SEM CONFLITOS
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
-import sqlite3
+from flask import Flask, request, render_template_string, jsonify
 import os
-from datetime import datetime
-from werkzeug.utils import secure_filename
+import hashlib
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("CHAVE_JBS", "JBS_INTELIGENCIA_SEGURA_2026")
 
-# ==================== SEGURANÇA ====================
-app.secret_key = os.environ.get("CHAVE_REDE_SOCIAL", "SEGURANCA_REDE_JBS_2026")
-app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
+# ==================== LÓGICA PRINCIPAL — LEVE E RÁPIDA ====================
+def processar_pergunta(texto_usuario: str) -> str:
+    tx = texto_usuario.lower().strip()
 
-# ==================== FORMATOS PERMITIDOS ====================
-EXTENSOES_PERMITIDAS = {"png", "jpg", "jpeg", "gif", "mp4", "avi", "mov", "mkv", "webm"}
+    # RESPOSTAS PRINCIPAIS PARA O SEU TRABALHO
+    if any(p in tx for p in ["ola", "oi", "bom dia", "boa tarde", "boa noite"]):
+        return "Olá! Eu sou a JBS, a inteligência exclusiva da JBS Tecnologia. Estou aqui para ajudar com códigos, projetos, cálculos e organização de documentos. Em que posso colaborar hoje?"
 
-# ==================== BANCO E ARQUIVOS PERMANENTES ====================
-PASTA_DADOS = "/app/dados" if os.path.exists("/app") else "."
-os.makedirs(PASTA_DADOS, exist_ok=True)
-PASTA_MIDIAS = os.path.join(PASTA_DADOS, "arquivos_midia")
-os.makedirs(PASTA_MIDIAS, exist_ok=True)
-BANCO_DADOS = os.path.join(PASTA_DADOS, "rede_social_jbs.db")
+    elif any(p in tx for p in ["codigo", "programa", "python", "flask"]):
+        return "Posso criar, corrigir, organizar e explicar códigos em Python, Flask e outras linguagens. Sempre seguindo os seus padrões, mantendo tudo funcional e seguro. Basta me dizer o que precisa."
 
-def conectar_banco():
-    conn = sqlite3.connect(BANCO_DADOS)
-    conn.row_factory = sqlite3.Row
-    return conn
+    elif any(p in tx for p in ["projeto", "elétrico", "automação", "veicular", "engenharia"]):
+        return "Posso ajudar a estruturar, detalhar e organizar projetos técnicos, elétricos, de automação, segurança veicular e viabilidade. Transformo a sua ideia em documento organizado e pronto para uso."
 
-def usuario_logado():
-    return "usuario_id" in session
+    elif any(p in tx for p in ["documento", "declaração", "contrato", "recibo"]):
+        return "Posso auxiliar na elaboração, revisão e organização de documentos oficiais, mantendo a formalidade, clareza e os valores de mercado que definimos."
 
-# ==================== TABELAS ====================
-conn = conectar_banco()
-c = conn.cursor()
+    elif any(p in tx for p in ["mudança", "cálculo", "valor", "metro cúbico", "quilômetro"]):
+        return "Posso auxiliar nos cálculos de mudança, valores por região, volume e distância, seguindo a tabela que você definiu."
 
-c.execute('''CREATE TABLE IF NOT EXISTS usuarios (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    senha TEXT NOT NULL,
-    data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP
-)''')
+    elif any(p in tx for p in ["segurança", "dados", "perder", "apagar"]):
+        return "Todos os dados ficam armazenados dentro da sua própria hospedagem, com a sua chave de segurança. Nada é enviado para fora, nada é apagado sem a sua ordem. Você tem o controle total."
 
-c.execute('''CREATE TABLE IF NOT EXISTS postagens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    usuario_id INTEGER NOT NULL,
-    texto TEXT,
-    arquivo TEXT,
-    tipo_arquivo TEXT,
-    curtidas INTEGER DEFAULT 0,
-    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-)''')
+    else:
+        return "Ainda estou aprendendo com você, mas posso ajudar com códigos, projetos técnicos, documentos, cálculos e organização. Basta explicar o que precisa com detalhes que eu ajudo a estruturar."
 
-conn.commit()
-conn.close()
-
-# ==================== TELA INICIAL ====================
+# ==================== PÁGINA DA JBS — MESMO ESTILO DO SEU SISTEMA ====================
 @app.route("/")
 def inicio():
-    if usuario_logado():
-        return redirect(url_for("feed"))
     return render_template_string('''
     <!DOCTYPE html>
     <html lang="pt-br">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JBS REDE SOCIAL</title>
+        <title>JBS — INTELIGÊNCIA EXCLUSIVA</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
-            body{min-height:100vh;background:linear-gradient(160deg,#020617 0%,#0f172a 40%,#1e293b 100%);color:#e2e8f0;position:relative;}
-            body::before{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background-image:radial-gradient(circle at 15% 25%,rgba(132,204,22,0.12) 0%,transparent 50%),radial-gradient(circle at 85% 75%,rgba(59,130,246,0.08) 0%,transparent 50%);pointer-events:none;}
-            .caixa{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:80px 25px;text-align:center;}
-            .logo{font-size:52px;font-weight:900;color:#84cc16;margin-bottom:12px;text-shadow:0 0 25px rgba(132,204,22,0.35);}
-            .subtitulo{font-size:18px;color:#cbd5e1;margin-bottom:35px;}
-            .botoes{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;}
-            .btn{padding:16px 38px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;transition:all 0.3s ease;border:none;}
-            .btn.primario{background:#84cc16;color:#020617;box-shadow:0 0 20px rgba(132,204,22,0.35);}
-            .btn.primario:hover{transform:translateY(-3px);box-shadow:0 0 35px rgba(132,204,22,0.5);}
-            .btn.secundario{background:rgba(30,41,59,0.6);color:#84cc16;border:1px solid rgba(132,204,22,0.4);}
-            .btn.secundario:hover{background:rgba(132,204,22,0.1);transform:translateY(-2px);}
-            .rodape{position:absolute;bottom:25px;width:100%;text-align:center;font-size:13px;color:#64748b;}
+            body{min-height:100vh;background:linear-gradient(160deg,#020617 0%,#0f172a 40%,#1e293b 100%);color:#e2e8f0;}
+            .caixa{max-width:850px;margin:0 auto;padding:40px 20px;}
+            .logo{font-size:48px;font-weight:900;color:#84cc16;text-align:center;margin-bottom:10px;text-shadow:0 0 20px rgba(132,204,22,0.3);}
+            .subtitulo{text-align:center;color:#94a3b8;margin-bottom:35px;}
+            .area-entrada{background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.3);padding:25px;border-radius:12px;margin-bottom:25px;}
+            textarea{width:100%;padding:14px;border-radius:8px;border:none;background:rgba(15,23,42,0.8);color:white;font-size:16px;min-height:120px;}
+            .botoes{display:flex;gap:15px;margin-top:15px;flex-wrap:wrap;}
+            button{padding:12px 28px;border-radius:8px;font-weight:bold;border:none;cursor:pointer;transition:all 0.2s;}
+            .btn-enviar{background:#84cc16;color:#020617;}
+            .btn-enviar:hover{transform:translateY(-2px);box-shadow:0 0 15px rgba(132,204,22,0.4);}
+            .btn-voz{background:rgba(30,41,59,0.8);color:#84cc16;border:1px solid #84cc16;}
+            .resposta{margin-top:25px;padding:20px;background:rgba(0,0,0,0.25);border-radius:10px;border-left:3px solid #84cc16;}
+            audio{margin-top:12px;}
         </style>
     </head>
     <body>
         <div class="caixa">
-            <div class="logo">JBS REDE SOCIAL</div>
-            <div class="subtitulo">Compartilhe textos, imagens e vídeos</div>
-            <div class="botoes">
-                <a href="/cadastrar" class="btn primario">Criar Conta</a>
-                <a href="/entrar" class="btn secundario">Acessar Conta</a>
+            <div class="logo">JBS</div>
+            <div class="subtitulo">Inteligência Exclusiva JBS Tecnologia</div>
+
+            <div class="area-entrada">
+                <p>Escreva o que precisa:</p>
+                <textarea id="pergunta" placeholder="Exemplo: crie um código para... / ajude a montar um projeto de..."></textarea>
+                <div class="botoes">
+                    <button class="btn-enviar" onclick="enviar()">ENVIAR</button>
+                    <button class="btn-voz" onclick="falarResposta()">OUVIR RESPOSTA</button>
+                </div>
             </div>
+
+            <div class="resposta" id="resposta"></div>
         </div>
-        <div class="rodape">© 2026 JBS TECNOLOGIA — Todos os Direitos Reservados</div>
+
+        <script>
+        let textoResposta = "";
+
+        function enviar(){
+            const texto = document.getElementById("pergunta").value.trim();
+            if(!texto) return;
+
+            fetch("/responder",{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({dados:texto})
+            })
+            .then(res=>res.json())
+            .then(retorno=>{
+                textoResposta = retorno.resposta;
+                document.getElementById("resposta").innerHTML = `<p>${textoResposta}</p>`;
+            });
+        }
+
+        function falarResposta(){
+            if(!textoResposta) return;
+            const voz = new SpeechSynthesisUtterance(textoResposta);
+            voz.lang = "pt-BR";
+            voz.rate = 1.0;
+            speechSynthesis.speak(voz);
+        }
+        </script>
     </body>
     </html>
     ''')
 
-# ==================== CADASTRO ====================
-@app.route("/cadastrar", methods=["GET","POST"])
-def cadastrar():
-    if usuario_logado(): return redirect(url_for("feed"))
-    if request.method == "POST":
-        n,e,s = request.form["nome"],request.form["email"],request.form["senha"]
-        try:
-            conn = conectar_banco()
-            conn.execute("INSERT INTO usuarios (nome,email,senha) VALUES (?,?,?)",(n,e,s))
-            conn.commit()
-            user = conn.execute("SELECT * FROM usuarios WHERE email=?",(e,)).fetchone()
-            conn.close()
-            session.update({"usuario_id":user["id"],"nome":user["nome"]})
-            session.permanent = True
-            return redirect(url_for("feed"))
-        except:
-            return '''<html style="background:#0f172a;color:white;padding:30px;text-align:center;">
-            <h3 style="color:#ef4444;">Este e-mail já está cadastrado.</h3>
-            <br><a href="/cadastrar" style="color:#84cc16;">Voltar</a></html>'''
-    return '''<html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
-    <h2 style="color:#84cc16;text-align:center;margin-bottom:25px;">Cadastro</h2>
-    <form method="POST">
-        <input type="text" name="nome" required placeholder="Nome completo" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;">
-        <input type="email" name="email" required placeholder="E-mail" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;">
-        <input type="password" name="senha" required placeholder="Senha" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;">
-        <button style="background:#84cc16;color:black;padding:12px;width:100%;border-radius:8px;margin-top:10px;font-weight:bold;">CONFIRMAR</button>
-    </form>
-    <br><div style="text-align:center;"><a href="/entrar" style="color:#84cc16;">Já possuo cadastro</a></div>
-    </html>'''
-
-# ==================== LOGIN ====================
-@app.route("/entrar", methods=["GET","POST"])
-def entrar():
-    if usuario_logado(): return redirect(url_for("feed"))
-    if request.method == "POST":
-        conn = conectar_banco()
-        user = conn.execute("SELECT * FROM usuarios WHERE email=? AND senha=?",(request.form["email"],request.form["senha"])).fetchone()
-        conn.close()
-        if user:
-            session.update({"usuario_id":user["id"],"nome":user["nome"]})
-            session.permanent = True
-            return redirect(url_for("feed"))
-        return '''<html style="background:#0f172a;color:white;padding:30px;text-align:center;">
-        <h3 style="color:#ef4444;">Dados incorretos.</h3>
-        <br><a href="/entrar" style="color:#84cc16;">Tentar novamente</a></html>'''
-    return '''<html style="background:#0f172a;color:white;padding:30px;max-width:500px;margin:0 auto;">
-    <h2 style="color:#84cc16;text-align:center;margin-bottom:25px;">Acesso</h2>
-    <form method="POST">
-        <input type="email" name="email" required placeholder="E-mail cadastrado" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;">
-        <input type="password" name="senha" required placeholder="Senha" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;">
-        <button style="background:#84cc16;color:black;padding:12px;width:100%;border-radius:8px;margin-top:10px;font-weight:bold;">ACESSAR</button>
-    </form>
-    <br><div style="text-align:center;"><a href="/cadastrar" style="color:#84cc16;">Novo cadastro</a></div>
-    </html>'''
-
-
-    # ==================== FEED PRINCIPAL ====================
-@app.route("/feed", methods=["GET","POST"])
-def feed():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-
-    if request.method == "POST":
-        texto = request.form.get("texto","")
-        nome_arquivo = None
-        tipo_arquivo = None
-        if "arquivo" in request.files:
-            arq = request.files["arquivo"]
-            if arq.filename:
-                ext = arq.filename.rsplit(".",1)[1].lower()
-                if ext in EXTENSOES_PERMITIDAS:
-                    nome_arquivo = secure_filename(f"{datetime.now().timestamp()}_{arq.filename}")
-                    arq.save(os.path.join(PASTA_MIDIAS, nome_arquivo))
-                    if ext in ["mp4","avi","mov","mkv","webm"]:
-                        tipo_arquivo = "video"
-                    else:
-                        tipo_arquivo = "imagem"
-        
-        conn = conectar_banco()
-        conn.execute("INSERT INTO postagens VALUES (NULL,?,?,?,?,0,?)",(session["usuario_id"],texto,nome_arquivo,tipo_arquivo,datetime.now()))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("feed"))
-
-    conn = conectar_banco()
-    postagens = conn.execute("SELECT p.*,u.nome FROM postagens p JOIN usuarios u ON p.usuario_id=u.id ORDER BY p.data_hora DESC").fetchall()
-    conn.close()
-
-    html = f'''
-    <html style="background:#0f172a;color:white;padding:20px;max-width:850px;margin:0 auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;">
-            <h2 style="color:#84cc16;">Olá, {session['nome']}</h2>
-            <a href="/sair" style="color:#ef4444;text-decoration:none;">Encerrar Sessão</a>
-        </div>
-
-        <div style="background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.3);padding:25px;border-radius:12px;margin-bottom:35px;">
-            <h3 style="color:#84cc16;margin-bottom:15px;">Nova Publicação</h3>
-            <form method="POST" enctype="multipart/form-data">
-                <textarea name="texto" placeholder="Compartilhe algo..." rows="4" style="width:100%;padding:12px;border-radius:8px;border:none;font-size:16px;margin-bottom:12px;"></textarea>
-                <input type="file" name="arquivo" accept="image/*,video/*" style="margin-bottom:15px;color:#94a3b8;">
-                <button style="background:#84cc16;color:black;padding:12px 35px;border-radius:8px;border:none;font-weight:bold;font-size:17px;">PUBLICAR</button>
-            </form>
-        </div>
-    '''
-
-    for p in postagens:
-        midia_html = ""
-        if p["arquivo"]:
-            #  AJUSTE DE CENTRALIZAÇÃO E LARGURA
-            if p["tipo_arquivo"] == "video":
-                midia_html = f'''<div style="width:100%;display:flex;justify-content:center;margin:12px 0;">
-                <video controls style="width:100%;max-width:100%;height:auto;border-radius:8px;"><source src='/midia/{p['arquivo']}' type='video/mp4'>Seu navegador não suporta reproduzir este vídeo.</video>
-                </div>'''
-            else:
-                midia_html = f'''<div style="width:100%;display:flex;justify-content:center;margin:12px 0;">
-                <img src='/midia/{p['arquivo']}' style="width:100%;max-width:100%;height:auto;border-radius:8px;object-fit:contain;">
-                </div>'''
-
-        html += f'''
-        <div style="background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.2);padding:22px;border-radius:12px;margin-bottom:20px;">
-            <h3 style="color:#84cc16;margin-bottom:8px;">{p['nome']}</h3>
-            <p style="font-size:16px;line-height:1.6;margin-bottom:10px;">{p['texto'] or ""}</p>
-            {midia_html}
-            <div style="margin-top:15px;color:#94a3b8;">
-                <a href="/curtir/{p['id']}" style="color:#ef4444;text-decoration:none;margin-right:20px;">Curtir ({p['curtidas']})</a>
-                <span>{p['data_hora']}</span>
-            </div>
-        </div>
-        '''
-
-    html += "</html>"
-    return html
-
-
-    for p in postagens:
-        midia_html = ""
-        if p["arquivo"]:
-            if p["tipo_arquivo"] == "video":
-                midia_html = f"<br><video controls style='max-width:100%;border-radius:8px;margin:12px 0;'><source src='/midia/{p['arquivo']}' type='video/mp4'>Seu navegador não suporta reproduzir este vídeo.</video>"
-            else:
-                midia_html = f"<br><img src='/midia/{p['arquivo']}' style='max-width:100%;border-radius:8px;margin:12px 0;'>"
-
-        html += f'''
-        <div style="background:rgba(30,41,59,0.6);border:1px solid rgba(132,204,22,0.2);padding:22px;border-radius:12px;margin-bottom:20px;">
-            <h3 style="color:#84cc16;margin-bottom:8px;">{p['nome']}</h3>
-            <p style="font-size:16px;line-height:1.6;margin-bottom:10px;">{p['texto'] or ""}</p>
-            {midia_html}
-            <div style="margin-top:15px;color:#94a3b8;">
-                <a href="/curtir/{p['id']}" style="color:#ef4444;text-decoration:none;margin-right:20px;">Curtir ({p['curtidas']})</a>
-                <span>{p['data_hora']}</span>
-            </div>
-        </div>
-        '''
-
-    html += "</html>"
-    return html
-
-# ==================== EXIBIR ARQUIVOS ====================
-@app.route("/midia/<nome>")
-def midia(nome):
-    return send_from_directory(PASTA_MIDIAS, nome)
-
-# ==================== CURTIR ====================
-@app.route("/curtir/<id_post>")
-def curtir(id_post):
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    conn = conectar_banco()
-    conn.execute("UPDATE postagens SET curtidas = curtidas + 1 WHERE id=?",(id_post,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for("feed"))
-
-# ==================== SAIR ====================
-@app.route("/sair")
-def sair():
-    session.clear()
-    return redirect(url_for("inicio"))
+@app.route("/responder", methods=["POST"])
+def responder():
+    dados = request.get_json()
+    pergunta = dados.get("dados", "")
+    resposta_final = processar_pergunta(pergunta)
+    return jsonify({"resposta": resposta_final})
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=porta)
+    app.run(host="0.0.0.0", port=porta, debug=False)
