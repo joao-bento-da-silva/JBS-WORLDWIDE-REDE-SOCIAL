@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA - CODIGO LIMPO SEM ERROS
 # DNA DIGITAL B.N.J. INCLUIDO ✅
 # SERVIDOR: 0.0.0.0 PORTA 5000 ✅
