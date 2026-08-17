@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA - CODIGO LIMPO SEM ERROS
 # DNA DIGITAL B.N.J. INCLUIDO ✅
 # SERVIDOR: 0.0.0.0 PORTA 5000 ✅
@@ -252,53 +252,69 @@ def inteligencia_dna():
     return render_template_string('''<html><body style="background:#0f172a;color:white;padding:20px;max-width:600px;margin:0 auto;"><h1>🧬 DNA JNB</h1><form method="POST"><input name="sequencia" required placeholder="Ex: AATGCC"><br><br><button type="submit">Analisar</button></form><p>'''+res+'''</p><a href="/painel">Voltar</a></body></html>''')
 
 # ======================================
-# DNA DIGITAL B.N.J. — NOVA FUNÇÃO
+# DNA DIGITAL B.N.J. — VERSÃO BILHÕES 🔐
+# 64 BITS → 18.446.744.073.709.551.616 COMBINAÇÕES
+# IMPOSSÍVEL DE ADIVINHAR NA SORTE ✅
 # ======================================
+
 @app.route("/bnj", methods=["GET", "POST"])
 def bnj():
     if not usuario_logado():
         return redirect(url_for("entrar"))
 
-    DNA_ORIGINAL = "yabcdefgxz"
-    DNA_PAR      = "yzxgfedcba"
+    # GERA CÓDIGO NOVO A CADA ACESSO — 64 dígitos = BILHÕES de combinações
+    if request.method != "POST" or "reiniciar" in request.form:
+        import random
+        CODIGO_ORIGINAL = ''.join(random.choice(['0','1']) for _ in range(64))
+        session["codigo_original"] = CODIGO_ORIGINAL
+    else:
+        CODIGO_ORIGINAL = session.get("codigo_original", "")
 
     mensagem = ""
     analise = None
 
-    def converter_sequencia(seq):
-        binario = ' '.join(format(ord(c), '08b') for c in seq)
-        hexa    = ' '.join(format(ord(c), '02X') for c in seq)
-        bits    = len(seq) * 8
-        bytes_  = bits // 8
-        return binario, hexa, bits, bytes_
+    # CALCULA O PAR CORRETO automaticamente
+    def gerar_par(cod):
+        invertido = cod[::-1]          # lê de trás pra frente
+        par_final = ""
+        for b in invertido:
+            par_final += "1" if b == "0" else "0"  # 0 vira 1 | 1 vira 0
+        return par_final
 
-    if request.method == "POST":
-        sequencia_usuario = request.form.get("sequencia", "").strip().lower()
+    PAR_CORRETO = gerar_par(CODIGO_ORIGINAL)
 
-        bin_ori, hex_ori, bits_ori, bytes_ori = converter_sequencia(DNA_ORIGINAL)
-        bin_par, hex_par, bits_par, bytes_par = converter_sequencia(DNA_PAR)
+    if request.method == "POST" and "sequencia" in request.form:
+        resposta = request.form.get("sequencia", "").strip()
 
-        if sequencia_usuario == DNA_PAR:
-            mensagem = "✅ SISTEMA ÍNTEGRO — Par correspondente confirmado. DNA sem falhas detectadas."
-            status = "ÍNTEGRO"
-            integridade = "100%"
-        elif sequencia_usuario == DNA_ORIGINAL:
-            mensagem = "ℹ️ Essa é a sequência ORIGINAL. Digite o PAR correspondente para análise."
-            status = "AGUARDANDO"
-            integridade = "—"
+        # CONVERSÕES TÉCNICAS
+        def converter(bin_str):
+            decimal = int(bin_str, 2)
+            hex_str = format(decimal, 'X')
+            return decimal, hex_str, len(bin_str), len(bin_str)//8
+
+        dec_ori, hex_ori, bits_ori, bytes_ori = converter(CODIGO_ORIGINAL)
+        dec_par, hex_par, bits_par, bytes_par = converter(PAR_CORRETO)
+
+        if resposta == PAR_CORRETO:
+            mensagem = "✅ SISTEMA ÍNTEGRO — CHAVE CORRESPONDENTE CONFIRMADA!\nIntegridade: 100% · Dados sem violação."
+            status = "🔒 SEGURO"
+            cor_status = "#22d3ee"
         else:
-            mensagem = "⚠️ FALHA DETECTADA — Sequência não corresponde. Possível erro, corrupção ou alteração."
-            status = "FALHA"
-            integridade = "COMPROMETIDA"
+            mensagem = "⚠️ FALHA DETECTADA — CHAVE NÃO CONFERE!\nPossível corrupção, alteração ou tentativa de acesso não autorizado."
+            status = "⚠️ ALTERADO"
+            cor_status = "#f87171"
 
         analise = {
             "status": status,
-            "integridade": integridade,
-            "bin_ori": bin_ori, "hex_ori": hex_ori,
-            "bin_par": bin_par, "hex_par": hex_par,
-            "bits_ori": bits_ori, "bytes_ori": bytes_ori,
-            "bits_par": bits_par, "bytes_par": bytes_par,
-            "megabits": round((bits_ori + bits_par) / 1_000_000, 6)
+            "cor_status": cor_status,
+            "bits": bits_ori,
+            "bytes": bytes_ori,
+            "combinacoes_possiveis": "18.446.744.073.709.551.616",
+            "dec_ori": f"{dec_ori:,}",
+            "hex_ori": hex_ori,
+            "dec_par": f"{dec_par:,}",
+            "hex_par": hex_par,
+            "megabits": round((bits_ori + bits_par) / 1_000_000, 2)
         }
 
     html = f"""
@@ -311,70 +327,63 @@ def bnj():
         <style>
             *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}}
             body{{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px}}
-            .painel{{background:#1e293b;border-radius:20px;padding:30px;max-width:720px;margin:0 auto;border:3px solid #22d3ee;box-shadow:0 0 30px #22d3ee40}}
-            h1{{text-align:center;color:#22d3ee;margin-bottom:5px}}
-            .sub{{text-align:center;color:#94a3b8;font-size:14px;margin-bottom:25px;line-height:1.5}}
-            .bloco{{background:#334155;border-radius:12px;padding:18px;margin-bottom:15px;border:2px solid #475569}}
-            .rot{{color:#94a3b8;font-size:13px;margin-bottom:8px}}
-            .seq{{font-size:24px;letter-spacing:7px;color:#f1f5f9;font-weight:bold;text-align:center;word-break:break-all}}
-            .msg{{padding:14px;border-radius:10px;margin:20px 0;text-align:center;font-weight:bold;
-                background:{'#22d3ee20' if '✅' in mensagem else '#f8717120' if '⚠️' in mensagem else '#47556940'};
-                color:{'#22d3ee' if '✅' in mensagem else '#f87171' if '⚠️' in mensagem else '#94a3b8'}}}
-            .grade{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}}
-            .caixa{{background:#0f172a;border-radius:8px;padding:12px}}
-            .etq{{color:#64748b;font-size:12px;margin-bottom:5px}}
-            .val{{color:#e2e8f0;font-size:13px;word-break:break-all;font-family:monospace}}
-            .linha{{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;font-size:14px}}
-            input{{width:100%;padding:14px;font-size:20px;text-align:center;border-radius:10px;border:2px solid #22d3ee;
-                background:#0f172a;color:#f1f5f9;letter-spacing:5px;outline:none;text-transform:lowercase}}
-            button{{width:100%;padding:14px;margin-top:12px;background:linear-gradient(90deg,#22d3ee,#0891b2);
-                color:#000;font-weight:bold;font-size:17px;border:none;border-radius:10px;cursor:pointer}}
+            .painel{{background:#1e293b;border-radius:20px;padding:30px;max-width:850px;margin:0 auto;border:3px solid #22d3ee;box-shadow:0 0 40px #22d3ee30}}
+            h1{{text-align:center;color:#22d3ee;margin-bottom:5px;font-size:26px}}
+            .sub{{text-align:center;color:#f87171;font-size:14px;margin-bottom:20px;line-height:1.6}}
+            .codigo{{background:#0f172a;padding:18px;border-radius:12px;border:2px solid #475569;
+                font-family:monospace;font-size:15px;letter-spacing:2px;color:#84cc16;
+                text-align:center;word-break:break-all;line-height:1.8;margin:15px 0}}
+            .instrucao{{background:#334155;padding:12px;border-radius:8px;color:#e2e8f0;line-height:1.7;margin-bottom:15px}}
+            .msg{{padding:16px;border-radius:10px;margin:20px 0;text-align:center;font-weight:bold;white-space:pre-line;
+                background:{'#22d3ee20' if '✅' in mensagem else '#f8717120'};
+                color:{'#22d3ee' if '✅' in mensagem else '#f87171'}}}
+            input{{width:100%;padding:16px;font-size:14px;font-family:monospace;letter-spacing:1px;
+                border-radius:10px;border:2px solid #22d3ee;background:#0f172a;color:#f1f5f9;outline:none}}
+            button{{padding:14px 24px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;transition:0.2s}}
+            .btn-analisar{{background:linear-gradient(90deg,#22d3ee,#0891b2);color:#000;width:100%;margin-top:12px}}
+            .btn-novo{{background:#475569;color:#fff;margin-right:10px}}
             button:hover{{transform:scale(1.02)}}
-            .titulo{{color:#22d3ee;font-size:15px;margin:20px 0 10px 0;padding-bottom:8px;border-bottom:1px solid #475569}}
-            @media(max-width:600px){{.grade{{grid-template-columns:1fr}}}}
+            .titulo{{color:#22d3ee;font-size:15px;margin:25px 0 10px 0;padding-bottom:8px;border-bottom:1px solid #475569}}
+            .linha{{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #334155;font-size:14px}}
+            .esq{{color:#94a3b8}}
+            .dir{{color:#e2e8f0;font-family:monospace}}
         </style>
     </head>
     <body>
         <div class="painel">
             <h1>🧬 DNA DIGITAL — B.N.J.</h1>
-            <p class="sub">Análise de Sequências · Integridade · Binário · Hexadecimal · Medição de Dados</p>
+            <p class="sub">🔐 64 BITS → 18.446.744.073.709.551.616 COMBINAÇÕES POSSÍVEIS</p>
 
-            <div class="bloco">
-                <div class="rot">🧬 Sequência DNA Original</div>
-                <div class="seq">{DNA_ORIGINAL}</div>
+            <div class="instrucao">
+                <strong>📋 REGRAS SECRETAS:</strong><br>
+                1. Pegue o código → leia de <strong>TRÁS PRA FRENTE</strong><br>
+                2. Troque cada número: <strong>0 vira 1</strong> e <strong>1 vira 0</strong><br>
+                3. Digite o resultado completo na caixinha
             </div>
 
+            <div class="codigo">{CODIGO_ORIGINAL}</div>
+
             <form method="POST">
-                <div class="bloco">
-                    <div class="rot">🔍 Digite o PAR correspondente</div>
-                    <input type="text" name="sequencia" placeholder="yzxgfedcba" autofocus autocomplete="off">
-                </div>
-                <button type="submit">📡 EXECUTAR ANÁLISE COMPLETA</button>
+                <input type="text" name="sequencia" placeholder="Digite a CHAVE CORRETA" required autocomplete="off">
+                <button class="btn-analisar" type="submit">🔐 VERIFICAR INTEGRIDADE</button>
+            </form>
+
+            <form method="POST" style="margin-top:10px;">
+                <button class="btn-novo" name="reiniciar" value="1">🔄 Gerar Novo Código</button>
             </form>
 
             {f'<div class="msg">{mensagem}</div>' if mensagem else ''}
 
             {f'''
-            <div class="titulo">📊 RELATÓRIO COMPLETO</div>
-            <div class="bloco">
-                <div class="linha"><span>Status do Sistema</span><span style="color:{'#22d3ee' if analise['status']=='ÍNTEGRO' else '#f87171'}">{analise['status']}</span></div>
-                <div class="linha"><span>Integridade Detectada</span><span>{analise['integridade']}</span></div>
-            </div>
-            <div class="titulo">🔢 CONVERSÃO DE DADOS</div>
-            <div class="grade">
-                <div class="caixa"><div class="etq">Original · Binário</div><div class="val">{analise['bin_ori']}</div></div>
-                <div class="caixa"><div class="etq">Original · Hexadecimal</div><div class="val">{analise['hex_ori']}</div></div>
-                <div class="caixa"><div class="etq">Par · Binário</div><div class="val">{analise['bin_par']}</div></div>
-                <div class="caixa"><div class="etq">Par · Hexadecimal</div><div class="val">{analise['hex_par']}</div></div>
-            </div>
-            <div class="titulo">📏 MEDIÇÃO DE CAPACIDADE</div>
-            <div class="bloco">
-                <div class="linha"><span>Bits — Sequência Original</span><span>{analise['bits_ori']} bits</span></div>
-                <div class="linha"><span>Bytes — Sequência Original</span><span>{analise['bytes_ori']} bytes</span></div>
-                <div class="linha"><span>Bits — Par Correspondente</span><span>{analise['bits_par']} bits</span></div>
-                <div class="linha"><span>Bytes — Par Correspondente</span><span>{analise['bytes_par']} bytes</span></div>
-                <div class="linha"><span>Capacidade Total</span><span>{analise['megabits']} Megabits</span></div>
-            </div>
+            <div class="titulo">📊 RELATÓRIO TÉCNICO COMPLETO</div>
+            <div class="linha"><span class="esq">Status do Sistema</span><span class="dir" style="color:{analise['cor_status']}">{analise['status']}</span></div>
+            <div class="linha"><span class="esq">Tamanho da Chave</span><span class="dir">{analise['bits']} bits ({analise['bytes']} bytes)</span></div>
+            <div class="linha"><span class="esq">Combinações Possíveis</span><span class="dir">{analise['combinacoes_possiveis']}</span></div>
+            <div class="linha"><span class="esq">Código Original · Decimal</span><span class="dir">{analise['dec_ori']}</span></div>
+            <div class="linha"><span class="esq">Código Original · Hexadecimal</span><span class="dir">{analise['hex_ori']}</span></div>
+            <div class="linha"><span class="esq">Chave Correta · Decimal</span><span class="dir">{analise['dec_par']}</span></div>
+            <div class="linha"><span class="esq">Chave Correta · Hexadecimal</span><span class="dir">{analise['hex_par']}</span></div>
+            <div class="linha"><span class="esq">Capacidade Total</span><span class="dir">{analise['megabits']} Megabits</span></div>
             ''' if analise else ''}
         </div>
         <div style="text-align:center;margin-top:20px;"><a href="/painel" style="color:#22d3ee;">← Voltar ao Painel</a></div>
@@ -382,6 +391,7 @@ def bnj():
     </html>
     """
     return render_template_string(html)
+
 
 
 @app.route("/rede_social", methods=["GET","POST"])
@@ -524,3 +534,4 @@ def jogo_pares():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+ 
