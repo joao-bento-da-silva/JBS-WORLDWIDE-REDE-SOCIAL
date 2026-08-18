@@ -1,7 +1,7 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
-# LOGIN · CADASTRO · PAINEL · LOJA · LICENÇA · REGISTRO BNJ
-# IDENTIDADE VISUAL COMPLETA · SEM DEPENDÊNCIAS EXTRAS
+# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA TOTAL
+# TODOS OS SERVIÇOS: PROJETO · ANÚNCIO · INTELIGÊNCIA · JOGOS
+# LOJA · LICENÇA · REGISTRO BNJ · PAINEL COMPLETO
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_file
@@ -94,7 +94,7 @@ def validar_licenca(chave_licenca, email, hardware_id):
         return False, f"Erro na validação: {str(e)}"
 
 # ----------------------
-# ROTAS BÁSICAS COM IDENTIDADE VISUAL
+# ROTAS BÁSICAS
 # ----------------------
 @app.route("/", methods=["GET"])
 def index():
@@ -112,7 +112,7 @@ def cadastrar():
             conn = sqlite3.connect("jnb.db")
             c = conn.cursor()
             c.execute("INSERT INTO usuarios (nome, email, senha, pontos) VALUES (?, ?, ?, ?)",
-                      (nome, email, senha, 1000)) # bônus de 1000 pontos ao cadastrar
+                      (nome, email, senha, 1000))
             conn.commit()
             conn.close()
             return redirect(url_for("entrar"))
@@ -141,6 +141,9 @@ def sair():
     session.clear()
     return redirect(url_for("entrar"))
 
+# ----------------------
+# TODOS OS SERVIÇOS DA PLATAFORMA
+# ----------------------
 @app.route("/painel")
 def painel():
     if not usuario_logado():
@@ -152,9 +155,50 @@ def painel():
     conn.close()
     return render_template_string(TEMPLATE_PAINEL, nome=nome, pontos=pontos)
 
-# ----------------------
-# LOJA DE PRÊMIOS
-# ----------------------
+@app.route("/projeto")
+def projeto():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    return render_template_string("""
+    <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; max-width:600px; margin:0 auto;">
+        <h1 style="color:#3b82f6;">📁 Meus Projetos</h1>
+        <p style="font-size:18px; margin:30px 0;">Aqui você gerencia todos os seus projetos salvos na plataforma JNB.</p>
+        <a href="/painel" style="color:#4ade80; font-size:18px; text-decoration:none;">← Voltar ao Painel</a>
+    </div>
+    """)
+
+@app.route("/anuncio")
+def anuncio():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    return render_template_string("""
+    <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; max-width:600px; margin:0 auto;">
+        <h1 style="color:#f97316;">📢 Gerenciar Anúncios</h1>
+        <p style="font-size:18px; margin:30px 0;">Crie, edite e acompanhe o desempenho dos seus anúncios na plataforma.</p>
+        <a href="/painel" style="color:#4ade80; font-size:18px; text-decoration:none;">← Voltar ao Painel</a>
+    </div>
+    """)
+
+@app.route("/inteligencia")
+def inteligencia():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    return render_template_string("""
+    <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; max-width:600px; margin:0 auto;">
+        <h1 style="color:#8b5cf6;">🧠 Inteligência BNJ</h1>
+        <p style="font-size:18px; margin:30px 0;">Acesse a inteligência artificial exclusiva da JNB TECNOLOGIA — análise, padrões e geração de código.</p>
+        <a href="/painel" style="color:#4ade80; font-size:18px; text-decoration:none;">← Voltar ao Painel</a>
+    </div>
+    """)
+
+@app.route("/jogos")
+def jogos():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    return render_template_string("""
+    <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; max-width:600px; margin:0 auto;">
+        <h1 style="color:#ef4444;">🎮 Jogos & Entretenimento</h1>
+        <p style="font-size:18px; margin:30px 0;">Jogue os jogos exclusivos da plataforma, acumule pontos e troque por prêmios.</p>
+        <a href="/painel" style="color:#4ade80; font-size:18px; text-decoration:none;">← Voltar ao Painel</a>
+    </div>
+    """)
+
 @app.route("/loja_premios", methods=["GET","POST"])
 def loja_premios():
     if not usuario_logado(): return redirect(url_for("entrar"))
@@ -198,9 +242,6 @@ def loja_premios():
     conn.close()
     return render_template_string(TEMPLATE_LOJA, planos=planos, pontos=pontos_usuario, mensagem=mensagem)
 
-# ----------------------
-# REGISTRO BNJ
-# ----------------------
 @app.route("/registro_bnj")
 def registro_bnj():
     if not usuario_logado(): return redirect(url_for("entrar"))
@@ -218,7 +259,7 @@ def registro_bnj():
     if not licenca:
         return render_template_string("""
         <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; text-align:center;">
-            <h1 style="color:#ef4444;">🧬 Registro BNJ — JNB TECNOLOGIA</h1>
+            <h1 style="color:#ef4444;">🧬 Registro BNJ</h1>
             <p style="font-size:18px; margin:30px 0;">Você ainda não possui uma licença ativa.</p>
             <a href="/loja_premios" style="background:#3b82f6; color:white; padding:15px 30px; border-radius:10px; text-decoration:none; font-weight:bold;">Adquirir Licença</a>
         </div>
@@ -227,9 +268,6 @@ def registro_bnj():
     chave_licenca, plano, data_expiracao = licenca
     return render_template_string(TEMPLATE_REGISTRO_BNJ, chave_licenca=chave_licenca, plano=plano, data_expiracao=data_expiracao)
 
-# ----------------------
-# DOWNLOAD E API DE ATIVAÇÃO
-# ----------------------
 @app.route("/download_instalador")
 def download_instalador():
     return "⚠️ Coloque o instalador BNJ_Registro_Setup.exe na pasta 'instaladores' do servidor."
@@ -247,7 +285,7 @@ def ativar_licenca():
     return {"status":"ativa", "mensagem":"Licença ativada com sucesso!"}
 
 # ----------------------
-# TEMPLATES HTML COM IDENTIDADE JNB
+# TEMPLATES HTML — PAINEL COM TODOS OS SERVIÇOS
 # ----------------------
 TEMPLATE_ENTRAR = '''
 <!DOCTYPE html>
@@ -277,7 +315,7 @@ TEMPLATE_ENTRAR = '''
         <div class="logo">
             <div class="logo-icon">🧬</div>
             <h1>JNB TECNOLOGIA</h1>
-            <div class="slogan">Plataforma de Autoridade · Registro BNJ · Licenças</div>
+            <div class="slogan">Plataforma Completa — Todos os Serviços</div>
         </div>
         <form method="POST">
             <input type="email" name="email" placeholder="Seu e-mail" required>
@@ -349,15 +387,19 @@ TEMPLATE_PAINEL = '''
         .logo-icon { font-size:48px; background:linear-gradient(45deg, #ef4444, #8b5cf6, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:bold; }
         h1 { color:#4ade80; font-size:28px; margin:10px 0 5px; }
         .subtitulo { color:#94a3b8; font-size:16px; margin-bottom:20px; }
-        .user-info { background:#1e293b; padding:20px; border-radius:12px; text-align:center; margin-bottom:30px; }
-        .user-name { font-size:20px; font-weight:bold; margin-bottom:8px; }
+        .user-info { background:#1e293b; padding:25px; border-radius:12px; text-align:center; margin-bottom:35px; }
+        .user-name { font-size:20px; font-weight:bold; margin-bottom:10px; }
         .user-points { color:#fbbf24; font-size:18px; }
         .menu { display:flex; flex-direction:column; gap:15px; }
         .menu a { padding:18px; border-radius:12px; text-align:center; text-decoration:none; font-weight:bold; font-size:18px; transition:transform 0.2s; }
         .menu a:hover { transform:translateY(-2px); }
-        .btn-loja { background:#3b82f6; color:white; }
-        .btn-registro { background:#8b5cf6; color:white; }
-        .btn-sair { background:#ef4444; color:white; margin-top:10px; }
+        .btn-projeto { background:#3b82f6; color:white; }
+        .btn-anuncio { background:#f97316; color:white; }
+        .btn-inteligencia { background:#8b5cf6; color:white; }
+        .btn-jogos { background:#ef4444; color:white; }
+        .btn-loja { background:#22c55e; color:black; }
+        .btn-registro { background:#a855f7; color:white; }
+        .btn-sair { background:#1e293b; color:#ef4444; margin-top:10px; border:2px solid #ef4444; }
     </style>
 </head>
 <body>
@@ -365,13 +407,17 @@ TEMPLATE_PAINEL = '''
         <div class="header">
             <div class="logo-icon">🧬</div>
             <h1>JNB TECNOLOGIA</h1>
-            <div class="subtitulo">Painel de Controle</div>
+            <div class="subtitulo">Painel de Controle — Todos os Serviços</div>
         </div>
         <div class="user-info">
             <div class="user-name">Bem-vindo, {{ nome }}!</div>
             <div class="user-points">🏆 Seus Pontos: {{ pontos }}</div>
         </div>
         <div class="menu">
+            <a href="/projeto" class="btn-projeto">📁 Meus Projetos</a>
+            <a href="/anuncio" class="btn-anuncio">📢 Gerenciar Anúncios</a>
+            <a href="/inteligencia" class="btn-inteligencia">🧠 Inteligência BNJ</a>
+            <a href="/jogos" class="btn-jogos">🎮 Jogos & Entretenimento</a>
             <a href="/loja_premios" class="btn-loja">🏆 Loja de Prêmios & Licenças</a>
             <a href="/registro_bnj" class="btn-registro">🧬 Registro BNJ</a>
             <a href="/sair" class="btn-sair">🚪 Sair da Plataforma</a>
@@ -438,6 +484,7 @@ TEMPLATE_REGISTRO_BNJ = '''
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro BNJ — JNB TECNOLOGIA</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
@@ -495,6 +542,7 @@ TEMPLATE_ERRO = '''
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erro — JNB TECNOLOGIA</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
