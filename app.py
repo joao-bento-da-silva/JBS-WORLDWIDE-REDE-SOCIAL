@@ -1,4 +1,4 @@
-# ==================================================
+  # ==================================================
 # © 2026 JNB TECNOLOGIA — CÓDIGO COMPLETO FECHADO ✅
 # TODOS OS SERVIÇOS INTACTOS + BNJ/DNA DIGITAL ✅
 # SEM ERROS DE SINTAXE | RODA EM 0.0.0.0:5000 ✅
@@ -717,9 +717,88 @@ button{width:100%;padding:14px;background:#a855f7;color:white;font-weight:bold;f
 {% endif %}
 <a href="/painel" class="voltar">← Voltar para o Painel</a></div></body></html>
 '''
+# ----------------------
+# ✅ SISTEMA DE CURTIDAS — REDE SOCIAL JNB
+# COLOCADO ENTRE O ÚLTIMO TEMPLATE E A LINHA DO SERVIDOR
+# ----------------------
+
+# 🔧 Criar tabela de curtidas no banco (executa uma vez só)
+def init_curtidas():
+    conn = sqlite3.connect("jnb.db")
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        postagem_id INTEGER NOT NULL,
+        usuario_id INTEGER NOT NULL,
+        FOREIGN KEY(postagem_id) REFERENCES postagens(id),
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id),
+        UNIQUE(postagem_id, usuario_id)
+    )""")
+    conn.commit()
+    conn.close()
+
+init_curtidas()
+
+# 🔗 ROTA DE CURTIR / DESCURTIR
+@app.route("/curtir/<int:post_id>")
+def curtir(post_id):
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
+    usuario_atual = session["usuario_id"]
+    conn = sqlite3.connect("jnb.db")
+    c = conn.cursor()
+    c.execute("SELECT id FROM curtidas WHERE postagem_id = ? AND usuario_id = ?", (post_id, usuario_atual))
+    ja_curtiu = c.fetchone()
+    if ja_curtiu:
+        c.execute("DELETE FROM curtidas WHERE postagem_id = ? AND usuario_id = ?", (post_id, usuario_atual))
+    else:
+        c.execute("INSERT INTO curtidas (postagem_id, usuario_id) VALUES (?, ?)", (post_id, usuario_atual))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("rede_social"))
+
+# 🎨 TEMPLATE DA REDE SOCIAL — ATUALIZADO COM CURTIDAS
+TEMPLATE_REDE_SOCIAL = '''""
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Rede Social — JNB TECNOLOGIA</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{background:#0f172a;color:white;min-height:100vh;padding:30px 20px;}
+.container{max-width:600px;margin:0 auto;}
+h1{color:#3b82f6;font-size:28px;margin-bottom:25px;}
+form{background:#1e293b;padding:25px;border-radius:12px;margin-bottom:30px;}
+textarea{width:100%;padding:15px;background:#0f172a;border:none;border-radius:8px;color:white;font-size:16px;min-height:100px;resize:vertical;}
+label{display:block;margin:12px 0 6px;font-weight:bold;}
+input[type="file"]{margin-bottom:15px;color:#94a3b8;}
+button{padding:12px 20px;background:#3b82f6;color:white;font-weight:bold;font-size:16px;border:none;border-radius:8px;cursor:pointer;}
+.postagem{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:20px;}
+.post-autor{font-weight:bold;color:#4ade80;margin-bottom:5px;}
+.post-data{color:#94a3b8;font-size:14px;margin-bottom:10px;}
+.post-texto{margin-bottom:10px;line-height:1.5;}
+.post-imagem{max-width:100%;border-radius:8px;margin-top:10px;}
+.btn-curtir{color:#ef4444;text-decoration:none;font-weight:bold;display:inline-flex;align-items:center;gap:5px;margin-top:10px;}
+.btn-curtir:hover{color:#fca5a5;}
+.voltar{color:#4ade80;text-decoration:none;font-size:18px;display:inline-block;margin-top:20px;}
+</style></head><body>
+<div class="container"><h1>🌐 REDE SOCIAL JNB</h1>
+<form method="POST" enctype="multipart/form-data">
+<textarea name="texto" placeholder="O que você está pensando?" required></textarea>
+<input type="file" name="arquivo" accept="image/*,video/*">
+<button type="submit">📤 Publicar</button>
+</form>
+<div class="postagens">
+{% for p in postagens %}
+<div class="postagem"><div class="post-autor">{{ p[4] }}</div><div class="post-data">{{ p[3] }}</div>
+<div class="post-texto">{{ p[1] }}</div>
+{% if p[2] %}<img src="/uploads/rede_social/{{ p[2] }}" class="post-imagem">{% endif %}
+<a href="/curtir/{{ p[0] }}" class="btn-curtir">❤️ Curtir ({{ p[5] }})</a>
+</div>
+{% endfor %}
+</div>
+<a href="/painel" class="voltar">← Voltar para o Painel</a></div></body></html>
+'''
 
 # ✅ LINHA FINAL DO SERVIDOR — TAMBÉM FECHADA E CORRETA
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 
- 
