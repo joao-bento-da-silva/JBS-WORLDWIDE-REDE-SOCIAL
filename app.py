@@ -1,4 +1,4 @@
-  # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA GLOBAL UNIVERSAL ✅
 # 🌍 TODOS OS SERVIÇOS ACESSÍVEIS PARA QUALQUER PESSOA NO MUNDO
 # 🧬� REGISTRO UNIVERSAL • 🎮 JOGOS • 🌐 REDE SOCIAL • 🛠️ FERRAMENTAS
