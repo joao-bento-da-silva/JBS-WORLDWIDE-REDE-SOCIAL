@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — CÓDIGO COMPLETO FECHADO ✅
 # TODOS OS SERVIÇOS INTACTOS + BNJ/DNA DIGITAL ✅
 # SEM ERROS DE SINTAXE | RODA EM 0.0.0.0:5000 ✅
