@@ -1,716 +1,522 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — ATIVADOS: ANÚNCIOS, DOCUMENTOS, PROJETOS ✅
-# TODOS OS DEMAIS MÓDULOS INTACTOS ✅
-# PORTA 0.0.0.0:5000 ✅ SEM ERROS ✅
+# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
+# LOGIN · CADASTRO · PAINEL · LOJA · LICENÇA · REGISTRO BNJ
+# IDENTIDADE VISUAL COMPLETA · SEM DEPENDÊNCIAS EXTRAS
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_file
 import sqlite3
 import os
 import random
-from datetime import datetime
-from werkzeug.utils import secure_filename
+import uuid
+import hashlib
+from datetime import datetime, timedelta
+import base64
 
 app = Flask(__name__)
-
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
-app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
-app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "midias")
-os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-BANCO_DADOS = "jnb_plataforma.db"
+# 🔐 SUA CHAVE MESTRA — NÃO MEXE
+CHAVE_MESTRA_JNB = "21054551774858609435694112838216077829"
 
-# ==================================================
+# ----------------------
 # BANCO DE DADOS
-# ==================================================
-def banco_criar():
-    conn = sqlite3.connect(BANCO_DADOS)
+# ----------------------
+def init_db():
+    conn = sqlite3.connect("jnb.db")
     c = conn.cursor()
     
     c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        senha TEXT NOT NULL,
-        plano TEXT DEFAULT 'gratuito',
+        nome TEXT,
+        email TEXT UNIQUE,
+        senha TEXT,
         pontos INTEGER DEFAULT 0
     )""")
     
-    c.execute("""CREATE TABLE IF NOT EXISTS postagens (
+    c.execute("""CREATE TABLE IF NOT EXISTS licencas_bnj (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario_id INTEGER,
-        texto TEXT,
-        midia TEXT,
-        tipo_midia TEXT,
-        curtidas INTEGER DEFAULT 0,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        chave_licenca TEXT UNIQUE,
+        plano TEXT,
+        hardware_id TEXT,
+        status TEXT DEFAULT 'ativa',
+        data_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_expiracao TIMESTAMP,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
     )""")
     
-    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+    c.execute("""CREATE TABLE IF NOT EXISTS pagamentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario_id INTEGER,
-        postagem_id INTEGER,
-        UNIQUE(usuario_id, postagem_id)
+        plano TEXT,
+        valor REAL,
+        forma_pagamento TEXT,
+        status TEXT DEFAULT 'pendente',
+        data_pagamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
     )""")
-    
-    c.execute("""CREATE TABLE IF NOT EXISTS produtos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        descricao TEXT,
-        preco REAL NOT NULL,
-        tipo TEXT
-    )""")
-    
-    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
-              ("Curso de IA Avançado", "Aprenda inteligência artificial moderna", 299.90, "curso"))
-    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
-              ("E-book Segurança Digital", "Proteja seus dados e privacidade", 49.90, "ebook"))
-    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
-              ("Consultoria de Projetos", "Sessão com especialista em tecnologia", 150.00, "servico"))
     
     conn.commit()
     conn.close()
 
-banco_criar()
+init_db()
 
 def usuario_logado():
-    return "usuario_id" in session
+    return session.get("usuario_id")
 
-# ==================================================
-# PÁGINA INICIAL
-# ==================================================
-@app.route("/")
-def inicio():
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JNB TECNOLOGIA</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            body { background: #0f172a; color: white; min-height: 100vh; padding: 30px 20px; }
-            .container { max-width: 420px; margin: 0 auto; text-align: center; }
-            h1 { font-size: 42px; margin-bottom: 10px; }
-            .sub { font-size: 18px; color: #94a3b8; margin-bottom: 40px; }
-            .btn { display: block; padding: 16px; margin: 12px 0; border-radius: 12px; background: #1e293b; color: white; text-decoration: none; font-size: 18px; transition: 0.2s; }
-            .btn:hover { background: #334155; }
-            .btn-entrar { background: #84cc16; color: black; font-weight: bold; }
-            .btn-cadastro { background: #3b82f6; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>JNB TECNOLOGIA 🌍</h1>
-            <p class="sub">PLATAFORMA GLOBAL 2.1</p>
-            <a href="/entrar" class="btn btn-entrar">Entrar</a>
-            <a href="/cadastro" class="btn btn-cadastro">Criar Conta</a>
-        </div>
-    </body>
-    </html>
-    """)
+# ----------------------
+# LICENÇA — APENAS MÓDULOS NATIVOS
+# ----------------------
+def gerar_licenca_assinada(email, plano, data_expiracao):
+    dados = f"{email}|{plano}|{data_expiracao.isoformat()}"
+    assinatura = hashlib.sha256((dados + CHAVE_MESTRA_JNB).encode()).hexdigest()[:32]
+    licenca_gerada = f"BNJ:{base64.urlsafe_b64encode(dados.encode()).decode()}:{assinatura}"
+    return licenca_gerada
 
-# ==================================================
-# CADASTRO
-# ==================================================
-@app.route("/cadastro", methods=["GET","POST"])
-def cadastro():
+def validar_licenca(chave_licenca, email, hardware_id):
+    try:
+        partes = chave_licenca.split(":")
+        if len(partes) != 3 or partes[0] != "BNJ":
+            return False, "Formato de licença inválido"
+        dados = base64.urlsafe_b64decode(partes[1]).decode()
+        assinatura_original = partes[2]
+        assinatura_calculada = hashlib.sha256((dados + CHAVE_MESTRA_JNB).encode()).hexdigest()[:32]
+        if assinatura_calculada != assinatura_original:
+            return False, "Licença inválida ou falsificada"
+        lic_email, lic_plano, lic_data_exp = dados.split("|")
+        if lic_email != email:
+            return False, "Licença pertence a outro usuário"
+        if datetime.fromisoformat(lic_data_exp) < datetime.now():
+            return False, "Licença expirada"
+        return True, lic_plano
+    except Exception as e:
+        return False, f"Erro na validação: {str(e)}"
+
+# ----------------------
+# ROTAS BÁSICAS COM IDENTIDADE VISUAL
+# ----------------------
+@app.route("/", methods=["GET"])
+def index():
+    if usuario_logado():
+        return redirect(url_for("painel"))
+    return redirect(url_for("entrar"))
+
+@app.route("/cadastrar", methods=["GET","POST"])
+def cadastrar():
     if request.method == "POST":
-        nome = request.form.get("nome","").strip()
-        email = request.form.get("email","").strip()
-        senha = request.form.get("senha","").strip()
-        if nome and email and senha:
-            conn = sqlite3.connect(BANCO_DADOS)
+        nome = request.form.get("nome")
+        email = request.form.get("email")
+        senha = hashlib.sha256(request.form.get("senha").encode()).hexdigest()
+        try:
+            conn = sqlite3.connect("jnb.db")
             c = conn.cursor()
-            try:
-                c.execute("INSERT INTO usuarios (nome,email,senha) VALUES (?,?,?)",(nome,email,senha))
-                conn.commit()
-                return redirect(url_for("entrar"))
-            except:
-                pass
+            c.execute("INSERT INTO usuarios (nome, email, senha, pontos) VALUES (?, ?, ?, ?)",
+                      (nome, email, senha, 1000)) # bônus de 1000 pontos ao cadastrar
+            conn.commit()
             conn.close()
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Criar Conta — JNB TECNOLOGIA</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            body { background: #0f172a; color: white; min-height: 100vh; padding: 30px 20px; }
-            .container { max-width: 400px; margin: 0 auto; text-align: center; }
-            h2 { font-size: 28px; margin-bottom: 30px; }
-            input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: #1e293b; color: white; font-size: 16px; }
-            button { width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; border: none; background: #84cc16; color: black; font-size: 18px; font-weight: bold; cursor: pointer; }
-            .voltar { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>Criar Conta</h2>
-            <form method="POST">
-                <input name="nome" placeholder="Seu nome" required>
-                <input name="email" placeholder="Seu e-mail" required>
-                <input type="password" name="senha" placeholder="Sua senha" required>
-                <button type="submit">Cadastrar</button>
-            </form>
-            <a href="/" class="voltar">← Voltar</a>
-        </div>
-    </body>
-    </html>
-    """)
+            return redirect(url_for("entrar"))
+        except sqlite3.IntegrityError:
+            return render_template_string(TEMPLATE_ERRO, mensagem="E-mail já cadastrado!")
+    return render_template_string(TEMPLATE_CADASTRAR)
 
-# ==================================================
-# ENTRAR
-# ==================================================
 @app.route("/entrar", methods=["GET","POST"])
 def entrar():
     if request.method == "POST":
-        email = request.form.get("email","").strip()
-        senha = request.form.get("senha","").strip()
-        conn = sqlite3.connect(BANCO_DADOS)
+        email = request.form.get("email")
+        senha = hashlib.sha256(request.form.get("senha").encode()).hexdigest()
+        conn = sqlite3.connect("jnb.db")
         c = conn.cursor()
-        c.execute("SELECT id,nome,plano,pontos FROM usuarios WHERE email=? AND senha=?",(email,senha))
+        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha = ?", (email, senha))
         usuario = c.fetchone()
         conn.close()
         if usuario:
             session["usuario_id"] = usuario[0]
-            session["plano"] = usuario[2]
-            session["pontos"] = usuario[3]
             return redirect(url_for("painel"))
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entrar — JNB TECNOLOGIA</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            body { background: #0f172a; color: white; min-height: 100vh; padding: 30px 20px; }
-            .container { max-width: 400px; margin: 0 auto; text-align: center; }
-            h2 { font-size: 28px; margin-bottom: 30px; }
-            input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: #1e293b; color: white; font-size: 16px; }
-            button { width: 100%; padding: 14px; margin-top: 10px; border-radius: 8px; border: none; background: #3b82f6; color: white; font-size: 18px; font-weight: bold; cursor: pointer; }
-            .voltar { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>Entrar</h2>
-            <form method="POST">
-                <input name="email" placeholder="E-mail" required>
-                <input type="password" name="senha" placeholder="Senha" required>
-                <button type="submit">Entrar</button>
-            </form>
-            <a href="/" class="voltar">← Voltar</a>
-        </div>
-    </body>
-    </html>
-    """)
+        return render_template_string(TEMPLATE_ERRO, mensagem="E-mail ou senha inválidos!")
+    return render_template_string(TEMPLATE_ENTRAR)
 
-# ==================================================
-# SAIR
-# ==================================================
 @app.route("/sair")
 def sair():
     session.clear()
-    return redirect(url_for("inicio"))
+    return redirect(url_for("entrar"))
 
-# ==================================================
-# PAINEL
-# ==================================================
 @app.route("/painel")
 def painel():
     if not usuario_logado():
         return redirect(url_for("entrar"))
-    plano_nome = session.get("plano", "gratuito").upper()
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Painel — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 30px 20px; }}
-            .container {{ max-width: 420px; margin: 0 auto; text-align: center; }}
-            h1 {{ font-size: 42px; margin-bottom: 5px; }}
-            .globo {{ font-size: 50px; margin: 10px 0; }}
-            .plano {{ font-size: 18px; color: #94a3b8; margin: 15px 0 35px 0; }}
-            .btn {{ display: block; padding: 18px; margin: 12px 0; border-radius: 12px; background: #1e293b; color: white; text-decoration: none; font-size: 19px; text-align: left; padding-left: 25px; transition: 0.2s; }}
-            .btn:hover {{ background: #334155; }}
-            .sair {{ color: #ff4444; margin-top: 30px; font-size: 20px; text-decoration: none; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>JNB TECNOLOGIA</h1>
-            <div class="globo">🌍</div>
-            <p class="plano">Plano: ◆ PLANO {plano_nome}</p>
-            
-            <a href="/documentos" class="btn">📄 DOCUMENTOS</a>
-            <a href="/projetos" class="btn">📐 PROJETOS</a>
-            <a href="/registro_bnj" class="btn">🧬 REGISTRO BNJ</a>
-            <a href="/anuncios" class="btn">📢 ANÚNCIOS</a>
-            <a href="/rede_social" class="btn">🌐 REDE SOCIAL</a>
-            <a href="/inteligencia" class="btn">🧠 INTELIGÊNCIA</a>
-            <a href="/jogo_numeros" class="btn">🎮 O SEGREDO DOS NÚMEROS</a>
-            <a href="/loja" class="btn">🏆 LOJA</a>
-            
-            <a href="/sair" class="sair">Sair</a>
-        </div>
-    </body>
-    </html>
-    """)
+    conn = sqlite3.connect("jnb.db")
+    c = conn.cursor()
+    c.execute("SELECT nome, pontos FROM usuarios WHERE id = ?", (session["usuario_id"],))
+    nome, pontos = c.fetchone()
+    conn.close()
+    return render_template_string(TEMPLATE_PAINEL, nome=nome, pontos=pontos)
 
-# ==================================================
-# ✅ DOCUMENTOS — ATIVADO E FUNCIONAL
-# ==================================================
-@app.route("/documentos")
-def documentos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Documentos — JNB TECNOLOGIA</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            body { background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; text-align: center; }
-            h1 { font-size: 32px; margin-bottom: 20px; }
-            .ok { font-size: 20px; color: #84cc16; margin: 30px 0; line-height: 1.6; }
-            .voltar { color: #3b82f6; font-size: 18px; text-decoration: none; }
-            .lista { max-width: 450px; margin: 30px auto; text-align: left; }
-            .item { background: #1e293b; padding: 15px; border-radius: 8px; margin: 10px 0; }
-        </style>
-    </head>
-    <body>
-        <h1>📄 DOCUMENTOS</h1>
-        <p class="ok">✅ Serviço ativo e funcionando ✅</p>
-        
-        <div class="lista">
-            <div class="item">📑 Contrato de Prestação de Serviços — JNB TECNOLOGIA</div>
-            <div class="item">📑 Relatório de Desenvolvimento — Plataforma Global 2.1</div>
-            <div class="item">📑 Manual do Usuário — Guia Completo</div>
-            <div class="item">📑 Certificado de Segurança e Criptografia</div>
-        </div>
-        
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-# ==================================================
-# ✅ PROJETOS — ATIVADO E FUNCIONAL
-# ==================================================
-@app.route("/projetos")
-def projetos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Projetos — JNB TECNOLOGIA</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            body { background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; text-align: center; }
-            h1 { font-size: 32px; margin-bottom: 20px; }
-            .ok { font-size: 20px; color: #84cc16; margin: 30px 0; line-height: 1.6; }
-            .voltar { color: #3b82f6; font-size: 18px; text-decoration: none; }
-            .lista { max-width: 450px; margin: 30px auto; text-align: left; }
-            .item { background: #1e293b; padding: 18px; border-radius: 10px; margin: 12px 0; }
-            .titulo { font-size: 19px; font-weight: bold; margin-bottom: 6px; color: #f59e0b; }
-            .desc { color: #cbd5e1; font-size: 15px; }
-        </style>
-    </head>
-    <body>
-        <h1>📐 PROJETOS</h1>
-        <p class="ok">✅ Serviço ativo e funcionando ✅</p>
-        
-        <div class="lista">
-            <div class="item">
-                <div class="titulo">🌍 Plataforma Global JNB 2.1</div>
-                <div class="desc">Plataforma completa com serviços, rede social, jogos e inteligência.</div>
-            </div>
-            <div class="item">
-                <div class="titulo">🧬 Sistema BNJ — DNA Digital</div>
-                <div class="desc">Sistema de registro, verificação e chave de segurança proprietária.</div>
-            </div>
-            <div class="item">
-                <div class="titulo">🎮 O Segredo dos Números</div>
-                <div class="desc">Jogo de lógica e padrões com sistema de pontuação e fases.</div>
-            </div>
-            <div class="item">
-                <div class="titulo">🔐 Criptografia e Autenticação</div>
-                <div class="desc">Módulo de segurança para proteção de dados e verificação de documentos.</div>
-            </div>
-        </div>
-        
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-# ==================================================
-# ✅ ANÚNCIOS — ATIVADO E FUNCIONAL
-# ==================================================
-@app.route("/anuncios", methods=["GET","POST"])
-def anuncios():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+# ----------------------
+# LOJA DE PRÊMIOS
+# ----------------------
+@app.route("/loja_premios", methods=["GET","POST"])
+def loja_premios():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    usuario_id = session["usuario_id"]
     mensagem = ""
-    if request.method == "POST":
-        titulo = request.form.get("titulo","").strip()
-        descricao = request.form.get("descricao","").strip()
-        if titulo and descricao:
-            mensagem = "✅ Anúncio publicado com sucesso!"
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Anúncios — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; }}
-            .container {{ max-width: 450px; margin: 0 auto; }}
-            h1 {{ font-size: 32px; text-align: center; margin-bottom: 20px; color: #ef4444; }}
-            .ok {{ font-size: 18px; color: #84cc16; text-align: center; margin-bottom: 25px; }}
-            .mensagem {{ color: #10b981; text-align: center; margin: 15px 0; font-weight: bold; }}
-            .form-box {{ background: #1e293b; padding: 25px; border-radius: 12px; margin-bottom: 30px; }}
-            input, textarea {{ width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #0f172a; color: white; font-size: 16px; }}
-            button {{ width: 100%; padding: 14px; border-radius: 8px; border: none; background: #ef4444; color: white; font-size: 17px; font-weight: bold; cursor: pointer; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: block; text-align: center; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>📢 ANÚNCIOS</h1>
-            <p class="ok">✅ Serviço ativo e funcionando ✅</p>
-            
-            {f'<div class="mensagem">{mensagem}</div>' if mensagem else ''}
-            
-            <div class="form-box">
-                <h3 style="margin-bottom: 15px;">Publicar Novo Anúncio</h3>
-                <form method="POST">
-                    <input name="titulo" placeholder="Título do anúncio" required>
-                    <textarea name="descricao" placeholder="Descrição completa" rows="4" required></textarea>
-                    <button type="submit">PUBLICAR ANÚNCIO</button>
-                </form>
-            </div>
-            
-            <a href="/painel" class="voltar">← Voltar ao Painel</a>
-        </div>
-    </body>
-    </html>
-    """)
-
-# ==================================================
-# DEMAIS ROTAS — INTACTAS E FUNCIONANDO
-# ==================================================
-@app.route("/registro_bnj", methods=["GET","POST"])
-def registro_bnj():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    resultado = ""
-    cor = "#84cc16"
-    if request.method == "POST":
-        acao = request.form.get("acao")
-        if acao == "varrer":
-            resultado = "✅ VARREDURA CONCLUÍDA ✅"
-            cor = "#3b82f6"
-        elif acao == "reparar":
-            resultado = "🔧 SISTEMA REPARADO ✅"
-            cor = "#f59e0b"
-        elif acao == "chave":
-            chave = "BNJ-" + ''.join(random.choice("0123456789ABCDEF") for _ in range(24))
-            resultado = f"🔑 CHAVE: {chave}"
-            cor = "#10b981"
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Registro BNJ — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; text-align: center; }}
-            h1 {{ font-size: 32px; margin-bottom: 30px; }}
-            .caixa {{ background: #1e293b; padding: 30px; border-radius: 15px; max-width: 420px; margin: 0 auto; border: 2px solid {cor}; }}
-            p {{ font-size: 18px; margin-bottom: 20px; }}
-            button {{ padding: 12px 20px; margin: 5px; border-radius: 8px; border: none; font-size: 16px; cursor: pointer; }}
-            .btn1 {{ background: #3b82f6; color: white; }}
-            .btn2 {{ background: #f59e0b; color: black; }}
-            .btn3 {{ background: #10b981; color: white; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: inline-block; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <h1>🧬 REGISTRO BNJ</h1>
-        <div class="caixa">
-            <p>{resultado}</p>
-            <form method="POST">
-                <button type="submit" name="acao" value="varrer" class="btn1">VARRER</button>
-                <button type="submit" name="acao" value="reparar" class="btn2">REPARAR</button>
-                <button type="submit" name="acao" value="chave" class="btn3">GERAR CHAVE</button>
-            </form>
-        </div>
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-@app.route("/rede_social", methods=["GET","POST"])
-def rede_social():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+    
+    planos = [
+        {"id":1, "nome":"Plano Básico BNJ", "desc":"30 dias · Varrer + Reparar + Gerar Chaves · 1 dispositivo", "valor":49.90, "pontos":500, "dias":30},
+        {"id":2, "nome":"Plano Profissional BNJ", "desc":"90 dias · Todas as funções · Suporte prioritário · 2 dispositivos", "valor":129.90, "pontos":1200, "dias":90},
+        {"id":3, "nome":"Plano Empresarial BNJ", "desc":"365 dias · Todas as funções · Suporte VIP · 5 dispositivos", "valor":399.90, "pontos":3500, "dias":365}
+    ]
+    
+    conn = sqlite3.connect("jnb.db")
+    c = conn.cursor()
+    c.execute("SELECT pontos, email FROM usuarios WHERE id = ?", (usuario_id,))
+    pontos_usuario, email_usuario = c.fetchone()
     
     if request.method == "POST":
-        texto = request.form.get("texto","")
-        midia = request.files.get("midia")
-        caminho = None
-        tipo = "texto"
-        if midia and midia.filename:
-            nome_seguro = secure_filename(midia.filename)
-            if nome_seguro.endswith(("jpg","jpeg","png","gif")):
-                tipo = "imagem"
-            elif nome_seguro.endswith(("mp4","webm")):
-                tipo = "video"
-            caminho = nome_seguro
-            midia.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_seguro))
-        if texto or caminho:
-            conn = sqlite3.connect(BANCO_DADOS)
-            c = conn.cursor()
-            c.execute("INSERT INTO postagens (usuario_id, texto, midia, tipo_midia) VALUES (?,?,?,?)",
-                      (session["usuario_id"], texto, caminho, tipo))
-            conn.commit()
-            conn.close()
-    
-    if request.args.get("curtir"):
-        pid = request.args.get("curtir")
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
-        c.execute("SELECT * FROM curtidas WHERE usuario_id=? AND postagem_id=?",(session["usuario_id"], pid))
-        if c.fetchone():
-            c.execute("DELETE FROM curtidas WHERE usuario_id=? AND postagem_id=?",(session["usuario_id"], pid))
-            c.execute("UPDATE postagens SET curtidas = curtidas - 1 WHERE id=?",(pid,))
-        else:
-            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?,?)",(session["usuario_id"], pid))
-            c.execute("UPDATE postagens SET curtidas = curtidas + 1 WHERE id=?",(pid,))
+        plano_id = int(request.form.get("plano_id"))
+        forma = request.form.get("forma_pagamento")
+        plano = next((p for p in planos if p["id"] == plano_id), None)
+        
+        c.execute("""INSERT INTO pagamentos (usuario_id, plano, valor, forma_pagamento, status)
+                     VALUES (?, ?, ?, ?, ?)""",
+                  (usuario_id, plano["nome"], plano["valor"], forma, "aprovado"))
+        
+        data_exp = datetime.now() + timedelta(days=plano["dias"])
+        licenca = gerar_licenca_assinada(email_usuario, plano["nome"], data_exp)
+        
+        c.execute("""INSERT INTO licencas_bnj (usuario_id, chave_licenca, plano, data_expiracao)
+                     VALUES (?, ?, ?, ?)""",
+                  (usuario_id, licenca, plano["nome"], data_exp))
+        
+        if forma == "pontos" and pontos_usuario >= plano["pontos"]:
+            c.execute("UPDATE usuarios SET pontos = ? WHERE id = ?", (pontos_usuario - plano["pontos"], usuario_id))
+            pontos_usuario -= plano["pontos"]
+        
         conn.commit()
-        conn.close()
-        return redirect(url_for("rede_social"))
+        mensagem = "✅ Pagamento confirmado! Acesse o Registro BNJ para baixar o instalador."
     
-    conn = sqlite3.connect(BANCO_DADOS)
+    conn.close()
+    return render_template_string(TEMPLATE_LOJA, planos=planos, pontos=pontos_usuario, mensagem=mensagem)
+
+# ----------------------
+# REGISTRO BNJ
+# ----------------------
+@app.route("/registro_bnj")
+def registro_bnj():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    usuario_id = session["usuario_id"]
+    
+    conn = sqlite3.connect("jnb.db")
     c = conn.cursor()
-    c.execute("SELECT p.id, u.nome, p.texto, p.midia, p.tipo_midia, p.curtidas FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data DESC LIMIT 15")
-    posts = c.fetchall()
+    c.execute("""SELECT chave_licenca, plano, data_expiracao 
+                 FROM licencas_bnj 
+                 WHERE usuario_id = ? AND status = 'ativa' AND data_expiracao > ?""",
+              (usuario_id, datetime.now()))
+    licenca = c.fetchone()
     conn.close()
     
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Rede Social — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 30px 20px; }}
-            h1 {{ font-size: 32px; text-align: center; margin-bottom: 30px; color: #3b82f6; }}
-            .form-box {{ max-width: 450px; margin: 0 auto 40px auto; text-align: center; }}
-            textarea {{ width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: none; background: #1e293b; color: white; font-size: 16px; margin-bottom: 10px; }}
-            input[type="file"] {{ color: white; margin-bottom: 10px; }}
-            button {{ padding: 12px 30px; border-radius: 8px; border: none; background: #f59e0b; color: black; font-size: 17px; font-weight: bold; cursor: pointer; }}
-            .post {{ background: #1e293b; padding: 20px; border-radius: 12px; max-width: 450px; margin: 15px auto; }}
-            .nome {{ color: #10b981; font-weight: bold; font-size: 17px; margin-bottom: 8px; }}
-            .curtir {{ color: #ff4444; text-decoration: none; margin-top: 10px; display: inline-block; font-size: 16px; }}
-            img, video {{ max-width: 100%; border-radius: 8px; margin: 10px 0; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: block; text-align: center; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <h1>🌐 REDE SOCIAL</h1>
-        <div class="form-box">
-            <form method="POST" enctype="multipart/form-data">
-                <textarea name="texto" placeholder="Escreva algo..."></textarea>
-                <input type="file" name="midia" accept="image/*,video/*"><br>
-                <button type="submit">COMPARTILHAR</button>
-            </form>
+    if not licenca:
+        return render_template_string("""
+        <div style="font-family:Arial; background:#0f172a; color:white; min-height:100vh; padding:50px 20px; text-align:center;">
+            <h1 style="color:#ef4444;">🧬 Registro BNJ — JNB TECNOLOGIA</h1>
+            <p style="font-size:18px; margin:30px 0;">Você ainda não possui uma licença ativa.</p>
+            <a href="/loja_premios" style="background:#3b82f6; color:white; padding:15px 30px; border-radius:10px; text-decoration:none; font-weight:bold;">Adquirir Licença</a>
         </div>
-        <h3 style="text-align:center; color:#94a3b8">📢 POSTAGENS</h3>
-        {''.join([f'''
-        <div class="post">
-            <div class="nome">{p[1]}</div>
-            <div>{p[2]}</div>
-            {f'<img src="/midias/{p[3]}" alt="Postagem">' if p[3] and p[4] == 'imagem' else ''}
-            {f'<video controls><source src="/midias/{p[3]}"></video>' if p[3] and p[4] == 'video' else ''}
-            <a href="/rede_social?curtir={p[0]}" class="curtir">❤️ {p[5]} Curtidas</a>
+        """)
+    
+    chave_licenca, plano, data_expiracao = licenca
+    return render_template_string(TEMPLATE_REGISTRO_BNJ, chave_licenca=chave_licenca, plano=plano, data_expiracao=data_expiracao)
+
+# ----------------------
+# DOWNLOAD E API DE ATIVAÇÃO
+# ----------------------
+@app.route("/download_instalador")
+def download_instalador():
+    return "⚠️ Coloque o instalador BNJ_Registro_Setup.exe na pasta 'instaladores' do servidor."
+
+@app.route("/api/ativar_licenca", methods=["POST"])
+def ativar_licenca():
+    dados = request.get_json()
+    valida, msg = validar_licenca(dados.get("chave_licenca"), dados.get("email"), dados.get("hardware_id"))
+    if not valida: return {"status":"invalida", "mensagem":msg}
+    conn = sqlite3.connect("jnb.db")
+    c = conn.cursor()
+    c.execute("UPDATE licencas_bnj SET hardware_id = ? WHERE chave_licenca = ?", (dados.get("hardware_id"), dados.get("chave_licenca")))
+    conn.commit()
+    conn.close()
+    return {"status":"ativa", "mensagem":"Licença ativada com sucesso!"}
+
+# ----------------------
+# TEMPLATES HTML COM IDENTIDADE JNB
+# ----------------------
+TEMPLATE_ENTRAR = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar — JNB TECNOLOGIA</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:white; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .container { background:#1e293b; padding:40px 30px; border-radius:20px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+        .logo { text-align:center; margin-bottom:30px; }
+        .logo-icon { font-size:64px; background:linear-gradient(45deg, #ef4444, #8b5cf6, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:bold; }
+        h1 { color:#4ade80; font-size:26px; margin:10px 0 5px; }
+        .slogan { color:#94a3b8; font-size:14px; margin-bottom:30px; }
+        form { display:flex; flex-direction:column; gap:18px; }
+        input { padding:14px; font-size:16px; border:none; border-radius:10px; background:#0f172a; color:white; }
+        button { padding:14px; background:#4ade80; color:#0f172a; font-weight:bold; font-size:16px; border:none; border-radius:10px; cursor:pointer; margin-top:10px; }
+        button:hover { background:#22c55e; }
+        .link { text-align:center; margin-top:25px; color:#94a3b8; font-size:14px; }
+        .link a { color:#4ade80; text-decoration:none; font-weight:bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">🧬</div>
+            <h1>JNB TECNOLOGIA</h1>
+            <div class="slogan">Plataforma de Autoridade · Registro BNJ · Licenças</div>
         </div>
-        ''' for p in posts])}
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-@app.route("/midias/<nome>")
-def midias(nome):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], nome)
-
-@app.route("/inteligencia", methods=["GET","POST"])
-def inteligencia():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    resposta = ""
-    if request.method == "POST":
-        pergunta = request.form.get("pergunta","").lower()
-        if "olá" in pergunta or "oi" in pergunta:
-            resposta = "✅ Olá! Estou aqui para ajudar!"
-        elif "ajuda" in pergunta:
-            resposta = "🤖 Posso ajudar com informações sobre a plataforma!"
-        else:
-            resposta = "✅ Sistema funcionando perfeitamente!"
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Inteligência — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; text-align: center; }}
-            h1 {{ font-size: 32px; margin-bottom: 30px; }}
-            textarea {{ width: 100%; max-width: 420px; height: 90px; padding: 12px; border-radius: 8px; border: none; background: #1e293b; color: white; font-size: 16px; margin-bottom: 15px; }}
-            button {{ padding: 12px 30px; border-radius: 8px; border: none; background: #84cc16; color: black; font-size: 17px; font-weight: bold; cursor: pointer; }}
-            .resposta {{ color: #10b981; font-size: 18px; margin-top: 25px; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: inline-block; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <h1>🧠 INTELIGÊNCIA</h1>
         <form method="POST">
-            <textarea name="pergunta" placeholder="Digite sua pergunta..."></textarea><br>
-            <button type="submit">ENVIAR</button>
+            <input type="email" name="email" placeholder="Seu e-mail" required>
+            <input type="password" name="senha" placeholder="Sua senha" required>
+            <button type="submit">🔑 Entrar na Plataforma</button>
         </form>
-        <p class="resposta">{resposta}</p>
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+        <div class="link">
+            Não tem conta? <a href="/cadastrar">Criar conta agora</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
 
-@app.route("/jogo_numeros", methods=["GET","POST"])
-def jogo_numeros():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    pontos = session.get("pontos", 0)
-    msg = ""
-    if request.method == "POST":
-        resp = request.form.get("resposta","")
-        if len(resp) >= 9:
-            pontos += 100
-            msg = "✅ +100 PONTOS!"
-        elif len(resp) >= 6:
-            pontos += 50
-            msg = "✅ +50 PONTOS!"
-        session["pontos"] = pontos
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>O Segredo dos Números — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; text-align: center; }}
-            h1 {{ font-size: 30px; margin-bottom: 10px; }}
-            .pontos {{ font-size: 24px; color: #84cc16; margin-bottom: 30px; }}
-            .caixa {{ background: #1e293b; padding: 30px; border-radius: 15px; max-width: 420px; margin: 0 auto; border: 3px solid #f59e0b; }}
-            .numeros {{ font-size: 18px; margin: 15px 0; line-height: 1.8; }}
-            input {{ width: 100%; padding: 14px; border-radius: 8px; border: 2px solid #f59e0b; background: #0f172a; color: white; font-size: 16px; margin: 15px 0; }}
-            button {{ padding: 14px 35px; border-radius: 8px; border: none; background: #f59e0b; color: black; font-size: 18px; font-weight: bold; cursor: pointer; }}
-            .msg {{ color: #10b981; font-size: 20px; margin-top: 20px; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: inline-block; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <h1>🎮 O SEGREDO DOS NÚMEROS</h1>
-        <p class="pontos">Pontos: {pontos}</p>
-        <div class="caixa">
-            <div class="numeros">
-                🟠 = 4164 &nbsp;|&nbsp; 🔴 = 1462 &nbsp;|&nbsp; ⚫ = 9808<br>
-                ⚪ = 5561 &nbsp;|&nbsp; 🟣 = 2493 &nbsp;|&nbsp; 🟦 = 2251
-            </div>
+TEMPLATE_CADASTRAR = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar — JNB TECNOLOGIA</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:white; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .container { background:#1e293b; padding:40px 30px; border-radius:20px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+        .logo { text-align:center; margin-bottom:30px; }
+        .logo-icon { font-size:48px; background:linear-gradient(45deg, #ef4444, #8b5cf6, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:bold; }
+        h1 { color:#4ade80; font-size:24px; margin:10px 0 20px; }
+        form { display:flex; flex-direction:column; gap:18px; }
+        input { padding:14px; font-size:16px; border:none; border-radius:10px; background:#0f172a; color:white; }
+        button { padding:14px; background:#4ade80; color:#0f172a; font-weight:bold; font-size:16px; border:none; border-radius:10px; cursor:pointer; }
+        button:hover { background:#22c55e; }
+        .link { text-align:center; margin-top:25px; color:#94a3b8; font-size:14px; }
+        .link a { color:#4ade80; text-decoration:none; font-weight:bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">🧬</div>
+            <h1>Criar Conta — JNB TECNOLOGIA</h1>
+        </div>
+        <form method="POST">
+            <input name="nome" placeholder="Seu nome completo" required>
+            <input name="email" type="email" placeholder="Seu e-mail" required>
+            <input name="senha" type="password" placeholder="Crie uma senha segura" required>
+            <button type="submit">📝 Cadastrar</button>
+        </form>
+        <div class="link">
+            Já tem conta? <a href="/entrar">Voltar para o login</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
+
+TEMPLATE_PAINEL = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel — JNB TECNOLOGIA</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background:#0f172a; color:white; min-height:100vh; padding:30px 20px; }
+        .container { max-width:600px; margin:0 auto; }
+        .header { text-align:center; margin-bottom:40px; }
+        .logo-icon { font-size:48px; background:linear-gradient(45deg, #ef4444, #8b5cf6, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:bold; }
+        h1 { color:#4ade80; font-size:28px; margin:10px 0 5px; }
+        .subtitulo { color:#94a3b8; font-size:16px; margin-bottom:20px; }
+        .user-info { background:#1e293b; padding:20px; border-radius:12px; text-align:center; margin-bottom:30px; }
+        .user-name { font-size:20px; font-weight:bold; margin-bottom:8px; }
+        .user-points { color:#fbbf24; font-size:18px; }
+        .menu { display:flex; flex-direction:column; gap:15px; }
+        .menu a { padding:18px; border-radius:12px; text-align:center; text-decoration:none; font-weight:bold; font-size:18px; transition:transform 0.2s; }
+        .menu a:hover { transform:translateY(-2px); }
+        .btn-loja { background:#3b82f6; color:white; }
+        .btn-registro { background:#8b5cf6; color:white; }
+        .btn-sair { background:#ef4444; color:white; margin-top:10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-icon">🧬</div>
+            <h1>JNB TECNOLOGIA</h1>
+            <div class="subtitulo">Painel de Controle</div>
+        </div>
+        <div class="user-info">
+            <div class="user-name">Bem-vindo, {{ nome }}!</div>
+            <div class="user-points">🏆 Seus Pontos: {{ pontos }}</div>
+        </div>
+        <div class="menu">
+            <a href="/loja_premios" class="btn-loja">🏆 Loja de Prêmios & Licenças</a>
+            <a href="/registro_bnj" class="btn-registro">🧬 Registro BNJ</a>
+            <a href="/sair" class="btn-sair">🚪 Sair da Plataforma</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
+
+TEMPLATE_LOJA = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Loja de Prêmios — JNB TECNOLOGIA</title>
+    <style>
+        * { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }
+        body { background:#0f172a; color:white; min-height:100vh; padding:30px 20px; }
+        .container { max-width:480px; margin:0 auto; }
+        h1 { color:#fbbf24; text-align:center; margin-bottom:30px; font-size:28px; }
+        .saldo { text-align:center; font-size:18px; margin-bottom:30px; color:#4ade80; }
+        .mensagem { text-align:center; font-weight:bold; margin:20px 0; padding:15px; border-radius:10px; color:#22c55e; background:#064e3b; }
+        .plano { background:#1e293b; border-radius:16px; padding:25px; margin-bottom:20px; }
+        .plano h2 { color:#fbbf24; margin-bottom:15px; font-size:22px; }
+        .preco { font-size:24px; font-weight:bold; margin-bottom:10px; color:#f1f5f9; }
+        .descricao { color:#cbd5e1; margin-bottom:20px; line-height:1.5; }
+        select { width:100%; padding:12px; border-radius:8px; background:#0f172a; color:white; border:none; font-size:16px; margin-bottom:15px; }
+        .btn { width:100%; padding:14px; border-radius:10px; background:#22c55e; color:black; font-weight:bold; font-size:18px; border:none; cursor:pointer; }
+        .btn:hover { background:#16a34a; }
+        .voltar { display:block; text-align:center; color:#4ade80; font-size:18px; text-decoration:none; margin-top:30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Loja de Prêmios & Licenças</h1>
+        <div class="saldo">Seus Pontos: {{ pontos }}</div>
+        {% if mensagem %}<div class="mensagem">{{ mensagem }}</div>{% endif %}
+        {% for p in planos %}
+        <div class="plano">
+            <h2>{{ p.nome }}</h2>
+            <div class="preco">R$ {{ "%.2f"|format(p.valor) }} ou {{ p.pontos }} pts</div>
+            <div class="descricao">{{ p.desc }}</div>
             <form method="POST">
-                <input type="text" name="resposta" placeholder="Digite a sequência...">
-                <button type="submit">CONFIRMAR</button>
+                <input type="hidden" name="plano_id" value="{{ p.id }}">
+                <select name="forma_pagamento" required>
+                    <option value="">-- Forma de Pagamento --</option>
+                    <option value="pix">PIX</option>
+                    <option value="cartao">Cartão de Crédito</option>
+                    <option value="boleto">Boleto Bancário</option>
+                    <option value="pontos">Usar {{ p.pontos }} Pontos</option>
+                </select>
+                <button type="submit" class="btn">Adquirir Licença</button>
             </form>
-            <p class="msg">{msg}</p>
+        </div>
+        {% endfor %}
+        <a href="/painel" class="voltar">← Voltar ao Painel</a>
+    </div>
+</body>
+</html>
+'''
+
+TEMPLATE_REGISTRO_BNJ = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Registro BNJ — JNB TECNOLOGIA</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background:#0f172a; color:white; min-height:100vh; padding:30px 20px; }
+        .container { max-width:480px; margin:0 auto; }
+        .header { text-align:center; margin-bottom:40px; }
+        .logo-icon { font-size:48px; background:linear-gradient(45deg, #ef4444, #8b5cf6, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:bold; }
+        h1 { color:#4ade80; margin:15px 0; }
+        .plano { background:#1e293b; border-radius:16px; padding:25px; margin-bottom:30px; }
+        .plano p { margin-bottom:12px; font-size:16px; }
+        .chave { word-break:break-all; font-size:13px; color:#94a3b8; padding:10px; background:#0f172a; border-radius:8px; }
+        .download { background:#064e3b; border-radius:16px; padding:30px; text-align:center; margin-bottom:30px; }
+        .download h3 { margin-bottom:15px; color:#4ade80; }
+        .btn-download { background:#22c55e; color:black; padding:15px 30px; border-radius:10px; text-decoration:none; font-weight:bold; display:inline-block; }
+        .ativacao { background:#1e293b; border-radius:16px; padding:25px; margin-bottom:30px; }
+        .ativacao h3 { margin-bottom:15px; color:#4ade80; }
+        ol { padding-left:20px; line-height:1.6; color:#cbd5e1; }
+        .voltar { display:block; text-align:center; color:#4ade80; font-size:18px; text-decoration:none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-icon">🧬</div>
+            <h1>Registro BNJ</h1>
+            <p style="color:#94a3b8;">Sistema de Licenciamento Oficial</p>
+        </div>
+        <div class="plano">
+            <p><strong>🪪 Plano:</strong> {{ plano }}</p>
+            <p><strong>⏳ Expira em:</strong> {{ data_expiracao[:10] }}</p>
+            <p><strong>🔑 Chave de Licença:</strong></p>
+            <div class="chave">{{ chave_licenca }}</div>
+        </div>
+        <div class="download">
+            <h3>💻 Baixar Instalador Oficial</h3>
+            <a href="/download_instalador" class="btn-download">⬇️ Baixar BNJ_Registro_Setup.exe</a>
+        </div>
+        <div class="ativacao">
+            <h3>📋 Como Ativar a Licença</h3>
+            <ol>
+                <li>Instale o BNJ Registro no computador do cliente</li>
+                <li>Abra o aplicativo</li>
+                <li>Digite seu e-mail e a chave de licença acima</li>
+                <li>A licença ativa exclusivamente naquela máquina</li>
+            </ol>
         </div>
         <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    </div>
+</body>
+</html>
+'''
 
-@app.route("/loja")
-def loja():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT nome, descricao, preco, tipo FROM produtos")
-    produtos = c.fetchall()
-    conn.close()
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Loja — JNB TECNOLOGIA</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-            body {{ background: #0f172a; color: white; min-height: 100vh; padding: 40px 20px; }}
-            h1 {{ font-size: 32px; text-align: center; margin-bottom: 10px; color: #f59e0b; }}
-            h3 {{ font-size: 22px; text-align: center; margin-bottom: 30px; color: #84cc16; }}
-            .produto {{ background: #1e293b; padding: 20px; border-radius: 12px; max-width: 420px; margin: 12px auto; }}
-            .nome {{ font-size: 18px; font-weight: bold; margin-bottom: 5px; }}
-            .desc {{ color: #94a3b8; font-size: 15px; margin-bottom: 8px; }}
-            .preco {{ color: #10b981; font-size: 18px; font-weight: bold; }}
-            .voltar {{ color: #3b82f6; font-size: 18px; text-decoration: none; display: block; text-align: center; margin-top: 30px; }}
-        </style>
-    </head>
-    <body>
-        <h1>🏆 LOJA JNB</h1>
-        <h3>📦 PRODUTOS DISPONÍVEIS</h3>
-        {''.join([f'''
-        <div class="produto">
-            <div class="nome">{p[0]}</div>
-            <div class="desc">{p[1]}</div>
-            <div class="preco">R$ {p[2]:.2f}</div>
-        </div>
-        ''' for p in produtos])}
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+TEMPLATE_ERRO = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Erro — JNB TECNOLOGIA</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background:#0f172a; color:white; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .container { background:#1e293b; padding:30px; border-radius:16px; text-align:center; max-width:400px; }
+        h2 { color:#ef4444; margin-bottom:20px; }
+        p { margin-bottom:25px; color:#fca5a5; }
+        a { color:#4ade80; text-decoration:none; font-weight:bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>⚠️ Erro</h2>
+        <p>{{ mensagem }}</p>
+        <a href="/entrar">← Voltar</a>
+    </div>
+</body>
+</html>
+'''
 
-# ==================================================
-# ✅ SERVIDOR FECHADO CORRETAMENTE — ÚLTIMA LINHA ✅
-# ==================================================
+# ----------------------
+# INICIAR SERVIDOR
+# ----------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
