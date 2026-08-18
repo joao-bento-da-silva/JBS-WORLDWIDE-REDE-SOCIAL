@@ -169,41 +169,65 @@ def anuncios():
         mensagem = "✅ Anúncio publicado com sucesso!"
     return render_template_string(TEMPLATE_ANUNCIOS, mensagem=mensagem)
 
-@app.route("/rede_social", methods=["GET","POST"])
+@app.route("/rede_social", methods=["GET", "POST"])
 def rede_social():
-    if not usuario_logado(): return redirect(url_for("entrar"))
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
+    
     if request.method == "POST":
         texto = request.form.get("texto")
         arquivo = request.files.get("arquivo")
         nome_arq = None
         if arquivo and arquivo.filename:
+            from werkzeug.utils import secure_filename
+            import os
             nome_arq = secure_filename(arquivo.filename)
             os.makedirs("uploads/rede_social", exist_ok=True)
             arquivo.save(os.path.join("uploads/rede_social", nome_arq))
+        
         conn = sqlite3.connect("jnb.db")
         c = conn.cursor()
         c.execute("INSERT INTO postagens (usuario_id, texto, arquivo) VALUES (?, ?, ?)",
                   (session["usuario_id"], texto, nome_arq))
         conn.commit()
-        c.execute("SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data_postagem DESC")
+        
+        # Consulta com contador de curtidas — POST
+        c.execute("""
+        SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
+               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas
+        FROM postagens p
+        JOIN usuarios u ON p.usuario_id = u.id
+        ORDER BY p.data_postagem DESC
+        """)
         postagens = c.fetchall()
         conn.close()
+    
     else:
         conn = sqlite3.connect("jnb.db")
         c = conn.cursor()
-        c.execute("SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data_postagem DESC")
+        
+        # Consulta com contador de curtidas — GET
+        c.execute("""
+        SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
+               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas
+        FROM postagens p
+        JOIN usuarios u ON p.usuario_id = u.id
+        ORDER BY p.data_postagem DESC
+        """)
         postagens = c.fetchall()
         conn.close()
+    
     return render_template_string(TEMPLATE_REDE_SOCIAL, postagens=postagens)
 
-@app.route("/inteligencia", methods=["GET","POST"])
+@app.route("/inteligencia", methods=["GET", "POST"])
 def inteligencia():
-    if not usuario_logado(): return redirect(url_for("entrar"))
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
     resposta = ""
     if request.method == "POST":
         pergunta = request.form.get("pergunta")
-        resposta = f"Resposta da IA: Entendi sua pergunta sobre '{pergunta}'. A inteligência BNJ está em constante aprendizado."
-    return render_template_string(TEMPLATE_INTELIGENCIA, resposta=resposta)
+        resposta = f"Resposta da IA: Entendi sua pergunta sobre '{pergunta}'. A inteligência BNJ está em constante aprendizado!"
+    return  render_template_string(TEMPLATE_INTELIGENCIA, resposta=resposta)
 
 @app.route("/jogo_pares", methods=["GET","POST"])
 def jogo_pares():
@@ -797,6 +821,12 @@ button{padding:12px 20px;background:#3b82f6;color:white;font-weight:bold;font-si
 </div>
 <a href="/painel" class="voltar">← Voltar para o Painel</a></div></body></html>
 '''
+# 📸 Rota para exibir fotos e vídeos enviados na rede social
+@app.route("/uploads/rede_social/<filename>")
+def servir_upload_rede(filename):
+    from flask import send_from_directory
+    return send_from_directory("uploads/rede_social", filename)
+
 
 # ✅ LINHA FINAL DO SERVIDOR — TAMBÉM FECHADA E CORRETA
 if __name__ == "__main__":
