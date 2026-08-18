@@ -1,6 +1,7 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — SISTEMA COMPLETO ✅
-# PAINEL COM DNA JNB ✅ | ROTA /bnj ✅ | FECHADO ✅
+# © 2026 JNB TECNOLOGIA — PAINEL COMPLETO ✅
+# INCLUI: 🧬 DNA DIGITAL BNJ — NOVO SERVIÇO ✅
+# TODAS ROTAS | FECHADO | PORTA 5000 ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -128,6 +129,7 @@ def painel():
             h1{{color:#84cc16;font-size:32px;margin-bottom:5px}}
             .sub{{color:#cbd5e1;font-size:18px;margin-bottom:30px}}
             .btn{{display:block;max-width:420px;margin:12px auto;padding:18px;background:#1e293b;border:3px solid #84cc16;border-radius:15px;color:white;text-decoration:none;font-size:20px;text-align:left;padding-left:30px}}
+            .btn-bnj{{border-color:#f59e0b;}}
             .btn-sair{{color:#f87171;margin-top:30px;text-decoration:none;font-size:18px}}
             .pontos{{color:#84cc16;font-size:22px;margin-bottom:25px}}
         </style>
@@ -140,7 +142,7 @@ def painel():
         <a href="/documentos" class="btn">📄 Documentos</a>
         <a href="/projetos" class="btn">📐 Projetos</a>
         <a href="/anuncios" class="btn">📢 Anúncios</a>
-        <a href="/bnj" class="btn" style="border-color:#f59e0b;">🧬 DNA JNB</a>
+        <a href="/bnj" class="btn btn-bnj">🧬 DNA DIGITAL BNJ</a>
         <a href="/rede_social" class="btn">🌐 Rede Social</a>
         <a href="/inteligencia" class="btn">🧠 Inteligência</a>
         <a href="/jogo_pares" class="btn">🎮 Jogo dos Pares Secretos</a>
@@ -235,7 +237,7 @@ def bnj():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🧬 DNA JNB</title>
+        <title>🧬 DNA DIGITAL BNJ</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
             body{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px}
@@ -255,7 +257,7 @@ def bnj():
     </head>
     <body>
         <div class="painel">
-            <h1>🧬 DNA JNB</h1>
+            <h1>🧬 DNA DIGITAL BNJ</h1>
             <div class="caixa">
                 <div class="rotulo">Sequência Original:</div>
                 <div class="valor">""" + DNA_ORIGINAL + """</div>
