@@ -1,6 +1,6 @@
- # ==================================================
-# © 2026 JNB TECNOLOGIA — CÓDIGO FINAL
-# CABEÇALHO NO TOPO ✅ | ORDEM CORRETA ✅
+  # ==================================================
+# © 2026 JNB TECNOLOGIA — PAINEL IGUAL A FOTO ✅
+# INCLUI: DNA DIGITAL JNB ✅ | ORDEM CORRETA ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -41,11 +41,11 @@ def inicio():
     return render_template_string("""
     <html>
     <body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
-        <h1 style="color:#84cc16;">JNB TECNOLOGIA</h1>
-        <h3>Plataforma de Serviços e Jogos</h3>
+        <h1 style="color:#84cc16;font-size:36px;font-weight:bold;">JNB TECNOLOGIA</h1>
+        <h3 style="color:#cbd5e1;margin-bottom:40px;">Plataforma Completa de Serviços</h3>
         <div style="margin-top:30px;">
-            <a href="/entrar" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #84cc16;border-radius:10px;color:white;text-decoration:none;">Entrar</a>
-            <a href="/cadastro" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #3b82f6;border-radius:10px;color:white;text-decoration:none;">Criar Conta</a>
+            <a href="/entrar" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:3px solid #84cc16;border-radius:15px;color:white;text-decoration:none;font-size:18px;">Entrar</a>
+            <a href="/cadastro" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:3px solid #3b82f6;border-radius:15px;color:white;text-decoration:none;font-size:18px;">Criar Conta</a>
         </div>
     </body>
     </html>
@@ -71,11 +71,12 @@ def cadastro():
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>Criar Conta</h2>
         <form method="POST">
-            <input name="nome" placeholder="Seu nome" required style="padding:10px;margin:5px;width:300px;"><br>
-            <input name="email" placeholder="Seu email" required style="padding:10px;margin:5px;width:300px;"><br>
-            <input name="senha" type="password" placeholder="Sua senha" required style="padding:10px;margin:5px;width:300px;"><br>
-            <button type="submit" style="padding:10px 30px;background:#84cc16;border:none;border-radius:5px;color:white;margin-top:10px;">Cadastrar</button>
+            <input name="nome" placeholder="Seu nome" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
+            <input name="email" placeholder="Seu email" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
+            <input name="senha" type="password" placeholder="Sua senha" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
+            <button type="submit" style="padding:12px 40px;background:#84cc16;border:none;border-radius:8px;color:white;margin-top:10px;font-size:16px;">Cadastrar</button>
         </form>
+        <br><a href="/" style="color:#3b82f6;">← Voltar</a>
     </body></html>
     """)
 
@@ -98,10 +99,11 @@ def entrar():
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>Entrar</h2>
         <form method="POST">
-            <input name="email" placeholder="Seu email" required style="padding:10px;margin:5px;width:300px;"><br>
-            <input name="senha" type="password" placeholder="Sua senha" required style="padding:10px;margin:5px;width:300px;"><br>
-            <button type="submit" style="padding:10px 30px;background:#3b82f6;border:none;border-radius:5px;color:white;margin-top:10px;">Entrar</button>
+            <input name="email" placeholder="Seu email" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
+            <input name="senha" type="password" placeholder="Sua senha" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
+            <button type="submit" style="padding:12px 40px;background:#3b82f6;border:none;border-radius:8px;color:white;margin-top:10px;font-size:16px;">Entrar</button>
         </form>
+        <br><a href="/" style="color:#3b82f6;">← Voltar</a>
     </body></html>
     """)
 
@@ -117,82 +119,68 @@ def painel():
     nome = session.get("usuario_nome", "Usuario")
     pontos = session.get("pontos", 0)
     return render_template_string(f"""
-    <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
-        <h2>Bem-vindo, {nome}!</h2>
-        <p style="color:#84cc16;font-size:20px;">Pontos: {pontos}</p>
-        <div style="margin-top:30px;">
-            <a href="/documentos" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">📄 Documentos</a>
-            <a href="/projetos" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">📐 Projetos</a>
-            <a href="/anuncios" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">📢 Anúncios</a>
-            <a href="/bnj" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #f59e0b;border-radius:10px;color:white;text-decoration:none;">🧬 DNA JNB</a>
-            <a href="/rede_social" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">🌐 Rede Social</a>
-            <a href="/inteligencia" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">🧠 Inteligência</a>
-            <a href="/jogo_pares" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">🎮 Jogo dos Pares</a>
-            <a href="/loja_premios" style="display:block;max-width:400px;margin:10px auto;padding:15px;background:#1e293b;border:2px solid #cbd5e1;border-radius:10px;color:white;text-decoration:none;">🏆 Loja de Prêmios</a>
-        </div>
-        <a href="/sair" style="display:inline-block;margin-top:30px;color:#f87171;text-decoration:none;">Sair</a>
-    </body></html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            *{{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}}
+            body{{background:#0f172a;color:white;text-align:center;padding:20px}}
+            h1{{color:#84cc16;font-size:32px;margin-bottom:5px}}
+            .sub{{color:#cbd5e1;font-size:18px;margin-bottom:30px}}
+            .btn{{display:block;max-width:420px;margin:12px auto;padding:18px;background:#1e293b;border:3px solid #84cc16;border-radius:15px;color:white;text-decoration:none;font-size:20px;text-align:left;padding-left:30px}}
+            .btn-sair{{color:#f87171;margin-top:30px;text-decoration:none;font-size:18px}}
+            .pontos{{color:#84cc16;font-size:22px;margin-bottom:25px}}
+        </style>
+    </head>
+    <body>
+        <h1>JNB TECNOLOGIA</h1>
+        <p class="sub">Plataforma Completa de Serviços</p>
+        <p class="pontos">Bem-vindo, {nome}! — Pontos: {pontos}</p>
+        
+        <a href="/documentos" class="btn">📄 Documentos</a>
+        <a href="/projetos" class="btn">📐 Projetos</a>
+        <a href="/anuncios" class="btn">📢 Anúncios</a>
+        <a href="/bnj" class="btn" style="border-color:#f59e0b;">🧬 DNA DIGITAL JNB</a>
+        <a href="/rede_social" class="btn">🌐 Rede Social</a>
+        <a href="/inteligencia" class="btn">🧠 Inteligência</a>
+        <a href="/jogo_pares" class="btn">🎮 Jogo dos Pares Secretos</a>
+        <a href="/loja_premios" class="btn">🏆 Loja de Prêmios</a>
+        
+        <a href="/sair" class="btn-sair">Sair</a>
+    </body>
+    </html>
     """)
 
-@app.route("/documentos", methods=["GET","POST"])
+@app.route("/documentos")
 def documentos():
     if not usuario_logado():
         return redirect(url_for("entrar"))
-    mensagem = ""
-    if request.method == "POST":
-        mensagem = "✅ Solicitação enviada!"
-    return render_template_string(f"""
+    return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>📄 Documentos</h2>
-        {mensagem}
-        <form method="POST">
-            <select name="tipo" style="padding:10px;width:300px;">
-                <option value="simples">Documento Simples</option>
-                <option value="completo">Documento Completo</option>
-                <option value="especial">Documento Especial</option>
-            </select><br><br>
-            <button type="submit" style="padding:10px 30px;background:#84cc16;border:none;border-radius:5px;color:white;">Solicitar</button>
-        </form>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
-@app.route("/projetos", methods=["GET","POST"])
+@app.route("/projetos")
 def projetos():
     if not usuario_logado():
         return redirect(url_for("entrar"))
-    mensagem = ""
-    if request.method == "POST":
-        mensagem = "✅ Projeto criado!"
-    return render_template_string(f"""
+    return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>📐 Projetos</h2>
-        {mensagem}
-        <form method="POST">
-            <textarea name="descricao" placeholder="Descreva seu projeto..." style="width:300px;height:100px;padding:10px;"></textarea><br>
-            <button type="submit" style="padding:10px 30px;background:#3b82f6;border:none;border-radius:5px;color:white;margin-top:10px;">Criar Projeto</button>
-        </form>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
-@app.route("/anuncios", methods=["GET","POST"])
+@app.route("/anuncios")
 def anuncios():
     if not usuario_logado():
         return redirect(url_for("entrar"))
-    mensagem = ""
-    if request.method == "POST":
-        mensagem = "✅ Anúncio publicado!"
-    return render_template_string(f"""
+    return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>📢 Anúncios</h2>
-        {mensagem}
-        <form method="POST">
-            <input name="titulo" placeholder="Título" style="width:300px;padding:10px;margin:5px;"><br>
-            <textarea name="descricao" placeholder="Descrição..." style="width:300px;height:100px;padding:10px;"></textarea><br>
-            <button type="submit" style="padding:10px 30px;background:#f59e0b;border:none;border-radius:5px;color:black;margin-top:10px;">Publicar</button>
-        </form>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
@@ -220,21 +208,17 @@ def bnj():
         bin_par, hex_par, bits_par, bytes_par = converter_sequencia(DNA_PAR)
 
         if sequencia_usuario == DNA_PAR:
-            mensagem = "✅ SISTEMA ÍNTEGRO"
+            mensagem = "✅ SISTEMA ÍNTEGRO — 100%"
             status = "ÍNTEGRO"
-            integridade = "100%"
         elif sequencia_usuario == DNA_ORIGINAL:
             mensagem = "ℹ️ Digite o PAR correspondente"
             status = "AGUARDANDO"
-            integridade = "—"
         else:
-            mensagem = "⚠️ FALHA DETECTADA"
+            mensagem = "⚠️ FALHA DETECTADA — COMPROMETIDA"
             status = "FALHA"
-            integridade = "COMPROMETIDA"
 
         analise = {
-            "status": status, "integridade": integridade,
-            "bin_ori": bin_ori, "hex_ori": hex_ori,
+            "status": status, "bin_ori": bin_ori, "hex_ori": hex_ori,
             "bin_par": bin_par, "hex_par": hex_par,
             "bits_ori": bits_ori, "bytes_ori": bytes_ori,
             "bits_par": bits_par, "bytes_par": bytes_par,
@@ -247,27 +231,27 @@ def bnj():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SISTEMA B.N.J.</title>
+        <title>🧬 DNA DIGITAL JNB</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-            body{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px}
-            .painel{background:#1e293b;border-radius:20px;padding:30px;max-width:720px;margin:0 auto;border:3px solid #f59e0b}
-            h1{text-align:center;color:#f59e0b;margin-bottom:10px}
+            body{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px;color:white}
+            .painel{background:#1e293b;border-radius:20px;padding:30px;max-width:480px;margin:0 auto;border:3px solid #f59e0b}
+            h1{text-align:center;color:#f59e0b;margin-bottom:20px;font-size:28px}
             .caixa{background:#0f172a;padding:15px;border-radius:10px;border:2px solid #475569;margin:10px 0}
-            .rotulo{color:#94a3b8;font-size:13px;margin-bottom:5px}
-            .valor{font-family:monospace;color:#f59e0b;word-break:break-all}
-            .status{padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin:15px 0;font-size:18px}
-            .status.ok{background:#84cc1620;color:#84cc16;border:2px solid #84cc16}
-            .status.erro{background:#f8717120;color:#f87171;border:2px solid #f87171}
-            .status.info{background:#3b82f620;color:#3b82f6;border:2px solid #3b82f6}
-            input{width:100%;padding:14px;font-size:18px;text-align:center;border-radius:10px;border:2px solid #f59e0b;background:#0f172a;color:#f1f5f9;outline:none}
-            button{width:100%;padding:14px;font-size:16px;font-weight:bold;background:linear-gradient(90deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;margin-top:12px;cursor:pointer}
-            a{display:block;text-align:center;margin-top:20px;color:#22d3ee;text-decoration:none}
+            .rotulo{color:#94a3b8;font-size:14px;margin-bottom:5px}
+            .valor{font-family:monospace;color:#f59e0b;word-break:break-all;font-size:15px}
+            .status{padding:15px;border-radius:10px;text-align:center;font-weight:bold;margin:20px 0;font-size:20px}
+            .ok{background:#84cc1620;color:#84cc16;border:2px solid #84cc16}
+            .erro{background:#f8717120;color:#f87171;border:2px solid #f87171}
+            .info{background:#3b82f620;color:#3b82f6;border:2px solid #3b82f6}
+            input{width:100%;padding:16px;font-size:20px;text-align:center;border-radius:10px;border:2px solid #f59e0b;background:#0f172a;color:white;outline:none}
+            button{width:100%;padding:16px;font-size:18px;font-weight:bold;background:linear-gradient(90deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;margin-top:15px;cursor:pointer}
+            a{display:block;text-align:center;margin-top:25px;color:#22d3ee;text-decoration:none;font-size:18px}
         </style>
     </head>
     <body>
         <div class="painel">
-            <h1>🧬 SISTEMA B.N.J.</h1>
+            <h1>🧬 DNA DIGITAL JNB</h1>
             <div class="caixa">
                 <div class="rotulo">Sequência Original:</div>
                 <div class="valor">""" + DNA_ORIGINAL + """</div>
@@ -280,9 +264,8 @@ def bnj():
     if analise:
         html += """
             <div class="status """ + ("ok" if analise['status']=="ÍNTEGRO" else "erro" if analise['status']=="FALHA" else "info") + """">
-                """ + analise['status'] + """ — Integridade: """ + analise['integridade'] + """
+                """ + mensagem + """
             </div>
-            <p style="text-align:center;color:#cbd5e1;margin:10px 0;">""" + mensagem + """</p>
             <div class="caixa">
                 <div class="rotulo">Original → Binário:</div>
                 <div class="valor" style="font-size:11px;">""" + analise['bin_ori'] + """</div>
@@ -302,7 +285,7 @@ def bnj():
         """
     html += """
         </div>
-        <a href="/painel">← Voltar</a>
+        <a href="/painel">← Voltar ao Painel</a>
     </body>
     </html>
     """
@@ -315,7 +298,7 @@ def rede_social():
     return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>🌐 Rede Social</h2>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
@@ -326,7 +309,7 @@ def inteligencia():
     return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>🧠 Inteligência</h2>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
@@ -336,8 +319,8 @@ def jogo_pares():
         return redirect(url_for("entrar"))
     return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
-        <h2>🎮 Jogo dos Pares</h2>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <h2>🎮 Jogo dos Pares Secretos</h2>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
@@ -348,7 +331,7 @@ def loja_premios():
     return render_template_string("""
     <html><body style="background:#0f172a;color:white;text-align:center;font-family:Arial;padding:20px;">
         <h2>🏆 Loja de Prêmios</h2>
-        <br><a href="/painel" style="color:#3b82f6;">← Voltar</a>
+        <br><a href="/painel" style="color:#3b82f6;font-size:18px;">← Voltar</a>
     </body></html>
     """)
 
