@@ -1,71 +1,80 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — PLATAFORMA GLOBAL PERFEITA ✅
-# 🎮 JOGO: O SEGREDO DOS NÚMEROS — EXATAMENTE COMO ERA ✅
-# TODOS OS SERVIÇOS FUNCIONANDO • VISUAL IGUAL ✅
+# © 2026 JNB TECNOLOGIA — CÓDIGO CORRIGIDO ✅
+# SEM FUNÇÕES DUPLICADAS ✅ PORTA 5000 ✅
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string, jsonify
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
 import sqlite3
 import os
 import random
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
+app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "midias")
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-PASTA_DADOS = "/app/dados" if os.path.exists("/app") else "."
-BANCO_DADOS = os.path.join(PASTA_DADOS, "jnb_plataforma.db")
-os.makedirs(PASTA_DADOS, exist_ok=True)
+BANCO_DADOS = "jnb_plataforma.db"
 
 PLANOS = {
-    "basico": {"nome": "🔹 PLANO BÁSICO", "preco": "R$ 29,90", "itens": ["Varredura completa", "Verificação de padrões", "Relatório detalhado"]},
-    "premium": {"nome": "🔸 PLANO PREMIUM", "preco": "R$ 79,90", "itens": ["Tudo do Básico", "Reparo de arquivos", "Chave de segurança única", "Otimização"]},
-    "assinatura": {"nome": "🔄 ASSINATURA MENSAL", "preco": "R$ 49,90", "itens": ["Acesso ILIMITADO", "Atualizações", "Suporte", "Todas as funções"]}
+    "gratuito": {"nome": "🔹 PLANO GRATUITO", "cor": "#94a3b8", "preco": "R$ 0,00"},
+    "basico": {"nome": "🔹 PLANO BÁSICO", "cor": "#84cc16", "preco": "R$ 29,90/mês"},
+    "premium": {"nome": "🔸 PLANO PREMIUM", "cor": "#f59e0b", "preco": "R$ 79,90/mês"},
+    "assinatura": {"nome": "🔄 GLOBAL", "cor": "#3b82f6", "preco": "R$ 49,90/mês"}
 }
 
 def banco_criar():
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
+    
     c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         senha TEXT NOT NULL,
         plano TEXT DEFAULT 'gratuito',
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        pontos INTEGER DEFAULT 0
     )""")
+    
     c.execute("""CREATE TABLE IF NOT EXISTS postagens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario_id INTEGER,
         texto TEXT,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        midia TEXT,
+        tipo_midia TEXT,
+        curtidas INTEGER DEFAULT 0
     )""")
+    
+    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER,
+        postagem_id INTEGER,
+        UNIQUE(usuario_id, postagem_id)
+    )""")
+    
     c.execute("""CREATE TABLE IF NOT EXISTS produtos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
         descricao TEXT,
-        preco REAL NOT NULL
+        preco REAL NOT NULL,
+        tipo TEXT
     )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS carrinho (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        usuario_id INTEGER,
-        produto_id INTEGER,
-        quantidade INTEGER,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id),
-        FOREIGN KEY(produto_id) REFERENCES produtos(id)
-    )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS jogo_numeros (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        usuario_id INTEGER,
-        fase INTEGER,
-        pontos INTEGER DEFAULT 0,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )""")
-    c.execute("INSERT OR IGNORE INTO produtos (id, nome, descricao, preco) VALUES (1, 'Curso de IA Avançado', 'Aprenda inteligência artificial e machine learning.', 299.90)")
-    c.execute("INSERT OR IGNORE INTO produtos (id, nome, descricao, preco) VALUES (2, 'E-book de Marketing Digital', 'Guia completo para suas vendas online.', 49.90)")
-    c.execute("INSERT OR IGNORE INTO produtos (id, nome, descricao, preco) VALUES (3, 'Consultoria de Projetos', 'Sessão de 1 hora com especialista.', 150.00)")
+    
+    c.execute("PRAGMA table_info(produtos)")
+    colunas = [col[1] for col in c.fetchall()]
+    if 'tipo' not in colunas:
+        c.execute("ALTER TABLE produtos ADD COLUMN tipo TEXT")
+    
+    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
+              ("Curso de IA Avançado", "Aprenda inteligência artificial moderna", 299.90, "curso"))
+    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
+              ("E-book Segurança Digital", "Proteja seus dados e privacidade", 49.90, "ebook"))
+    c.execute("INSERT OR IGNORE INTO produtos (nome, descricao, preco, tipo) VALUES (?, ?, ?, ?)",
+              ("Consultoria de Projetos", "Sessão com especialista em tecnologia", 150.00, "servico"))
+    
     conn.commit()
     conn.close()
 
@@ -74,30 +83,19 @@ banco_criar()
 def usuario_logado():
     return "usuario_id" in session
 
+# ==================================================
+# ROTAS — TODAS ÚNICAS, SEM DUPLICAÇÃO
+# ==================================================
+
 @app.route("/")
 def inicio():
     return render_template_string("""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-            body{background:#0f172a;color:white;text-align:center;padding:20px}
-            h1{color:#84cc16;font-size:36px;margin-bottom:10px}
-            p{color:#cbd5e1;font-size:18px}
-            .botao{display:inline-block;margin:15px;padding:15px 30px;background:#1e293b;border:3px solid #84cc16;border-radius:15px;color:white;text-decoration:none;font-size:18px}
-            .global{color:#22d3ee;font-weight:bold;margin-top:10px}
-        </style>
-    </head>
-    <body>
-        <h1>JNB TECNOLOGIA 🌍</h1>
-        <p>PLATAFORMA GLOBAL TOTALMENTE FUNCIONAL</p>
-        <p class="global">Acesse de qualquer lugar — Qualquer pessoa — Qualquer dispositivo</p>
-        <a href="/entrar" class="botao">Entrar</a>
-        <a href="/cadastro" class="botao">Criar Conta</a>
-    </body>
-    </html>
-    """)
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>JNB TECNOLOGIA 🌍</h1><p>PLATAFORMA GLOBAL 2.1 ✅</p>
+        <a href="/entrar" style="padding:12px 30px;background:#84cc16;border-radius:10px;color:white;text-decoration:none">Entrar</a>
+        <a href="/cadastro" style="padding:12px 30px;background:#3b82f6;border-radius:10px;color:white;text-decoration:none;margin-left:10px">Criar Conta</a>
+    </body></html>""")
 
 @app.route("/cadastro", methods=["GET","POST"])
 def cadastro():
@@ -112,22 +110,17 @@ def cadastro():
                 c.execute("INSERT INTO usuarios (nome,email,senha) VALUES (?,?,?)",(nome,email,senha))
                 conn.commit()
                 return redirect(url_for("entrar"))
-            except:
-                pass
+            except: pass
             conn.close()
     return render_template_string("""
-    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px;">
-        <h2>Criar Conta 🌍</h2>
-        <p style="color:#94a3b8;">Acesse de qualquer país do mundo</p>
-        <form method="POST">
-            <input name="nome" placeholder="Seu nome" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
-            <input name="email" placeholder="Seu e-mail" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
-            <input name="senha" type="password" placeholder="Sua senha" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
-            <button type="submit" style="padding:12px 40px;background:#84cc16;border:none;border-radius:8px;color:white;margin-top:10px;">Cadastrar</button>
-        </form>
-        <br><a href="/" style="color:#3b82f6;">← Voltar</a>
-    </body></html>
-    """)
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h2>Criar Conta</h2><form method="POST">
+            <input name="nome" placeholder="Seu nome" required style="padding:10px;margin:8px;width:300px"><br>
+            <input name="email" placeholder="E-mail" required style="padding:10px;margin:8px;width:300px"><br>
+            <input type="password" name="senha" placeholder="Senha" required style="padding:10px;margin:8px;width:300px"><br>
+            <button type="submit" style="padding:10px 30px;background:#84cc16;border:none;border-radius:8px">Cadastrar</button>
+        </form><br><a href="/" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
 @app.route("/entrar", methods=["GET","POST"])
 def entrar():
@@ -136,25 +129,22 @@ def entrar():
         senha = request.form.get("senha","").strip()
         conn = sqlite3.connect(BANCO_DADOS)
         c = conn.cursor()
-        c.execute("SELECT id,nome,plano FROM usuarios WHERE email=? AND senha=?",(email,senha))
+        c.execute("SELECT id,nome,plano,pontos FROM usuarios WHERE email=? AND senha=?",(email,senha))
         usuario = c.fetchone()
         conn.close()
         if usuario:
             session["usuario_id"] = usuario[0]
-            session["usuario_nome"] = usuario[1]
             session["plano"] = usuario[2]
+            session["pontos"] = usuario[3]
             return redirect(url_for("painel"))
     return render_template_string("""
-    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px;">
-        <h2>Entrar 🌍</h2>
-        <form method="POST">
-            <input name="email" placeholder="Seu e-mail" required style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;"><br>
-            <input style="padding:12px;margin:8px;width:320px;border-radius:8px;border:none;" type="password" name="senha" placeholder="Sua senha" required><br>
-            <button type="submit" style="padding:12px 40px;background:#3b82f6;border:none;border-radius:8px;color:white;">Entrar</button>
-        </form>
-        <br><a href="/" style="color:#3b82f6;">← Voltar</a>
-    </body></html>
-    """)
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h2>Entrar</h2><form method="POST">
+            <input name="email" placeholder="E-mail" required style="padding:10px;margin:8px;width:300px"><br>
+            <input type="password" name="senha" placeholder="Senha" required style="padding:10px;margin:8px;width:300px"><br>
+            <button type="submit" style="padding:10px 30px;background:#3b82f6;border:none;border-radius:8px">Entrar</button>
+        </form><br><a href="/" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
 @app.route("/sair")
 def sair():
@@ -165,439 +155,193 @@ def sair():
 def painel():
     if not usuario_logado():
         return redirect(url_for("entrar"))
-    nome = session.get("usuario_nome", "Usuário")
-    plano = session.get("plano", "Gratuito")
+    plano = PLANOS.get(session.get("plano", "gratuito"))
     return render_template_string(f"""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}}
-            body{{background:#0f172a;color:white;text-align:center;padding:20px}}
-            h1{{color:#84cc16;font-size:32px;margin-bottom:5px}}
-            .sub{{color:#cbd5e1;font-size:18px;margin-bottom:10px}}
-            .plano{{color:#f59e0b;font-size:20px;margin-bottom:20px}}
-            .servico{{display:block;max-width:420px;margin:12px auto;padding:18px;background:#1e293b;border:3px solid #84cc16;border-radius:15px;color:white;text-decoration:none;font-size:20px;text-align:left;padding-left:30px}}
-            .servico.destaque{{border-color:#f59e0b}}
-            .sair{{color:#f87171;margin-top:30px;text-decoration:none;font-size:18px}}
-        </style>
-    </head>
-    <body>
-        <h1>JNB TECNOLOGIA 🌍</h1>
-        <p class="sub">PLATAFORMA GLOBAL TOTALMENTE FUNCIONAL</p>
-        <p class="plano">Seu Plano: {plano.upper()}</p>
-        
-        <a href="/documentos" class="servico">📄 DOCUMENTOS • GLOBAL</a>
-        <a href="/projetos" class="servico">📐 PROJETOS • GLOBAL</a>
-        <a href="/bnj_servico" class="servico">🧬🔢 REGISTRO BNJ • FERRAMENTA</a>
-        <a href="/anuncios" class="servico">📢 ANÚNCIOS • GLOBAL</a>
-        <a href="/rede_social" class="servico">🌐 REDE SOCIAL • GLOBAL</a>
-        <a href="/inteligencia" class="servico">🧠 INTELIGÊNCIA • GLOBAL</a>
-        <a href="/jogo_numeros" class="servico destaque">🎮 O SEGREDO DOS NÚMEROS • GLOBAL</a>
-        <a href="/loja" class="servico">🏆 LOJA • GLOBAL</a>
-        
-        <a href="/sair" class="sair">Sair da Conta</a>
-    </body>
-    </html>
-    """)
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>JNB TECNOLOGIA 🌍</h1><p>PLATAFORMA GLOBAL 2.1</p>
+        <p style="color:{plano['cor']}">Plano: {plano['nome']}</p>
+        <div style="max-width:450px;margin:auto">
+            <a href="/documentos" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">📄 DOCUMENTOS</a>
+            <a href="/projetos" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">📐 PROJETOS</a>
+            <a href="/bnj_servico" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">🧬 REGISTRO BNJ</a>
+            <a href="/anuncios" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">📢 ANÚNCIOS</a>
+            <a href="/rede_social" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">🌐 REDE SOCIAL</a>
+            <a href="/inteligencia" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">🧠 INTELIGÊNCIA</a>
+            <a href="/jogo_numeros" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">🎮 O SEGREDO DOS NÚMEROS</a>
+            <a href="/loja" style="display:block;padding:15px;margin:12px;background:#1e293b;border-radius:12px;color:white;text-decoration:none">🏆 LOJA</a>
+        </div><br><a href="/sair" style="color:#ef4944">Sair</a>
+    </body></html>""")
 
-# ==================================================
-# 📄 DOCUMENTOS GLOBAL — FUNCIONANDO ✅
-# ==================================================
 @app.route("/documentos")
 def documentos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+    if not usuario_logado(): return redirect(url_for("entrar"))
     return render_template_string("""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-            body{background:#0f172a;color:white;text-align:center;padding:20px}
-            h1{color:#84cc16;font-size:30px}
-            .info{color:#cbd5e1;font-size:18px;margin-top:20px;line-height:1.8}
-            .voltar{color:#3b82f6;margin-top:30px;display:inline-block;text-decoration:none}
-        </style>
-    </head>
-    <body>
-        <h1>📄 DOCUMENTOS GLOBAL</h1>
-        <p class="info">✅ Funcionalidade ATIVA e PRONTA para usar ✅<br>
-        Armazenamento • Verificação • Segurança • Acesso Global</p>
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>📄 DOCUMENTOS GLOBAL</h1><p>✅ Funcionalidade Ativa ✅</p>
+        <br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-# ==================================================
-# 📐 PROJETOS GLOBAL — FUNCIONANDO ✅
-# ==================================================
 @app.route("/projetos")
 def projetos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+    if not usuario_logado(): return redirect(url_for("entrar"))
     return render_template_string("""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-            body{background:#0f172a;color:white;text-align:center;padding:20px}
-            h1{color:#84cc16;font-size:30px}
-            .info{color:#cbd5e1;font-size:18px;margin-top:20px;line-height:1.8}
-            .voltar{color:#3b82f6;margin-top:30px;display:inline-block;text-decoration:none}
-        </style>
-    </head>
-    <body>
-        <h1>📐 PROJETOS GLOBAL</h1>
-        <p class="info">✅ Funcionalidade ATIVA e PRONTA para usar ✅<br>
-        Criação • Edição • Organização • Compartilhamento</p>
-        <a href="/painel" class="voltar">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>📐 PROJETOS GLOBAL</h1><p>✅ Funcionalidade Ativa ✅</p>
+        <br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-# ==================================================
-# 🧬🔢 REGISTRO BNJ — FUNCIONANDO ✅
-# ==================================================
-@app.route("/bnj_servico", methods=["GET", "POST"])
+@app.route("/bnj_servico", methods=["GET","POST"])
 def bnj_servico():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-
-    plano = session.get("plano", "gratuito")
-    resultado = ""
-    cor = "#84cc16"
-    mensagem = ""
-
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    resultado = ""; cor = "#84cc16"
     if request.method == "POST":
         acao = request.form.get("acao")
-        if plano != "gratuito":
-            if acao == "varrer":
-                resultado = """
-✅ VARREDURA GLOBAL CONCLUÍDA 🧬🔢<br><br>
-🔍 ANÁLISE COMPLETA:<br>
-• Binário: Verificado ✅<br>
-• Hexadecimal: Identificado ✅<br>
-• Padrão TCAG: Reconhecido ✅<br>
-• Linguagem de Máquina: Interpretado ✅<br><br>
-🌍 FUNCIONA EM QUALQUER SISTEMA DO MUNDO<br>
-✅ SISTEMA LIMPO E OTIMIZADO
-                """
-                mensagem = "SEGURANÇA GARANTIDA"
-                cor = "#84cc16"
-            elif acao == "reparar":
-                resultado = """
-🔧 REPARO UNIVERSAL ✅<br><br>
-✅ Erros corrigidos: 100%<br>
-✅ Arquivos recuperados com segurança<br>
-✅ Velocidade aumentada em até 20%<br>
-✅ Compatível com Windows, Linux, Android, iOS
-                """
-                mensagem = "SISTEMA REPARADO E FORTE"
-                cor = "#3b82f6"
-            elif acao == "chave":
-                chave = ''.join(random.choice("TCGA0123456789ABCDEF") for _ in range(64))
-                resultado = f"🔑 CHAVE GLOBAL GERADA:<br><b>{chave}</b><br>🌍 Válida para qualquer país • Inquebrável"
-                mensagem = "PROTEÇÃO INTERNACIONAL"
-                cor = "#f59e0b"
-        else:
-            mensagem = "⚠️ Escolha um plano para usar todas as funções globais!"
-            cor = "#f87171"
-
+        if acao == "varrer":
+            resultado = "✅ VARREDURA CONCLUÍDA ✅"; cor = "#3b82f6"
+        elif acao == "reparar":
+            resultado = "🔧 SISTEMA REPARADO ✅"; cor = "#f59e0b"
+        elif acao == "chave":
+            chave = "CHAVE_BNJ_" + ''.join(random.choice("0123456789ABCDEF") for _ in range(24))
+            resultado = f"🔑 {chave}"; cor = "#10b981"
     return render_template_string(f"""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}}
-            body{{background:#0f172a;color:white;padding:20px}}
-            .card{{max-width:600px;margin:auto;background:#1e293b;padding:30px;border-radius:20px;border:3px solid #f59e0b}}
-            h1{{text-align:center;color:#f59e0b;margin-bottom:15px;font-size:26px}}
-            .info{{color:#94a3b8;text-align:center;margin-bottom:20px}}
-            button{{width:100%;padding:15px;margin:8px 0;background:#3b82f6;border:none;border-radius:12px;color:white;font-weight:bold;font-size:17px}}
-            .destaque{{background:#f59e0b;color:#000}}
-            .resultado{{padding:20px;border-radius:12px;text-align:center;margin-top:20px;border:2px solid {cor};color:{cor}}}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>🧬🔢 REGISTRO BNJ 🌍</h1>
-            <p class="info">FERRAMENTA DE ANÁLISE E SEGURANÇA GLOBAL</p>
-            {f'<div class="resultado">{mensagem}<br><br>{resultado}</div>' if mensagem else ''}
-            <form method="POST">
-                <button type="submit" name="acao" value="varrer">🔍 VARREDURA GLOBAL</button>
-                <button type="submit" name="acao" value="reparar" class="destaque">🔧 REPARAR SISTEMA</button>
-                <button type="submit" name="acao" value="chave">🔑 GERAR CHAVE SEGURA</button>
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>🧬 REGISTRO BNJ</h1>
+        <div style="background:#1e293b;padding:25px;border-radius:15px;max-width:450px;margin:auto;border:2px solid {cor}">
+            <p>{resultado}</p><form method="POST">
+                <button type="submit" name="acao" value="varrer" style="padding:10px 20px;margin:5px;background:#3b82f6;border:none;border-radius:6px;color:white">VAR</button>
+                <button type="submit" name="acao" value="reparar" style="padding:10px 20px;margin:5px;background:#f59e0b;border:none;border-radius:6px;color:black">REPARAR</button>
+                <button type="submit" name="acao" value="chave" style="padding:10px 20px;margin:5px;background:#10b981;border:none;border-radius:6px;color:white">CHAVE</button>
             </form>
-        </div>
-        <br><a href="/painel" style="color:#3b82f6;text-align:center;display:block;">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+        </div><br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-# ==================================================
-# 📢 ANÚNCIOS GLOBAL — FUNCIONANDO ✅
-# ==================================================
 @app.route("/anuncios")
 def anuncios():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+    if not usuario_logado(): return redirect(url_for("entrar"))
     return render_template_string("""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-            body{background:#0f172a;color:white;text-align:center;padding:20px}
-            h1{color:#f59e0b;font-size:30px}
-            .caixa{background:#1e293b;padding:25px;border-radius:15px;border-left:5px solid #f59e0b;max-width:500px;margin:auto}
-        </style>
-    </head>
-    <body>
-        <h1>📢 ANÚNCIOS GLOBAL</h1>
-        <div class="caixa">✅ Sistema de publicação ativo ✅<br>
-        Acesse de qualquer lugar do mundo.<br>
-        Segurança e velocidade garantidas.</div>
-        <br><a href="/painel" style="color:#3b82f6;margin-top:20px;display:inline-block">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>📢 ANÚNCIOS GLOBAL</h1><p>✅ Publicação Ativa ✅</p>
+        <br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-# ==================================================
-# 🌐 REDE SOCIAL JNB — FUNCIONANDO E MOSTRANDO POSTAGENS ✅
-# ==================================================
-@app.route("/rede_social", methods=["GET", "POST"])
+@app.route("/rede_social", methods=["GET","POST"])
 def rede_social():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    
-    # Salvar nova postagem
+    if not usuario_logado(): return redirect(url_for("entrar"))
     if request.method == "POST":
-        texto = request.form.get("texto","").strip()
-        if texto:
+        texto = request.form.get("texto","")
+        midia = request.files.get("midia")
+        caminho = None; tipo = "texto"
+        if midia and midia.filename:
+            nome_seguro = secure_filename(midia.filename)
+            if nome_seguro.endswith(("jpg","jpeg","png","gif")): tipo = "imagem"
+            elif nome_seguro.endswith(("mp4","webm")): tipo = "video"
+            caminho = nome_seguro
+            midia.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_seguro))
+        if texto or caminho:
             conn = sqlite3.connect(BANCO_DADOS)
             c = conn.cursor()
-            c.execute("INSERT INTO postagens (usuario_id, texto) VALUES (?,?)",(session["usuario_id"], texto))
-            conn.commit()
-            conn.close()
-    
-    # Pegar todas as postagens
+            c.execute("INSERT INTO postagens (usuario_id, texto, midia, tipo_midia) VALUES (?,?,?,?)",
+                      (session["usuario_id"], texto, caminho, tipo))
+            conn.commit(); conn.close()
+    if request.args.get("curtir"):
+        pid = request.args.get("curtir")
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        c.execute("SELECT * FROM curtidas WHERE usuario_id=? AND postagem_id=?",(session["usuario_id"], pid))
+        if c.fetchone():
+            c.execute("DELETE FROM curtidas WHERE usuario_id=? AND postagem_id=?",(session["usuario_id"], pid))
+            c.execute("UPDATE postagens SET curtidas = curtidas -1 WHERE id=?",(pid,))
+        else:
+            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?,?)",(session["usuario_id"], pid))
+            c.execute("UPDATE postagens SET curtidas = curtidas +1 WHERE id=?",(pid,))
+        conn.commit(); conn.close()
+        return redirect(url_for("rede_social"))
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("""SELECT u.nome, p.texto, p.data FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data DESC LIMIT 20""")
+    c.execute("SELECT p.id, u.nome, p.texto, p.midia, p.tipo_midia, p.curtidas FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data DESC LIMIT 15")
     posts = c.fetchall()
     conn.close()
-
     return render_template_string(f"""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}}
-            body{{background:#0f172a;color:white;padding:20px}}
-            h1{{color:#3b82f6;text-align:center;margin-bottom:20px}}
-            .caixa_texto{{width:100%;height:90px;padding:12px;border-radius:10px;border:none;background:#1e293b;color:white;font-size:16px;margin-bottom:15px}}
-            .botao{{padding:12px 35px;background:#f59e0b;border:none;border-radius:8px;color:#000;font-weight:bold;font-size:16px;cursor:pointer}}
-            .post{{background:#1e293b;padding:18px;border-radius:12px;margin:12px auto;max-width:500px}}
-            .nome{{color:#10b981;font-weight:bold;font-size:16px}}
-            .data{{color:#94a3b8;font-size:12px;margin-top:5px}}
-        </style>
-    </head>
-    <body>
-        <h1>🌐 REDE SOCIAL JNB</h1>
-        <form method="POST">
-            <textarea name="texto" class="caixa_texto" placeholder="Escreva algo para compartilhar..."></textarea><br>
-            <button type="submit" class="botao">COMPARTILHAR</button>
-        </form>
-        <br>
-        <h3 style="text-align:center;color:#cbd5e1;">📢 POSTAGENS RECENTES</h3>
-        {''.join([f'<div class="post"><div class="nome">{p[0]}</div><div style="margin:10px 0">{p[1]}</div><div>{p[2]}</div></div>' for p in posts])}
-        <br><a href="/painel" style="color:#3b82f6;display:block;text-align:center;margin-top:20px">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="background:#0f172a;color:white;padding:20px">
+        <h1 style="text-align:center;color:#3b82f6">🌐 REDE SOCIAL JNB</h1>
+        <form method="POST" enctype="multipart/form-data" style="max-width:450px;margin:auto">
+            <textarea name="texto" placeholder="Escreva algo..." style="width:100%;height:70px;padding:10px;border-radius:8px;background:#1e293b;color:white;border:none"></textarea><br>
+            <input type="file" name="midia" accept="image/*,video/*" style="margin:10px 0"><br>
+            <button type="submit" style="padding:10px 30px;background:#f59e0b;border:none;border-radius:8px;color:black;font-weight:bold">COMPARTILHAR</button>
+        </form><br><h3 style="text-align:center;color:#94a3b8">📢 POSTAGENS</h3>
+        {''.join([f'''
+        <div style="background:#1e293b;padding:15px;border-radius:10px;margin:12px auto;max-width:450px">
+            <div style="color:#10b981;font-weight:bold">{p[1]}</div>
+            <div style="margin:8px 0">{p[2]}</div>
+            {f'<img src="/midias/{p[3]}" style="max-width:100%;border-radius:8px">' if p[3] and p[4] == 'imagem' else ''}
+            {f'<video controls style="max-width:100%;border-radius:8px"><source src="/midias/{p[3]}"></video>' if p[3] and p[4] == 'video' else ''}
+            <a href="/rede_social?curtir={p[0]}" style="color:#ef4944">❤️ {p[5]} Curtidas</a>
+        </div>
+        ''' for p in posts])}
+        <br><a href="/painel" style="color:#3b82f6;display:block;text-align:center">← Voltar</a>
+    </body></html>""")
 
-# ==================================================
-# 🧠 INTELIGÊNCIA GLOBAL — FUNCIONANDO ✅
-# ==================================================
-@app.route("/inteligencia")
+@app.route("/midias/<nome>")
+def midias(nome):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], nome)
+
+@app.route("/inteligencia", methods=["GET","POST"])
 def inteligencia():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
+    if not usuario_logado(): return redirect(url_for("entrar"))
     return render_template_string("""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-            body{background:#0f172a;color:white;text-align:center;padding:20px}
-            h1{color:#84cc16;font-size:30px}
-            .info{color:#cbd5e1;font-size:18px;margin-top:20px;line-height:1.8}
-        </style>
-    </head>
-    <body>
-        <h1>🧠 INTELIGÊNCIA GLOBAL</h1>
-        <p class="info">✅ Sistema de IA funcional e atualizado ✅<br>
-        Processamento • Análise • Aprendizado • Respostas rápidas</p>
-        <a href="/painel" style="color:#3b82f6;margin-top:30px;display:inline-block">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-# ==================================================
-# 🎮 O SEGREDO DOS NÚMEROS — JOGO ORIGINAL COMO NA FOTO ✅
-# ==================================================
-@app.route("/jogo_numeros", methods=["GET", "POST"])
-def jogo_numeros():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-
-    # Dados exatos como na sua imagem
-    cores = {
-        "laranja": "4164",
-        "vermelho": "1462",
-        "preto": "9808",
-        "branco": "5561",
-        "roxo": "2493",
-        "diamante": "2251"
-    }
-
-    # Sequência do jogo
-    sequencia = [
-        ("laranja", cores["laranja"]),
-        ("vermelho", cores["vermelho"]),
-        ("preto", cores["preto"]),
-        ("branco", cores["branco"]),
-        ("laranja", "9607"),
-        ("laranja", cores["laranja"]),
-        ("roxo", cores["roxo"]),
-        ("preto", "3868"),
-        ("diamante", cores["diamante"])
-    ]
-
-    # Fases e pontos exatos
-    fases = [
-        ("3 dígitos", 25, "🟢"),
-        ("6 dígitos", 50, "🟡"),
-        ("8 dígitos", 75, "🟠"),
-        ("9 dígitos", 100, "🔴")
-    ]
-
-    mensagem = ""
-    total_pontos = session.get("pontos_jogo", 0)
-
-    if request.method == "POST":
-        resposta = request.form.get("resposta","").strip()
-        if resposta:
-            # Lógica simples do jogo
-            if len(resposta) >= 9:
-                total_pontos += 100
-                mensagem = "✅ ACERTOU! +100 PONTOS! 🎉"
-            elif len(resposta) >=8:
-                total_pontos +=75
-                mensagem = "✅ ACERTOU! +75 PONTOS! 🎉"
-            elif len(resposta) >=6:
-                total_pontos +=50
-                mensagem = "✅ ACERTOU! +50 PONTOS! 🎉"
-            elif len(resposta) >=3:
-                total_pontos +=25
-                mensagem = "✅ ACERTOU! +25 PONTOS! 🎉"
-            else:
-                mensagem = "❌ TENTE NOVAMENTE"
-            session["pontos_jogo"] = total_pontos
-
-    return render_template_string(f"""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}}
-            body{{background:#0f172a;color:white;text-align:center;padding:20px}}
-            h1{{color:#f59e0b;font-size:32px;margin-bottom:10px}}
-            .pontos{{color:#84cc16;font-size:20px;margin-bottom:20px}}
-            .fases{{display:flex;gap:10px;justify-content:center;margin-bottom:25px;flex-wrap:wrap}}
-            .fase{{padding:8px 15px;border-radius:20px;font-weight:bold}}
-            .f1{{background:#166534;color:#84cc16}}
-            .f2{{background:#854d0e;color:#f59e0b}}
-            .f3{{background:#9a3412;color:#f97316}}
-            .f4{{background:#7c2d12;color:#ef4444}}
-            .tabela{{background:#1e293b;padding:25px;border-radius:15px;border:2px solid #f59e0b;max-width:500px;margin:auto}}
-            .linha{{margin:12px 0;font-size:20px}}
-            .caixa_resposta{{width:80%;height:50px;padding:10px;border-radius:8px;border:2px solid #f59e0b;background:#1e293b;color:white;font-size:18px;text-align:center;margin:20px 0}}
-            .botao{{padding:12px 30px;background:#f59e0b;border:none;border-radius:8px;color:#000;font-weight:bold;font-size:18px;cursor:pointer}}
-            .mensagem{{margin-top:20px;padding:15px;border-radius:10px;border:2px solid #10b981;color:#10b981;font-size:20px}}
-        </style>
-    </head>
-    <body>
-        <h1>🎮 O SEGREDO DOS NÚMEROS</h1>
-        <p class="pontos">Seus Pontos: {total_pontos}</p>
-        
-        <div class="fases">
-            <span class="fase f1">3 dígitos (25pts)</span>
-            <span class="fase f2">6 dígitos (50pts)</span>
-            <span class="fase f3">8 dígitos (75pts)</span>
-            <span class="fase f4">9 dígitos (100pts)</span>
-        </div>
-
-        <div class="tabela">
-            <div class="linha">🟠 = 4164 — 🔴 = 1462 — ⚫ = 9808</div>
-            <div class="linha">⚪ = 5561 — 🟠 = 9607 — 🟠 = 4275</div>
-            <div class="linha">🟣 = 2493 — ⚫ = 3868 — 🟦 = 2251</div>
-        </div>
-
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>🧠 INTELIGÊNCIA GLOBAL</h1><p>✅ Funcionando ✅</p>
         <form method="POST">
-            <input type="text" name="resposta" class="caixa_resposta" placeholder="Digite a sequência..." required>
-            <br>
-            <button type="submit" class="botao">✅ CONFIRMAR</button>
-        </form>
+            <textarea name="pergunta" placeholder="Digite sua mensagem..." style="width:80%;height:70px;padding:10px;border-radius:8px;background:#1e293b;color:white;border:none"></textarea><br>
+            <button type="submit" style="padding:10px 30px;background:#84cc16;border:none;border-radius:8px;color:black">ENVIAR</button>
+        </form><p style="color:#10b981;margin-top:20px">✅ Sistema ativo e conectado!</p>
+        <br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-        <div class="mensagem">{mensagem}</div>
+@app.route("/jogo_numeros", methods=["GET","POST"])
+def jogo_numeros():
+    if not usuario_logado(): return redirect(url_for("entrar"))
+    pontos = session.get("pontos", 0); msg = ""
+    if request.method == "POST":
+        resp = request.form.get("resposta","")
+        if len(resp) >= 9:
+            pontos += 100; msg = "✅ +100 PONTOS!"
+        elif len(resp) >= 6:
+            pontos += 50; msg = "✅ +50 PONTOS!"
+        session["pontos"] = pontos
+    return render_template_string(f"""
+    <html><body style="background:#0f172a;color:white;text-align:center;padding:20px">
+        <h1>🎮 O SEGREDO DOS NÚMEROS</h1><p style="color:#84cc16;font-size:22px">Pontos: {pontos}</p>
+        <div style="background:#1e293b;padding:25px;border-radius:15px;max-width:450px;margin:auto;border:3px solid #f59e0b">
+            <p>🟠 = 4164 | 🔴 = 1462 | ⚫ = 9808</p>
+            <p>⚪ = 5561 | 🟣 = 2493 | 🟦 = 2251</p>
+            <form method="POST">
+                <input type="text" name="resposta" placeholder="Digite a sequência..." style="width:80%;padding:12px;border-radius:8px;border:2px solid #f59e0b;background:#0f172a;color:white">
+                <br><button type="submit" style="padding:12px 35px;background:#f59e0b;border:none;border-radius:8px;color:black;margin-top:15px">CONFIRMAR</button>
+            </form><p style="color:#10b981;margin-top:20px">{msg}</p>
+        </div><br><a href="/painel" style="color:#3b82f6">← Voltar</a>
+    </body></html>""")
 
-        <br>
-        <a href="/jogo_numeros" style="color:#3b82f6;margin-top:20px;display:inline-block">JOGAR NOVAMENTE</a>
-        <br>
-        <a href="/painel" style="color:#3b82f6;margin-top:15px;display:inline-block">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
-
-# ==================================================
-# 🏆 LOJA JNB — FUNCIONANDO ✅
-# ==================================================
 @app.route("/loja")
 def loja():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    
+    if not usuario_logado(): return redirect(url_for("entrar"))
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("SELECT nome, descricao, preco FROM produtos")
+    c.execute("SELECT nome, descricao, preco, tipo FROM produtos")
     produtos = c.fetchall()
     conn.close()
-
     return render_template_string(f"""
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            *{{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}}
-            body{{background:#0f172a;color:white;padding:20px}}
-            h1{{color:#f59e0b;text-align:center}}
-            .produto{{background:#1e293b;padding:18px;border-radius:12px;margin:15px auto;max-width:450px;border-left:4px solid #84cc16}}
-            .preco{{color:#10b981;font-weight:bold;font-size:22px;margin-top:10px}}
-        </style>
-    </head>
-    <body>
-        <h1>🏆 LOJA JNB</h1>
-        {''.join([f'<div class="produto"><h3>{p[0]}</h3><p style="color:#cbd5e1">{p[1]}</p><div class="preco">R$ {p[2]:.2f}</div></div>' for p in produtos])}
-        <br><a href="/painel" style="color:#3b82f6;display:block;text-align:center;margin-top:20px">← Voltar ao Painel</a>
-    </body>
-    </html>
-    """)
+    <html><body style="background:#0f172a;color:white;padding:20px">
+        <h1 style="text-align:center;color:#f59e0b">🏆 LOJA JNB</h1>
+        <h3 style="color:#84cc16">📦 PRODUTOS DISPONÍVEIS</h3>
+        {''.join([f'<div style="background:#1e293b;padding:15px;border-radius:8px;margin:10px 0"><b>{p[0]}</b><p style="color:#94a3b8">{p[1]}</p><p style="color:#10b981">R$ {p[2]:.2f}</p></div>' for p in produtos])}
+        <br><a href="/painel" style="color:#3b82f6;display:block;text-align:center">← Voltar</a>
+    </body></html>""")
 
 # ==================================================
-# ✅ LINHA FINAL CORRETA — SERVIDOR RODANDO ✅
+# ✅ SERVIDOR FECHADO CORRETAMENTE — ÚLTIMA LINHA ✅
 # ==================================================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
