@@ -1,6 +1,6 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — PAINEL IGUAL A FOTO ✅
-# INCLUI: DNA DIGITAL JNB ✅ | ORDEM CORRETA ✅
+# © 2026 JNB TECNOLOGIA — SISTEMA COMPLETO ✅
+# PAINEL COM DNA JNB ✅ | ROTA /bnj ✅ | FECHADO ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -140,7 +140,7 @@ def painel():
         <a href="/documentos" class="btn">📄 Documentos</a>
         <a href="/projetos" class="btn">📐 Projetos</a>
         <a href="/anuncios" class="btn">📢 Anúncios</a>
-        <a href="/bnj" class="btn" style="border-color:#f59e0b;">🧬 DNA DIGITAL JNB</a>
+        <a href="/bnj" class="btn" style="border-color:#f59e0b;">🧬 DNA JNB</a>
         <a href="/rede_social" class="btn">🌐 Rede Social</a>
         <a href="/inteligencia" class="btn">🧠 Inteligência</a>
         <a href="/jogo_pares" class="btn">🎮 Jogo dos Pares Secretos</a>
@@ -208,17 +208,21 @@ def bnj():
         bin_par, hex_par, bits_par, bytes_par = converter_sequencia(DNA_PAR)
 
         if sequencia_usuario == DNA_PAR:
-            mensagem = "✅ SISTEMA ÍNTEGRO — 100%"
+            mensagem = "✅ SISTEMA ÍNTEGRO — Par correspondente confirmado."
             status = "ÍNTEGRO"
+            integridade = "100%"
         elif sequencia_usuario == DNA_ORIGINAL:
-            mensagem = "ℹ️ Digite o PAR correspondente"
+            mensagem = "ℹ️ Digite o PAR correspondente para análise."
             status = "AGUARDANDO"
+            integridade = "—"
         else:
-            mensagem = "⚠️ FALHA DETECTADA — COMPROMETIDA"
+            mensagem = "⚠️ FALHA DETECTADA — Sequência não corresponde."
             status = "FALHA"
+            integridade = "COMPROMETIDA"
 
         analise = {
-            "status": status, "bin_ori": bin_ori, "hex_ori": hex_ori,
+            "status": status, "integridade": integridade,
+            "bin_ori": bin_ori, "hex_ori": hex_ori,
             "bin_par": bin_par, "hex_par": hex_par,
             "bits_ori": bits_ori, "bytes_ori": bytes_ori,
             "bits_par": bits_par, "bytes_par": bytes_par,
@@ -227,14 +231,14 @@ def bnj():
 
     html = """
     <!DOCTYPE html>
-    <html>
+    <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🧬 DNA DIGITAL JNB</title>
+        <title>🧬 DNA JNB</title>
         <style>
             *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-            body{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px;color:white}
+            body{background:linear-gradient(135deg,#0f172a,#1e293b);min-height:100vh;padding:20px}
             .painel{background:#1e293b;border-radius:20px;padding:30px;max-width:480px;margin:0 auto;border:3px solid #f59e0b}
             h1{text-align:center;color:#f59e0b;margin-bottom:20px;font-size:28px}
             .caixa{background:#0f172a;padding:15px;border-radius:10px;border:2px solid #475569;margin:10px 0}
@@ -251,7 +255,7 @@ def bnj():
     </head>
     <body>
         <div class="painel">
-            <h1>🧬 DNA DIGITAL JNB</h1>
+            <h1>🧬 DNA JNB</h1>
             <div class="caixa">
                 <div class="rotulo">Sequência Original:</div>
                 <div class="valor">""" + DNA_ORIGINAL + """</div>
