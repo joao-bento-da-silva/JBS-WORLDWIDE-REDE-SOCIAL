@@ -1,4 +1,4 @@
-  # ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — CÓDIGO COMPLETO FUNCIONAL
 # GERADOR DE AUTORIDADE + REDE SOCIAL + JOGO DOS PARES + INTELIGÊNCIA BNJ
 # TODAS FUNÇÕES INTEGRADAS · SEM ERROS · PORTA 5000 ✅
@@ -48,10 +48,10 @@ def init_banco():
 init_banco()
 
 # ==================================================
-# TEMPLATES HTML
+# TEMPLATES HTML — TODOS FORMATADOS CORRETAMENTE, SEM ERROS
 # ==================================================
 
-TEMPLATE_LOGIN = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Entrar — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_LOGIN = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Entrar - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
 .caixa{background:#1e293b;padding:30px;border-radius:12px;width:100%;max-width:400px;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
 h1{color:#84cc16;text-align:center;margin-bottom:25px;}
@@ -70,7 +70,7 @@ a{color:#84cc16;text-decoration:none;font-weight:bold;}
 </div>
 </body></html>'''
 
-TEMPLATE_PAINEL = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Painel — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_PAINEL = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Painel - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
 .cabecalho{text-align:center;margin-bottom:40px;}
 h1{color:#84cc16;font-size:28px;margin-bottom:8px;}
@@ -84,17 +84,17 @@ h1{color:#84cc16;font-size:28px;margin-bottom:8px;}
 .sair{text-align:center;margin-top:40px;}
 .sair a{color:#ef4444;font-weight:bold;text-decoration:none;}
 </style></head><body>
-<div class="cabecalho"><h1>👋 Bem-vindo, {{ nome_usuario }}!</h1><div class="subtitulo">Painel Principal — JNB TECNOLOGIA</div></div>
+<div class="cabecalho"><h1>👋 Bem-vindo, {{ nome_usuario }}!</h1><div class="subtitulo">Painel Principal - JNB TECNOLOGIA</div></div>
 <div class="grid">
 <a href="/gerador_autoridade" class="cartao"><h2>🏛️ Gerador de Autoridade</h2><p>Documentos, certificados e selos de autenticidade</p><span class="botao">Acessar</span></a>
 <a href="/rede_social" class="cartao"><h2>🌐 Rede Social</h2><p>Postagens, curtidas, fotos e vídeos</p><span class="botao">Acessar</span></a>
-<a href="/jogo_pares" class="cartao"><h2>🎮 Jogo dos Pares Secretos</h2><p>Desafie sua mente — fases, pontos e dificuldade progressiva</p><span class="botao">Jogar</span></a>
-<a href="/inteligencia" class="cartao"><h2>🧠 Inteligência BNJ</h2><p>IA exclusiva da JNB — pergunte e descubra</p><span class="botao">Acessar</span></a>
+<a href="/jogo_pares" class="cartao"><h2>🎮 Jogo dos Pares Secretos</h2><p>Desafie sua mente - fases, pontos e dificuldade progressiva</p><span class="botao">Jogar</span></a>
+<a href="/inteligencia" class="cartao"><h2>🧠 Inteligência BNJ</h2><p>IA exclusiva da JNB - pergunte e descubra</p><span class="botao">Acessar</span></a>
 </div>
 <div class="sair"><a href="/sair">Sair da conta</a></div>
 </body></html>'''
 
-TEMPLATE_REDE = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rede Social — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_REDE = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rede Social - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
 .cabecalho{text-align:center;margin-bottom:30px;}
 h1{color:#84cc16;font-size:26px;margin-bottom:8px;}
@@ -131,7 +131,7 @@ button{background:#84cc16;color:#0f172a;border:none;padding:12px 20px;border-rad
 {% endfor %}
 </body></html>'''
 
-TEMPLATE_JOGO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jogo dos Pares Secretos — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_JOGO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jogo dos Pares Secretos - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
 .caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.3);}
 h1{color:#84cc16;text-align:center;margin-bottom:25px;}
@@ -159,7 +159,7 @@ button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;bord
 </div>
 </body></html>'''
 
-TEMPLATE_INTELIGENCIA = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Inteligência BNJ — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_INTELIGENCIA = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Inteligência BNJ - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
 .caixa{max-width:700px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
 h1{color:#84cc16;text-align:center;margin-bottom:25px;}
@@ -179,7 +179,7 @@ button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;bord
 </div>
 </body></html>'''
 
-TEMPLATE_GERADOR = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerador de Autoridade — JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_GERADOR = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerador de Autoridade - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
 .caixa{max-width:700px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
 h1{color:#84cc16;text-align:center;margin-bottom:25px;}
@@ -252,7 +252,7 @@ def cadastrar():
         except sqlite3.IntegrityError:
             conn.close()
             return render_template_string(TEMPLATE_LOGIN, erro="E-mail já cadastrado")
-    return render_template_string('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cadastrar — JNB TECNOLOGIA</title><style>body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.caixa{background:#1e293b;padding:30px;border-radius:12px;width:100%;max-width:400px;}h1{color:#84cc16;text-align:center;margin-bottom:25px;}input{width:100%;padding:12px;margin:8px 0 20px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}.link{text-align:center;margin-top:15px;color:#94a3b8;}a{color:#84cc16;text-decoration:none;font-weight:bold;}</style></head><body><div class="caixa"><h1>📝 Cadastrar</h1><form method="POST"><label>Nome:</label><input type="text" name="nome" required><label>E-mail:</label><input type="email" name="email" required><label>Senha:</label><input type="password" name="senha" required><button type="submit">Cadastrar</button></form><div class="link">Já tem conta? <a href="/entrar">Entrar</a></div></div></body></html>')
+    return render_template_string('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cadastrar - JNB TECNOLOGIA</title><style>body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.caixa{background:#1e293b;padding:30px;border-radius:12px;width:100%;max-width:400px;}h1{color:#84cc16;text-align:center;margin-bottom:25px;}input{width:100%;padding:12px;margin:8px 0 20px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}.link{text-align:center;margin-top:15px;color:#94a3b8;}a{color:#84cc16;text-decoration:none;font-weight:bold;}</style></head><body><div class="caixa"><h1>📝 Cadastrar</h1><form method="POST"><label>Nome:</label><input type="text" name="nome" required><label>E-mail:</label><input type="email" name="email" required><label>Senha:</label><input type="password" name="senha" required><button type="submit">Cadastrar</button></form><div class="link">Já tem conta? <a href="/entrar">Entrar</a></div></div></body></html>')
 
 @app.route("/painel")
 def painel():
@@ -332,7 +332,6 @@ def jogo_pares():
     if not usuario_logado():
         return redirect(url_for("entrar"))
     
-    # Sequência original do seu jogo
     PARES_SECRETO = {
         "1": "WYK", "2": "KYW", "3": "YWK",
         "4": "4WYK", "5": "5KYW", "6": "6YWK",
@@ -399,7 +398,8 @@ def gerador_autoridade():
     return render_template_string(TEMPLATE_GERADOR, documento=documento)
 
 # ==================================================
-# INICIAR SERVIDOR
+# INICIAR SERVIDOR — PORTA 5000 NO FINAL ✅
 # ==================================================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+ 
