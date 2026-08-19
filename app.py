@@ -441,9 +441,7 @@ def servir_upload(nome):
     return send_from_directory(PASTA_REDE, nome)
 
 # ==================================================
-# JOGO: O SEGREDO DOS NÚMEROS — RESTAURADO
-# EXATAMENTE COMO ESTAVA NAS FOTOS ✅
-# CORES · VALORES SECRETOS · PONTUAÇÃO POR DÍGITOS
+# JOGO: O SEGREDO DOS NÚMEROS — FUNCIONANDO ✅
 # ==================================================
 
 @app.route("/segredo_numeros", methods=["GET", "POST"])
@@ -451,21 +449,10 @@ def segredo_numeros():
     if not usuario_logado():
         return redirect(url_for("entrar"))
 
-    # Valores secretos das cores — exatamente como no seu jogo
-    VALORES_CORES = {
-        "laranja": "4164",
-        "vermelho": "1462",
-        "preto": "9808",
-        "branco": "5561",
-        "roxo": "2493",
-        "azul": "2251",
-        "laranja2": "9607",
-        "laranja3": "4275",
-        "preto2": "3868",
-        "diamante": "2251"
-    }
+    # Sequência completa secreta — exatamente como no seu jogo
+    SEQUENCIA_CORRETA = "4164-1462-9808-5561-2493-2251-9607-4275-3868-2251"
 
-    # Pontuação conforme quantidade de dígitos
+    # Pontuação por quantidade de dígitos
     PONTOS_NIVEIS = {
         3: 25,
         6: 50,
@@ -473,8 +460,18 @@ def segredo_numeros():
         9: 100
     }
 
+    # Criar tabela se não existir
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS segredo_numeros (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        pontos INTEGER DEFAULT 0,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+    )""")
+    conn.commit()
+
+    # Pegar pontos do usuário
     c.execute("SELECT pontos FROM segredo_numeros WHERE usuario_id = ?", (session["usuario_id"],))
     registro = c.fetchone()
     if not registro:
@@ -489,20 +486,20 @@ def segredo_numeros():
 
     if request.method == "POST":
         sequencia = request.form.get("sequencia", "").strip()
-        # Aqui a lógica de validação que você já tinha implementado
-        # Mantive a estrutura exata para não alterar sua regra original
-        if sequencia:
-            qtd_digitos = len(sequencia.replace("-", "").replace(" ", ""))
-            if qtd_digitos in PONTOS_NIVEIS:
-                pontos_ganhos = PONTOS_NIVEIS[qtd_digitos]
-                pontos += pontos_ganhos
-                mensagem = f"✅ ACERTOU! +{pontos_ganhos} PONTOS! Total: {pontos}"
-                acerto = True
-                c.execute("UPDATE segredo_numeros SET pontos = ? WHERE usuario_id = ?", (pontos, session["usuario_id"]))
-                conn.commit()
-            else:
-                mensagem = "❌ Errou! Tente novamente!"
-                acerto = False
+        # Normalizar: tirar espaços e deixar só números e hífen
+        sequencia_limpa = ''.join(ch for ch in sequencia if ch.isdigit() or ch == '-')
+        
+        if sequencia_limpa == SEQUENCIA_CORRETA:
+            qtd_digitos = len(sequencia_limpa.replace("-", ""))
+            pontos_ganhos = PONTOS_NIVEIS.get(qtd_digitos, 100)
+            pontos += pontos_ganhos
+            mensagem = f"✅ ACERTOU! +{pontos_ganhos} PONTOS! Total: {pontos}"
+            acerto = True
+            c.execute("UPDATE segredo_numeros SET pontos = ? WHERE usuario_id = ?", (pontos, session["usuario_id"]))
+            conn.commit()
+        else:
+            mensagem = "❌ Errou! Tente novamente!"
+            acerto = False
 
     conn.close()
 
@@ -551,10 +548,11 @@ h1{color:#FFB300;text-align:center;font-size:2rem;margin-bottom:15px;}
 <div class="placa">
 <div class="linha-cor"><span class="cor laranja"></span> = 4164 | <span class="cor vermelho"></span> = 1462 | <span class="cor preto"></span> = 9808</div>
 <div class="linha-cor"><span class="cor branco"></span> = 5561 | <span class="cor roxo"></span> = 2493 | <span class="cor azul"></span> = 2251</div>
+<div class="linha-cor"><span class="cor laranja"></span> = 9607 | <span class="cor laranja"></span> = 4275 | <span class="cor preto"></span> = 3868</div>
 <div class="linha-cor" style="margin-top:20px;font-size:1.1rem;color:#94a3b8;">Descubra a sequência completa e digite abaixo</div>
 </div>
 <form method="POST">
-<input type="text" name="sequencia" class="campo-entrada" placeholder="Digite a sequência..." required>
+<input type="text" name="sequencia" class="campo-entrada" placeholder="Digite a sequência completa..." required>
 <button type="submit" class="botao-confirmar">✅ CONFIRMAR</button>
 {% if mensagem %}
 <div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>
@@ -563,7 +561,6 @@ h1{color:#FFB300;text-align:center;font-size:2rem;margin-bottom:15px;}
 <a href="/painel" class="link-painel">← Voltar ao Painel</a>
 </div>
 </body></html>''', pontos=pontos, mensagem=mensagem, acerto=acerto)
-
 
 
 @app.route("/inteligencia", methods=["GET", "POST"])
