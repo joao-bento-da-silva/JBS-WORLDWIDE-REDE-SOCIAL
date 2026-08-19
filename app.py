@@ -440,18 +440,28 @@ def curtir(postagem_id):
 def servir_upload(nome):
     return send_from_directory(PASTA_REDE, nome)
 
+# ==================================================
+# JOGO DOS PARES — VERSÃO ORIGINAL RESTAURADA
+# SUA REGRA EXATA: 9↔1, 8↔2, 7↔3, 6↔4 | 5=neutro | 0=neutro
+# ==================================================
+
 @app.route("/jogo_pares", methods=["GET", "POST"])
 def jogo_pares():
     if not usuario_logado():
         return redirect(url_for("entrar"))
     
+    # ✅ SEU SISTEMA EXATO — SEM ADICIONAR NADA MEU
     PARES_SECRETO = {
-        "1": "10",
-        "2": "20",
-        "3": "30",
-        "4": "40",
-        "5": "50"
+        "9": "1",
+        "1": "9",
+        "8": "2",
+        "2": "8",
+        "7": "3",
+        "3": "7",
+        "6": "4",
+        "4": "6"
     }
+    NEUTROS = ["0", "5"]  # neutros, sem correspondente
 
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
@@ -467,29 +477,80 @@ def jogo_pares():
 
     mensagem = ""
     acerto = False
+    # Ordem exata que você quer os números aparecendo
+    numeros_ordem = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "0"]
+    numero_atual = numeros_ordem[fase - 1] if fase <= len(numeros_ordem) else None
 
     if request.method == "POST":
         resposta = request.form.get("resposta", "").strip()
-        if str(fase) in PARES_SECRETO and resposta == PARES_SECRETO[str(fase)]:
-            pontos += 25
-            if fase < 5:
-                fase += 1
-                mensagem = "✅ Acertou! +25 pontos! Próximo número!"
+        
+        if numero_atual in NEUTROS:
+            if resposta == numero_atual:
+                pontos += 25
+                mensagem = f"✅ Correto! O {numero_atual} é neutro — não tem par! +25 pontos!"
+                acerto = True
             else:
-                mensagem = "🏆 Você completou todos os pares! Parabéns!"
-            acerto = True
-            c.execute("UPDATE jogo_pares SET fase = ?, pontos = ? WHERE usuario_id = ?", (fase, pontos, session["usuario_id"]))
-            conn.commit()
-        else:
-            mensagem = "❌ Errou! Tente novamente — voltou para o início!"
-            acerto = False
-            fase = 1
-            pontos = 0
-            c.execute("UPDATE jogo_pares SET fase = ?, pontos = ? WHERE usuario_id = ?", (fase, pontos, session["usuario_id"]))
-            conn.commit()
+                mensagem = f"❌ Errou! O {numero_atual} é neutro — digite ele mesmo!"
+                acerto = False
+                fase = 1
+                pontos = 0
+        elif numero_atual in PARES_SECRETO:
+            if resposta == PARES_SECRETO[numero_atual]:
+                pontos += 25
+                mensagem = f"✅ Acertou! {numero_atual} ↔ {PARES_SECRETO[numero_atual]}! +25 pontos!"
+                acerto = True
+            else:
+                mensagem = f"❌ Errou! O par de {numero_atual} é {PARES_SECRETO[numero_atual]}!"
+                acerto = False
+                fase = 1
+                pontos = 0
+        
+        if acerto and fase < len(numeros_ordem):
+            fase += 1
+        elif acerto and fase == len(numeros_ordem):
+            mensagem = "🏆 Você completou TODOS os números! Parabéns!"
+        
+        c.execute("UPDATE jogo_pares SET fase = ?, pontos = ? WHERE usuario_id = ?", (fase, pontos, session["usuario_id"]))
+        conn.commit()
 
     conn.close()
-    return render_template_string(TEMPLATE_JOGO, fase=fase, pontos=pontos, mensagem=mensagem, acerto=acerto)
+
+    return render_template_string('''<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<title>Jogo dos Pares - JNB TECNOLOGIA</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
+.caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
+h1{color:#84cc16;text-align:center;margin-bottom:25px;}
+.info{background:#334155;padding:15px;border-radius:8px;margin-bottom:25px;line-height:1.8;}
+.numero-atual{font-size:3rem;font-weight:bold;color:#84cc16;text-align:center;padding:30px;background:#0f172a;border-radius:8px;margin:20px 0;letter-spacing:10px;}
+input{width:100%;padding:14px;margin:10px 0 20px;border:none;border-radius:6px;font-size:1.5rem;background:#334155;color:#fff;text-align:center;letter-spacing:5px;}
+button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1.1rem;cursor:pointer;}
+.mensagem{padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold;}
+.acerto{background:#166534;color:#bbf7d0;}
+.erro{background:#991b1b;color:#fecaca;}
+.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
+</style>
+</head><body>
+<div class="caixa">
+<h1>🎮 Jogo dos Pares — SEU JOGO ORIGINAL</h1>
+<div class="info">
+🔹 Fase: {{ fase }} de 10 | 🔹 Pontos: {{ pontos }}
+<div style="font-size:0.9rem; margin-top:5px;">Regra: 9↔1, 8↔2, 7↔3, 6↔4 | 5 e 0 são neutros</div>
+</div>
+{% if mensagem %}
+<div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>
+{% endif %}
+<div class="numero-atual">{{ numero_atual }}</div>
+<form method="POST">
+<input type="text" name="resposta" placeholder="Digite o par ou o próprio número se neutro" required autocomplete="off">
+<button type="submit">Enviar Resposta</button>
+</form>
+<a href="/painel" class="link-painel">← Voltar ao Painel</a>
+</div>
+</body></html>''', fase=fase, pontos=pontos, numero_atual=numero_atual, mensagem=mensagem, acerto=acerto)
+
 
 @app.route("/inteligencia", methods=["GET", "POST"])
 def inteligencia():
