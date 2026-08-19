@@ -1,9 +1,7 @@
   # ==================================================
-# © 2026 JNB TECNOLOGIA — PLATAFORMA BNJ COMPLETA
-# TODOS OS SERVIÇOS INTEGRADOS · SEM DEPENDÊNCIAS EXTERNAS
-# LOGIN · PAINEL · REDE SOCIAL · JOGO · INTELIGÊNCIA
-# DNA DIGITAL BNJ · PROJETOS · ANÚNCIOS · DOCUMENTOS
-# PORTA 5000 ✅
+# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
+# TODOS OS SERVIÇOS · JOGO DOS PARES ORIGINAL
+# SEM ERROS · SEM INVENÇÕES · PORTA 5000 ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -50,7 +48,7 @@ def init_banco():
 init_banco()
 
 # ==================================================
-# TEMPLATES — TODOS INTEGRADOS NO CÓDIGO BNJ
+# TEMPLATES
 # ==================================================
 
 TEMPLATE_LOGIN = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Entrar - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
@@ -90,7 +88,7 @@ h1{color:#84cc16;font-size:28px;margin-bottom:8px;}
 <div class="grid">
 <a href="/gerador_autoridade" class="cartao"><h2>🏛️ Gerador de Autoridade</h2><p>Certificados, selos e documentos oficiais</p><span class="botao">Acessar</span></a>
 <a href="/rede_social" class="cartao"><h2>🌐 Rede Social</h2><p>Postagens, fotos, vídeos e curtidas</p><span class="botao">Acessar</span></a>
-<a href="/jogo_pares" class="cartao"><h2>🎮 Jogo dos Pares</h2><p>Desafie sua mente — fases e pontos</p><span class="botao">Jogar</span></a>
+<a href="/jogo_pares" class="cartao"><h2>🎮 Jogo dos Pares</h2><p>Desafie sua mente — encontre os pares numéricos</p><span class="botao">Jogar</span></a>
 <a href="/inteligencia" class="cartao"><h2>🧠 Inteligência BNJ</h2><p>IA exclusiva JNB — pergunte e descubra</p><span class="botao">Acessar</span></a>
 <a href="/dna_bnj" class="cartao"><h2>🧬 DNA Digital BNJ</h2><p>Varredura, criptografia, reparo e conversão digital</p><span class="botao">Acessar</span></a>
 <a href="/projetos" class="cartao"><h2>📁 Projetos</h2><p>Seus projetos salvos</p><span class="botao">Acessar</span></a>
@@ -137,29 +135,28 @@ button{background:#84cc16;color:#0f172a;border:none;padding:12px 20px;border-rad
 {% endfor %}
 </body></html>'''
 
-TEMPLATE_JOGO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jogo dos Pares - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
+TEMPLATE_JOGO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jogo dos Pares - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
 body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.3);}
+.caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
 h1{color:#84cc16;text-align:center;margin-bottom:25px;}
 .info{background:#334155;padding:15px;border-radius:8px;margin-bottom:25px;line-height:1.8;}
-.sequencia{font-size:1.4rem;font-weight:bold;color:#84cc16;text-align:center;padding:20px;background:#0f172a;border-radius:8px;margin:20px 0;letter-spacing:3px;}
-input{width:100%;padding:14px;margin:10px 0 20px;border:none;border-radius:6px;font-size:1.1rem;background:#334155;color:#fff;text-align:center;letter-spacing:2px;}
+.numero-atual{font-size:1.8rem;font-weight:bold;color:#84cc16;text-align:center;padding:20px;background:#0f172a;border-radius:8px;margin:20px 0;letter-spacing:5px;}
+input{width:100%;padding:14px;margin:10px 0 20px;border:none;border-radius:6px;font-size:1.1rem;background:#334155;color:#fff;text-align:center;letter-spacing:3px;}
 button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1.1rem;cursor:pointer;}
 .mensagem{padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold;}
 .acerto{background:#166534;color:#bbf7d0;}
 .erro{background:#991b1b;color:#fecaca;}
 .link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-.fases{display:flex;justify-content:center;gap:10px;margin:15px 0;}
-.fase{padding:5px 10px;background:#334155;border-radius:4px;}
-.fase.ativa{background:#84cc16;color:#0f172a;font-weight:bold;}
 </style></head><body>
 <div class="caixa">
-<h1>🎮 Jogo dos Pares Secretos</h1>
+<h1>🎮 Jogo dos Pares</h1>
 <div class="info">
-🔹 Fase: {{ fase }} | 🔹 Pontos: {{ pontos }}<br>
-<div class="fases">{% for i in range(1,5) %}<div class="fase {{ 'ativa' if i == fase else '' }}">F{{ i }}</div>{% endfor %}</div>
-{% if mensagem %}<div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>{% endif %}
-{% if mostrar_sequencia %}<div class="sequencia">{{ sequencia_exibida }}</div>{% endif %}
+🔹 Fase: {{ fase }} | 🔹 Pontos: {{ pontos }}
+</div>
+{% if mensagem %}
+<div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>
+{% endif %}
+<div class="numero-atual">{{ fase }}</div>
 <form method="POST">
 <input type="text" name="resposta" placeholder="Digite o par correspondente" required autocomplete="off">
 <button type="submit">Enviar Resposta</button>
@@ -325,7 +322,7 @@ button{padding:10px 15px;background:#84cc16;color:#0f172a;border:none;border-rad
 </body></html>'''
 
 # ==================================================
-# ROTAS — TODAS INTEGRADAS E FUNCIONANDO
+# ROTAS
 # ==================================================
 
 @app.route("/")
@@ -448,7 +445,13 @@ def jogo_pares():
     if not usuario_logado():
         return redirect(url_for("entrar"))
     
-    PARES_SECRETO = {"1": "WYK", "2": "KYW", "3": "YWK", "4": "4WYK", "5": "5KYW", "6": "6YWK"}
+    PARES_SECRETO = {
+        "1": "10",
+        "2": "20",
+        "3": "30",
+        "4": "40",
+        "5": "50"
+    }
 
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
@@ -464,24 +467,21 @@ def jogo_pares():
 
     mensagem = ""
     acerto = False
-    sequencia_exibida = f"{fase}"
-    mostrar_sequencia = True
 
     if request.method == "POST":
-        resposta = request.form.get("resposta", "").strip().upper()
-        chave = str(fase)
-        if chave in PARES_SECRETO and resposta == PARES_SECRETO[chave]:
-            pontos += 100
-            if fase < 4:
+        resposta = request.form.get("resposta", "").strip()
+        if str(fase) in PARES_SECRETO and resposta == PARES_SECRETO[str(fase)]:
+            pontos += 25
+            if fase < 5:
                 fase += 1
-                mensagem = "✅ Acertou! +100 pontos! Avançou de fase!"
+                mensagem = "✅ Acertou! +25 pontos! Próximo número!"
             else:
-                mensagem = "🏆 Você completou todas as fases! +100 pontos!"
+                mensagem = "🏆 Você completou todos os pares! Parabéns!"
             acerto = True
             c.execute("UPDATE jogo_pares SET fase = ?, pontos = ? WHERE usuario_id = ?", (fase, pontos, session["usuario_id"]))
             conn.commit()
         else:
-            mensagem = "❌ Errou! Voltou para a Fase 1 com 0 pontos!"
+            mensagem = "❌ Errou! Tente novamente — voltou para o início!"
             acerto = False
             fase = 1
             pontos = 0
@@ -489,7 +489,7 @@ def jogo_pares():
             conn.commit()
 
     conn.close()
-    return render_template_string(TEMPLATE_JOGO, fase=fase, pontos=pontos, mensagem=mensagem, acerto=acerto, sequencia_exibida=sequencia_exibida, mostrar_sequencia=mostrar_sequencia)
+    return render_template_string(TEMPLATE_JOGO, fase=fase, pontos=pontos, mensagem=mensagem, acerto=acerto)
 
 @app.route("/inteligencia", methods=["GET", "POST"])
 def inteligencia():
