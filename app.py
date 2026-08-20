@@ -1,4 +1,4 @@
-# ==================================================
+  # ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA FUNCIONAL
 # TODOS OS SERVIÇOS · VISUAL INTACTO · SEM ERROS · PORTA 5000 ✅
 # ==================================================
