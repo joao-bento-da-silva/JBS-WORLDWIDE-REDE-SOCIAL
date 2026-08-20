@@ -1,4 +1,4 @@
-  # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA FUNCIONAL
 # TODOS OS SERVIÇOS · VISUAL INTACTO · SEM ERROS · PORTA 5000 ✅
 # ==================================================
@@ -616,6 +616,26 @@ def dna_bnj():
         if acao == "varrer":
             hash_sistema = hashlib.sha256(str(datetime.now()).encode()).hexdigest()
             resultado = f"🔍 Varredura Concluída!\n✅ Sistema íntegro\n✅ Nenhum arquivo corrompido\n✅ Segurança ativa\n🔑 Assinatura: {hash_sistema[:16]}"
+
+    return render_template_string(TEMPLATE_DNA_BNJ, resultado=resultado)
+
+@app.route("/documentos")
+def documentos():
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
+    return render_template_string(TEMPLATE_DOCUMENTOS)
+
+@app.route("/projetos")
+def projetos():
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
+    return render_template_string(TEMPLATE_PROJETOS)
+
+@app.route("/anuncios")
+def anuncios():
+    if not usuario_logado():
+        return redirect(url_for("entrar"))
+    return render_template_string(TEMPLATE_ANUNCIOS)
 
 
 if __name__ == "__main__":
