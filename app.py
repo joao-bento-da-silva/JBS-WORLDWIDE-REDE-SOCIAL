@@ -506,28 +506,52 @@ def plataforma():
             }
             return texto;
         }
+function converterParaDNA() {
+    const texto = document.getElementById('dna-input').value.trim();
+    if(!texto) return alert("Digite algo para converter!");
+    const res = document.getElementById('dna-result');
+    const dna = textoParaDNA(texto);
+    res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
+    res.classList.remove('hidden');
+    
+    const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "documento_dna.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
-        function converterParaDNA() {
-            const texto = document.getElementById('dna-input').value.trim();
-            if(!texto) return alert("Digite algo para converter!");
-            const res = document.getElementById('dna-result');
-            const dna = textoParaDNA(texto);
-            res.innerHTML = `<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-gray-300 text-sm break-all">${dna}</p>`;
-            res.classList.remove('hidden');
-        }
+function decodificarDNA() {
+    const dna = document.getElementById('dna-input').value.trim();
+    if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
+    const res = document.getElementById('dna-result');
+    try {
+        const texto = dnaParaTexto(dna);
+        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
+    } catch (e) {
+        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
+    }
+    res.classList.remove('hidden');
+}
 
-        function decodificarDNA() {
-            const dna = document.getElementById('dna-input').value.trim();
-            if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
-            const res = document.getElementById('dna-result');
-            try {
-                const texto = dnaParaTexto(dna);
-                res.innerHTML = `<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-gray-300 text-sm">${texto}</p>`;
-            } catch {
-                res.innerHTML = `<p class="text-red-400">❌ DNA inválido ou corrompido!</p>`;
-            }
-            res.classList.remove('hidden');
-        }
+function lerArquivoDNA(event) {
+    const file = event.target.files;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('dna-input').value = e.target.result.trim();
+        decodificarDNA(); 
+    };
+    reader.readAsText(file);
+}
+
+window.onload = () => switchTab('rede');
+</script>
+</body>
+</html>
+
 
         window.onload = () => switchTab('rede');
     </script>
