@@ -553,23 +553,4 @@ window.onload = () => switchTab('rede');
 </html>
 
 
-        window.onload = () => switchTab('rede');
-    </script>
-</body>
-</html>''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
-
-@app.route("/atualizar_pontos", methods=["POST"])
-def atualizar_pontos():
-    if not usuario_logado():
-        return "Não autorizado", 401
-    pontos = int(request.form.get("pontos", 0))
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pontos, session["usuario_id"]))
-    conn.commit()
-    conn.close()
-    return "OK"
-
-# -------------------- RODAR SERVIDOR --------------------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+        
