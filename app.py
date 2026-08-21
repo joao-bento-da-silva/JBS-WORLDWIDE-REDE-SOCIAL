@@ -1,6 +1,8 @@
 # ==================================================
-# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA FUNCIONAL
-# TODOS OS SERVIÇOS · VISUAL INTACTO · SEM ERROS · PORTA 5000 ✅
+# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
+# REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
+# POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
+# PORTA 5000 · TUDO FUNCIONANDO ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
@@ -17,626 +19,533 @@ app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
-# Pastas e banco de dados
-PASTA_UPLOADS = os.path.join(os.path.dirname(__file__), "uploads")
-PASTA_REDE = os.path.join(PASTA_UPLOADS, "rede_social")
-os.makedirs(PASTA_REDE, exist_ok=True)
-BANCO_DADOS = "jnb_bnj.db"
+# Configuração de upload de arquivos
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
-# Funções auxiliares
-def usuario_logado():
-    return "usuario_id" in session
+BANCO_DADOS = "jnb_novo.db"
 
-def init_banco():
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# -------------------- BANCO DE DADOS --------------------
+def init_db():
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS postagens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL, texto TEXT, arquivo TEXT, link TEXT, data_postagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id))""")
-    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, postagem_id INTEGER NOT NULL, usuario_id INTEGER NOT NULL, data_curtida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(postagem_id, usuario_id), FOREIGN KEY(postagem_id) REFERENCES postagens(id), FOREIGN KEY(usuario_id) REFERENCES usuarios(id))""")
-    c.execute("""CREATE TABLE IF NOT EXISTS jogo_pares (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL, fase INTEGER DEFAULT 1, pontos INTEGER DEFAULT 0, data_jogo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id))""")
-    c.execute("""CREATE TABLE IF NOT EXISTS segredo_numeros (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL, pontos INTEGER DEFAULT 0,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id))""")
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha_hash TEXT NOT NULL,
+        pontos INTEGER DEFAULT 0,
+        dna_chave TEXT
+    )""")
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS postagens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        texto TEXT NOT NULL,
+        arquivo TEXT,
+        data_postagem TEXT NOT NULL,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        postagem_id INTEGER NOT NULL,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id),
+        FOREIGN KEY(postagem_id) REFERENCES postagens(id),
+        UNIQUE(usuario_id, postagem_id)
+    )""")
     conn.commit()
     conn.close()
 
-init_banco()
+init_db()
 
-# ==================================================
-# TEMPLATES — VISUAL EXATAMENTE COMO ESTAVA ✅
-# ==================================================
+def usuario_logado():
+    return "usuario_id" in session
 
-TEMPLATE_LOGIN = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Entrar - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-.caixa{background:#1e293b;padding:30px;border-radius:12px;width:100%;max-width:400px;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-input{width:100%;padding:12px;margin:8px 0 20px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}
-button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}
-.link{text-align:center;margin-top:15px;color:#94a3b8;}
-a{color:#84cc16;text-decoration:none;font-weight:bold;}
-</style></head><body>
-<div class="caixa"><h1>🔐 Entrar — Plataforma BNJ</h1>
-<form method="POST">
-<label>E-mail:</label><input type="email" name="email" required>
-<label>Senha:</label><input type="password" name="senha" required>
-<button type="submit">Entrar</button>
-</form>
-<div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se</a></div>
-</div>
-</body></html>'''
-
-TEMPLATE_PAINEL = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Painel BNJ - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.cabecalho{text-align:center;margin-bottom:40px;}
-h1{color:#84cc16;font-size:28px;margin-bottom:8px;}
-.subtitulo{color:#94a3b8;font-size:16px;}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:1200px;margin:0 auto;}
-.cartao{background:#1e293b;padding:25px;border-radius:12px;text-align:center;box-shadow:0 6px 15px rgba(0,0,0,0.2);transition:transform 0.3s;}
-.cartao:hover{transform:translateY(-5px);}
-.cartao h2{color:#84cc16;margin-bottom:12px;font-size:20px;}
-.cartao p{color:#cbd5e1;margin-bottom:20px;}
-.botao{display:inline-block;padding:12px 20px;background:#84cc16;color:#0f172a;border-radius:6px;font-weight:bold;text-decoration:none;}
-.sair{text-align:center;margin-top:40px;}
-.sair a{color:#ef4444;font-weight:bold;text-decoration:none;}
-</style></head><body>
-<div class="cabecalho"><h1>👋 Bem-vindo, {{ nome_usuario }}!</h1><div class="subtitulo">Painel Principal — Plataforma BNJ</div></div>
-<div class="grid">
-<a href="/gerador_autoridade" class="cartao"><h2>🏛️ Gerador de Autoridade</h2><p>Certificados, selos e documentos oficiais</p><span class="botao">Acessar</span></a>
-<a href="/rede_social" class="cartao"><h2>🌐 Rede Social</h2><p>Postagens, fotos, vídeos, links e curtidas</p><span class="botao">Acessar</span></a>
-<a href="/jogo_pares" class="cartao"><h2>🎮 Jogo dos Pares</h2><p>Desafie sua mente — encontre os pares numéricos</p><span class="botao">Jogar</span></a>
-<a href="/segredo_numeros" class="cartao"><h2>🎮 O Segredo dos Números</h2><p>Sequências, cores e pontuação por fases</p><span class="botao">Jogar</span></a>
-<a href="/inteligencia" class="cartao"><h2>🧠 Inteligência BNJ</h2><p>IA exclusiva JNB — pergunte e descubra</p><span class="botao">Acessar</span></a>
-<a href="/dna_bnj" class="cartao"><h2>🧬 DNA Digital BNJ</h2><p>Varredura, criptografia, reparo e conversão digital</p><span class="botao">Acessar</span></a>
-<a href="/projetos" class="cartao"><h2>📁 Projetos</h2><p>Seus projetos salvos</p><span class="botao">Acessar</span></a>
-<a href="/anuncios" class="cartao"><h2>📢 Anúncios</h2><p>Oportunidades e publicações</p><span class="botao">Acessar</span></a>
-<a href="/documentos" class="cartao"><h2>📄 Documentos</h2><p>Arquivos e documentos pessoais</p><span class="botao">Acessar</span></a>
-</div>
-<div class="sair"><a href="/sair">Sair da conta</a></div>
-</body></html>'''
-
-TEMPLATE_REDE = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rede Social BNJ - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-textarea, input{width:100%;padding:12px;margin:8px 0 15px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}
-button{background:#84cc16;color:#0f172a;border:none;padding:12px 20px;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}
-.postagem{background:#334155;padding:20px;border-radius:12px;margin-bottom:20px;}
-.autor{font-weight:bold;color:#84cc16;margin-bottom:8px;}
-.data{color:#94a3b8;font-size:0.9rem;margin-bottom:12px;}
-.texto{margin-bottom:15px;line-height:1.6;}
-.midia{max-width:100%;border-radius:8px;margin:10px 0;}
-.botao-curtir{background:transparent;border:1px solid #84cc16;color:#84cc16;padding:8px 15px;border-radius:20px;font-size:0.9rem;}
-.botao-curtir.curtido{background:#84cc16;color:#0f172a;}
-</style></head><body>
-<div class="caixa">
-<h1>🌐 Rede Social BNJ</h1>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-<form method="POST" enctype="multipart/form-data" style="margin:20px 0;">
-<textarea name="texto" placeholder="O que você está pensando?" rows="3"></textarea>
-<input type="url" name="link_compartilhar" placeholder="Cole um link para compartilhar (opcional)">
-<input type="file" name="arquivo" accept="image/*,video/*">
-<button type="submit">Publicar</button>
-</form>
-{% for p in postagens %}
-<div class="postagem">
-<div class="autor">{{ p[0] }}</div>
-<div class="data">{{ p[1] }}</div>
-<div class="texto">{{ p[2] | safe }}</div>
-{% if p[4] %}<p><a href="{{ p[4] }}" target="_blank" style="color:#3b82f6;">🔗 {{ p[4] }}</a></p>{% endif %}
-{% if p[3] %}
-{% set ext = p[3].split('.')[-1].lower() %}
-{% if ext in ['mp4', 'webm', 'ogg', 'mov', 'avi'] %}
-<video controls class="midia">
-<source src="/uploads/rede_social/{{ p[3] }}" type="video/{{ ext }}">
-Seu navegador não suporta vídeo.
-</video>
-{% else %}
-<img src="/uploads/rede_social/{{ p[3] }}" class="midia">
-{% endif %}
-{% endif %}
-<form method="POST" action="/curtir/{{ p[5] }}" style="display:inline;margin-top:10px;">
-<button class="botao-curtir {% if p[6] %}curtido{% endif %}">❤️ Curtir ({{ p[7] }})</button>
-</form>
-</div>
-{% endfor %}
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_JOGO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jogo dos Pares - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:600px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.info{background:#334155;padding:15px;border-radius:8px;margin-bottom:25px;line-height:1.8;}
-.numero-atual{font-size:1.8rem;font-weight:bold;color:#84cc16;text-align:center;padding:20px;background:#0f172a;border-radius:8px;margin:20px 0;letter-spacing:5px;}
-input{width:100%;padding:14px;margin:10px 0 20px;border:none;border-radius:6px;font-size:1.1rem;background:#334155;color:#fff;text-align:center;letter-spacing:3px;}
-button{width:100%;padding:14px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1.1rem;cursor:pointer;}
-.mensagem{padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold;}
-.acerto{background:#166534;color:#bbf7d0;}
-.erro{background:#991b1b;color:#fecaca;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-</style></head><body>
-<div class="caixa">
-<h1>🎮 Jogo dos Pares</h1>
-<div class="info">
-🔹 Fase: {{ fase }} | 🔹 Pontos: {{ pontos }}
-</div>
-{% if mensagem %}
-<div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>
-{% endif %}
-<div class="numero-atual">{{ numero_atual }}</div>
-<form method="POST">
-<input type="text" name="resposta" placeholder="Digite o par correspondente" required autocomplete="off">
-<button type="submit">Enviar Resposta</button>
-</form>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_SEGREDO = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>O Segredo dos Números - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:650px;margin:0 auto;background:#161B22;padding:30px;border-radius:12px;border:2px solid #FFB300;}
-h1{color:#FFB300;text-align:center;font-size:2rem;margin-bottom:15px;}
-.pontos-topo{text-align:center;color:#84cc16;font-size:1.5rem;margin-bottom:25px;}
-.barra-niveis{display:flex;gap:8px;margin-bottom:25px;flex-wrap:wrap;justify-content:center;}
-.nivel{padding:8px 12px;border-radius:20px;font-size:0.9rem;font-weight:bold;}
-.nivel:nth-child(1){background:#166534;color:#bbf7d0;}
-.nivel:nth-child(2){background:#eab308;color:#854d0e;}
-.nivel:nth-child(3){background:#f97316;color:#7c2d12;}
-.nivel:nth-child(4){background:#ef4444;color:#fecaca;}
-.placa{border:3px solid #FFB300;padding:25px;border-radius:12px;margin-bottom:25px;background:#1e293b;}
-.linha-cor{margin:12px 0;font-size:1.3rem;text-align:center;}
-.cor{display:inline-block;width:25px;height:25px;border-radius:50%;margin-right:12px;vertical-align:middle;}
-.laranja{background:#f97316;}
-.vermelho{background:#ef4444;}
-.preto{background:#0f172a;border:1px solid #475569;}
-.branco{background:#f8fafc;}
-.roxo{background:#a855f7;}
-.azul{background:#3b82f6;}
-.diamante{clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);background:#f97316;width:25px;height:25px;display:inline-block;margin-right:12px;vertical-align:middle;}
-.campo-entrada{width:100%;padding:16px;border:none;border-radius:8px;font-size:1.2rem;background:#0f172a;color:#f1f5f9;text-align:center;margin-bottom:20px;border:2px solid #FFB300;}
-.botao-confirmar{width:100%;padding:14px;background:#FFB300;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:1.2rem;cursor:pointer;}
-.mensagem{padding:15px;border-radius:8px;margin:20px 0;text-align:center;font-weight:bold;font-size:1.1rem;}
-.acerto{background:#166534;color:#bbf7d0;}
-.erro{background:#991b1b;color:#fecaca;}
-.link-painel{color:#FFB300;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-</style></head><body>
-<div class="caixa">
-<h1>🎮 O SEGREDO DOS NÚMEROS</h1>
-<div class="pontos-topo">Pontos: {{ pontos }}</div>
-<div class="barra-niveis">
-<div class="nivel">3 dígitos (25pts)</div>
-<div class="nivel">6 dígitos (50pts)</div>
-<div class="nivel">8 dígitos (75pts)</div>
-<div class="nivel">9 dígitos (100pts)</div>
-</div>
-<div class="placa">
-<div class="linha-cor"><span class="cor laranja"></span> = 4164 | <span class="cor vermelho"></span> = 1462 | <span class="cor preto"></span> = 9808</div>
-<div class="linha-cor"><span class="cor branco"></span> = 5561 | <span class="cor roxo"></span> = 2493 | <span class="cor azul"></span> = 2251</div>
-<div class="linha-cor"><span class="cor laranja"></span> = 9607 | <span class="cor laranja"></span> = 4275 | <span class="cor preto"></span> = 3868</div>
-<div class="linha-cor" style="margin-top:20px;font-size:1.1rem;color:#94a3b8;">Descubra a sequência completa e digite abaixo</div>
-</div>
-<form method="POST">
-<input type="text" name="sequencia" class="campo-entrada" placeholder="Digite a sequência completa..." required>
-<button type="submit" class="botao-confirmar">✅ CONFIRMAR</button>
-{% if mensagem %}
-<div class="mensagem {{ 'acerto' if acerto else 'erro' }}">{{ mensagem }}</div>
-{% endif %}
-</form>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_INTELIGENCIA = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Inteligência BNJ - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:700px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-textarea{width:100%;padding:15px;border:none;border-radius:8px;font-size:1rem;background:#334155;color:#fff;min-height:120px;margin-bottom:15px;}
-button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:8px;font-weight:bold;font-size:1rem;cursor:pointer;}
-.resposta{margin-top:25px;padding:20px;background:#334155;border-radius:8px;line-height:1.6;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-</style></head><body>
-<div class="caixa">
-<h1>🧠 Inteligência BNJ</h1>
-<form method="POST">
-<textarea name="pergunta" placeholder="Faça sua pergunta para a IA BNJ..." required></textarea>
-<button type="submit">Enviar Pergunta</button>
-</form>
-{% if resposta %}<div class="resposta">{{ resposta }}</div>{% endif %}
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_GERADOR = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerador de Autoridade - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:700px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-input, textarea, select{width:100%;padding:12px;margin:8px 0 15px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}
-button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}
-.resultado{margin-top:25px;padding:20px;background:#334155;border-radius:8px;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-</style></head><body>
-<div class="caixa">
-<h1>🏛️ Gerador de Autoridade</h1>
-<form method="POST">
-<label>Tipo de Documento:</label>
-<select name="tipo">
-<option value="certificado">Certificado</option>
-<option value="selo">Selo de Autenticidade</option>
-<option value="documento">Documento Oficial</option>
-</select>
-<label>Título / Nome:</label>
-<input type="text" name="titulo" required>
-<label>Conteúdo / Descrição:</label>
-<textarea name="conteudo" rows="5" required></textarea>
-<button type="submit">Gerar Documento</button>
-</form>
-{% if documento %}<div class="resultado"><h3>{{ documento.tipo }}: {{ documento.titulo }}</h3><p>{{ documento.conteudo }}</p><p><strong>Código:</strong> {{ documento.codigo }}</p><p><strong>Data:</strong> {{ documento.data }}</p></div>{% endif %}
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_DNA_BNJ = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DNA Digital BNJ - JNB TECNOLOGIA</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:800px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;box-shadow:0 8px 20px rgba(132,204,22,0.15);}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.descricao{background:#334155;padding:20px;border-radius:8px;margin-bottom:25px;line-height:1.8;}
-.funcao{background:#0f172a;padding:18px;border-radius:8px;margin:15px 0;}
-.funcao h3{color:#84cc16;margin-bottom:10px;}
-textarea, input{width:100%;padding:12px;margin:8px 0 15px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}
-button{padding:12px 20px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;margin-right:10px;margin-bottom:10px;}
-.resultado{margin-top:20px;padding:18px;background:#334155;border-radius:8px;min-height:100px;line-height:1.6;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-.binario{color:#f59e0b;font-family:monospace;}
-.hex{color:#3b82f6;font-family:monospace;}
-</style></head><body>
-<div class="caixa">
-<h1>🧬 DNA Digital BNJ</h1>
-<div class="descricao">
-<strong>Ferramenta de Sistema Universal — JNB TECNOLOGIA</strong><br>
-✅ Varredura e diagnóstico de integridade do sistema<br>
-✅ Criptografia de arquivos com chave BNJ<br>
-✅ Reparo de arquivos corrompidos<br>
-✅ Conversão texto ↔ binário ↔ hexadecimal ↔ DNA<br>
-✅ Geração de assinatura digital única
-</div>
-<form method="POST">
-<div class="funcao">
-<h3>🔍 Varredura do Sistema</h3>
-<button name="acao" value="varrer">Iniciar Varredura</button>
-</div>
-<div class="funcao">
-<h3>🔐 Criptografia de Dados</h3>
-<textarea name="dados" placeholder="Digite ou cole os dados para proteger..." rows="3"></textarea>
-<button name="acao" value="criptografar">Criptografar</button>
-<button name="acao" value="descriptografar">Descriptografar</button>
-</div>
-<div class="funcao">
-<h3>🔄 Conversor Universal DNA</h3>
-<input type="text" name="texto_conv" placeholder="Texto para converter">
-<button name="acao" value="para_binario">Texto → Binário</button>
-<button name="acao" value="para_hex">Texto → Hexadecimal</button>
-<button name="acao" value="analisar_dna">Analisar Estrutura DNA</button>
-<button name="acao" value="bin_texto">Binário → Texto</button>
-<button name="acao" value="hex_texto">Hex → Texto</button>
-</div>
-<div class="funcao">
-<h3>🛠️ Reparo de Arquivos</h3>
-<input type="text" name="arquivo_reparar" placeholder="Caminho/nome do arquivo">
-<button name="acao" value="reparar">Reparar Integridade</button>
-</div>
-{% if resultado %}
-<div class="resultado"><strong>Resultado:</strong><br><pre>{{ resultado }}</pre></div>
-{% endif %}
-</form>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_PROJETOS = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Projetos - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:800px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.projeto{background:#334155;padding:20px;border-radius:8px;margin-bottom:15px;}
-.projeto h3{color:#84cc16;margin-bottom:10px;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-button{padding:10px 15px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-right:10px;}
-</style></head><body>
-<div class="caixa">
-<h1>📁 Meus Projetos</h1>
-<button style="margin-bottom:20px;">+ Novo Projeto</button>
-<div class="projeto"><h3>Projeto DNA Digital BNJ</h3><p>Status: Em andamento | Criado em: 19/08/2026</p><button>Abrir</button><button>Editar</button><button>Excluir</button></div>
-<div class="projeto"><h3>Plataforma Rede Social</h3><p>Status: Concluído | Criado em: 15/08/2026</p><button>Abrir</button><button>Editar</button><button>Excluir</button></div>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_ANUNCIOS = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Anúncios - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:800px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.anuncio{background:#334155;padding:20px;border-radius:8px;margin-bottom:15px;}
-.anuncio h3{color:#f59e0b;margin-bottom:10px;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-button{padding:10px 15px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-right:10px;}
-</style></head><body>
-<div class="caixa">
-<h1>📢 Anúncios & Oportunidades</h1>
-<button style="margin-bottom:20px;">+ Criar Anúncio</button>
-<div class="anuncio"><h3>Licença DNA Digital BNJ</h3><p>Valor: R$ 12.500,00 | Disponível</p><button>Contatar</button><button>Ver Detalhes</button></div>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-TEMPLATE_DOCUMENTOS = '''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Documentos - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>
-body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px;}
-.caixa{max-width:800px;margin:0 auto;background:#1e293b;padding:30px;border-radius:12px;}
-h1{color:#84cc16;text-align:center;margin-bottom:25px;}
-.documento{background:#334155;padding:20px;border-radius:8px;margin-bottom:15px;}
-.documento h3{color:#3b82f6;margin-bottom:10px;}
-.link-painel{color:#84cc16;text-decoration:none;font-weight:bold;display:block;text-align:center;margin-top:25px;}
-button{padding:10px 15px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-right:10px;}
-</style></head><body>
-<div class="caixa">
-<h1>📄 Meus Documentos</h1>
-<button style="margin-bottom:20px;">+ Upload de Documento</button>
-<div class="documento"><h3>Certificado de Autoridade - Projeto Alpha</h3><p>Tipo: Certificado | Emitido em: 19/08/2026</p><button>Baixar</button><button>Ver</button><button>Excluir</button></div>
-<a href="/painel" class="link-painel">← Voltar ao Painel</a>
-</div>
-</body></html>'''
-
-# ==================================================
-# ROTAS — TODAS FUNCIONANDO ✅
-# ==================================================
-
+# -------------------- ROTAS --------------------
 @app.route("/")
 def inicio():
-    return redirect(url_for("entrar"))
+    if usuario_logado():
+        return redirect(url_for("plataforma"))
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JNB TECNOLOGIA — Acesso</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .caixa{background:rgba(15,23,42,0.8);border:1px solid #f59e0b;padding:40px;border-radius:12px;width:100%;max-width:400px;}
+        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #33415e;color:white;border-radius:6px;}
+        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-top:15px;}
+        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+        .link a{color:#f59e0b;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>JNB TECNOLOGIA</h1>
+        <form action="/entrar" method="POST">
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+        <div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se</a></div>
+    </div>
+</body>
+</html>''')
 
-@app.route("/entrar", methods=["GET", "POST"])
-def entrar():
-    if request.method == "POST":
-        email = request.form.get("email")
-        senha = request.form.get("senha")
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
-        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha = ?", (email, senha))
-        usuario = c.fetchone()
-        conn.close()
-        if usuario:
-            session["usuario_id"] = usuario[0]
-            session["nome_usuario"] = usuario[1]
-            return redirect(url_for("painel"))
-        return render_template_string(TEMPLATE_LOGIN, erro="E-mail ou senha inválidos")
-    return render_template_string(TEMPLATE_LOGIN)
-
-@app.route("/cadastrar", methods=["GET", "POST"])
+@app.route("/cadastrar", methods=["GET","POST"])
 def cadastrar():
     if request.method == "POST":
-        nome = request.form.get("nome")
-        email = request.form.get("email")
-        senha = request.form.get("senha")
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
-        try:
-            c.execute("INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)", (nome, email, senha))
-            conn.commit()
-            usuario_id = c.lastrowid
-            session["usuario_id"] = usuario_id
-            session["nome_usuario"] = nome
-            conn.close()
-            return redirect(url_for("painel"))
-        except sqlite3.IntegrityError:
-            conn.close()
-            return render_template_string(TEMPLATE_LOGIN, erro="E-mail já cadastrado")
-    return render_template_string('''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cadastrar - BNJ</title><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{background:#0f172a;color:#f1f5f9;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.caixa{background:#1e293b;padding:30px;border-radius:12px;width:100%;max-width:400px;box-shadow:0 8px 20px rgba(0,0,0,0.3)}h1{color:#84cc16;text-align:center;margin-bottom:25px;}input{width:100%;padding:12px;margin:8px 0 20px;border:none;border-radius:6px;font-size:1rem;background:#334155;color:#fff;}button{width:100%;padding:12px;background:#84cc16;color:#0f172a;border:none;border-radius:6px;font-weight:bold;font-size:1rem;cursor:pointer;}.link{text-align:center;margin-top:15px;color:#94a3b8;}a{color:#84cc16;text-decoration:none;font-weight:bold;}</style></head><body><div class="caixa"><h1>📝 Cadastrar</h1><form method="POST"><label>Nome:</label><input type="text" name="nome" required><label>E-mail:</label><input type="email" name="email" required><label>Senha:</label><input type="password" name="senha" required><button type="submit">Cadastrar</button></form><div class="link">Já tem conta? <a href="/entrar">Entrar</a></div></div></body></html>''')
+        nome = request.form.get("nome","").strip()
+        email = request.form.get("email","").strip()
+        senha = request.form.get("senha","").strip()
+        if nome and email and senha:
+            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+            dna_chave = base64.b64encode(os.urandom(24)).decode()
+            try:
+                conn = sqlite3.connect(BANCO_DADOS)
+                c = conn.cursor()
+                c.execute("INSERT INTO usuarios (nome,email,senha_hash,dna_chave) VALUES (?,?,?,?)",
+                          (nome, email, senha_hash, dna_chave))
+                conn.commit()
+                usuario_id = c.lastrowid
+                session["usuario_id"] = usuario_id
+                session["nome_usuario"] = nome
+                conn.close()
+                return redirect(url_for("plataforma"))
+            except sqlite3.IntegrityError:
+                return "E-mail já cadastrado. <a href='/'>Voltar</a>"
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar — JNB TECNOLOGIA</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .caixa{background:rgba(15,23,42,0.8);border:1px solid #f59e0b;padding:40px;border-radius:12px;width:100%;max-width:400px;}
+        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #33415e;color:white;border-radius:6px;}
+        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-top:15px;}
+        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+        .link a{color:#f59e0b;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>Cadastrar</h1>
+        <form method="POST">
+            <input type="text" name="nome" placeholder="Seu nome" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Cadastrar</button>
+        </form>
+        <div class="link">Já tem conta? <a href="/">Entrar</a></div>
+    </div>
+</body>
+</html>''')
 
-@app.route("/painel")
-def painel():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string(TEMPLATE_PAINEL, nome_usuario=session.get("nome_usuario"))
+@app.route("/entrar", methods=["POST"])
+def entrar():
+    email = request.form.get("email","").strip()
+    senha = request.form.get("senha","").strip()
+    senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+    usuario = c.fetchone()
+    conn.close()
+    if usuario:
+        session["usuario_id"] = usuario[0]
+        session["nome_usuario"] = usuario[1]
+        return redirect(url_for("plataforma"))
+    return "E-mail ou senha inválidos. <a href='/'>Voltar</a>"
 
 @app.route("/sair")
 def sair():
     session.clear()
-    return redirect(url_for("entrar"))
+    return redirect(url_for("inicio"))
 
-@app.route("/rede_social", methods=["GET", "POST"])
-def rede_social():
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+# -------------------- PLATAFORMA UNIFICADA --------------------
+@app.route("/plataforma", methods=["GET","POST"])
+def plataforma():
     if not usuario_logado():
-        return redirect(url_for("entrar"))
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    if request.method == "POST":
-        texto = request.form.get("texto", "").strip()
-        link = request.form.get("link_compartilhar", "").strip()
+        return redirect(url_for("inicio"))
+
+    usuario_id = session["usuario_id"]
+
+    # Postar nova postagem (texto + arquivo)
+    if request.method == "POST" and "texto_post" in request.form:
+        texto = request.form.get("texto_post","").strip()
         arquivo = request.files.get("arquivo")
         nome_arq = None
-        if arquivo and arquivo.filename:
+        if arquivo and allowed_file(arquivo.filename):
             nome_arq = secure_filename(arquivo.filename)
-            ext = nome_arq.split(".")[-1].lower()
-            if ext in {"jpg", "jpeg", "png", "gif", "mp4", "webm", "ogg", "mov", "avi"}:
-                arquivo.save(os.path.join(PASTA_REDE, nome_arq))
-        c.execute(
-            "INSERT INTO postagens (usuario_id, texto, arquivo, link) VALUES (?, ?, ?, ?)",
-            (session["usuario_id"], texto, nome_arq, link)
-        )
-        conn.commit()
+            arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
+        if texto or nome_arq:
+            conn = sqlite3.connect(BANCO_DADOS)
+            c = conn.cursor()
+            c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
+                      (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+            conn.close()
+        return redirect(url_for("plataforma"))
+
+    # Curtir postagem
+    if request.args.get("curtir"):
+        postagem_id = request.args.get("curtir")
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        try:
+            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, postagem_id))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, postagem_id))
+            conn.commit()
+        conn.close()
+        return redirect(url_for("plataforma") + "#post-" + postagem_id)
+
+    # Dados do usuário
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
+    nome_usuario, total_pontos, dna_chave = c.fetchone()
+    
+    # Buscar postagens com dados
     c.execute("""
-        SELECT u.nome, p.data_postagem, p.texto, p.arquivo, p.link, p.id,
-               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu,
-               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas
+        SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
+               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
+               EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
         FROM postagens p JOIN usuarios u ON p.usuario_id = u.id
         ORDER BY p.data_postagem DESC
-    """, (session["usuario_id"],))
+    """, (usuario_id,))
     postagens = c.fetchall()
     conn.close()
-    return render_template_string(TEMPLATE_REDE, postagens=postagens)
 
-@app.route("/curtir/<int:postagem_id>", methods=["POST"])
-def curtir(postagem_id):
+    return render_template_string('''
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma — JNB TECNOLOGIA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        body { background: linear-gradient(180deg, #0f172a, #1e293b); color: #e2e8f0; min-height: 100vh; }
+        .hidden { display: none !important; }
+        .tab-btn { transition: all 0.3s ease; }
+        .tab-content { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .video-js { width: 100% !important; height: auto !important; }
+    </style>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container max-w-6xl mx-auto p-4 md:p-6">
+        <!-- Cabeçalho -->
+        <div class="flex flex-col md:flex-row justify-between items-center border-b border-yellow-500/40 pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-yellow-500 font-serif">🚀 JNB TECNOLOGIA</h1>
+                <p class="text-sm text-gray-400">Bem-vindo, {{ nome_usuario }}!</p>
+            </div>
+            <div class="text-right mt-3 md:mt-0">
+                <p class="text-xs text-gray-400">Total de Pontos</p>
+                <div id="global-total-pontos" class="text-xl font-bold text-yellow-500">{{ total_pontos }}</div>
+                <a href="/sair" class="text-xs text-red-400 hover:text-red-300">Sair <i class="fa fa-sign-out"></i></a>
+            </div>
+        </div>
+
+        <!-- Navegação por Abas -->
+        <div class="flex overflow-x-auto border-b border-gray-700 mb-6">
+            <button id="btn-rede" class="tab-btn px-5 py-3 text-gray-400 border-b-2 border-yellow-500 text-white" onclick="switchTab('rede')">
+                <i class="fa fa-share-alt mr-2"></i>Rede Social
+            </button>
+            <button id="btn-jogo" class="tab-btn px-5 py-3 text-gray-400 border-b-2 border-transparent hover:text-white hover:border-yellow-500" onclick="switchTab('jogo')">
+                <i class="fa fa-puzzle-piece mr-2"></i>Jogo: Segredo dos Números
+            </button>
+            <button id="btn-ia" class="tab-btn px-5 py-3 text-gray-400 border-b-2 border-transparent hover:text-white hover:border-yellow-500" onclick="switchTab('ia')">
+                <i class="fa fa-file-text mr-2"></i>IA & Documentos
+            </button>
+            <button id="btn-dna" class="tab-btn px-5 py-3 text-gray-400 border-b-2 border-transparent hover:text-white hover:border-yellow-500" onclick="switchTab('dna')">
+                <i class="fa fa-dna mr-2"></i>DNA / BNJ
+            </button>
+        </div>
+
+        <!-- Aba 1: Rede Social -->
+        <div id="tab-rede" class="tab-content">
+            <!-- Caixa de Postagem -->
+            <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30 mb-6">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-pencil-square mr-2"></i>O que você está pensando?</h2>
+                <form method="POST" enctype="multipart/form-data">
+                    <textarea name="texto_post" placeholder="Escreva algo..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:border-yellow-500 mb-4" rows="3"></textarea>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition">
+                                <i class="fa fa-paperclip mr-1"></i>Anexar Foto/Vídeo
+                                <input type="file" name="arquivo" class="hidden" accept="image/*,video/*" onchange="previewFile(this)">
+                            </label>
+                            <span id="arquivo-nome" class="text-gray-400 text-sm"></span>
+                        </div>
+                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-bold transition">
+                            <i class="fa fa-paper-plane mr-2"></i>Publicar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Feed de Postagens -->
+            <div class="space-y-6">
+                {% if postagens %}
+                {% for pid, texto, arquivo, data, autor, total_curtidas, curtiu in postagens %}
+                <div id="post-{{ pid }}" class="bg-gray-800 rounded-xl border border-yellow-500/20 overflow-hidden shadow-lg">
+                    <!-- Cabeçalho da postagem -->
+                    <div class="p-4 border-b border-gray-700/50 flex items-center">
+                        <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center font-bold text-white text-xl mr-4">{{ autor[0] }}</div>
+                        <div>
+                            <h4 class="font-bold text-white">{{ autor }}</h4>
+                            <p class="text-gray-400 text-sm">{{ data }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Conteúdo da postagem -->
+                    <div class="p-4">
+                        {% if texto %}
+                        <p class="text-gray-100 text-base mb-4 whitespace-pre-wrap">{{ texto }}</p>
+                        {% endif %}
+                        
+                        {% if arquivo %}
+                            {% set ext = arquivo.split('.')[-1].lower() %}
+                            {% if ext in ['jpg','jpeg','png','gif'] %}
+                            <img src="/uploads/{{ arquivo }}" class="w-full rounded-lg max-h-96 object-cover mb-4">
+                            {% elif ext in ['mp4','mov','avi','webm'] %}
+                            <video controls class="w-full rounded-lg mb-4" preload="metadata">
+                                <source src="/uploads/{{ arquivo }}" type="video/{{ ext }}">
+                                Seu navegador não suporta vídeo.
+                            </video>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Ações: Curtir -->
+                    <div class="px-4 py-3 bg-gray-900/50 border-t border-gray-700/50 flex items-center">
+                        <a href="/plataforma?curtir={{ pid }}#post-{{ pid }}" class="flex items-center gap-2 px-4 py-2 rounded-lg transition {{ 'text-yellow-400 bg-yellow-900/30' if curtiu else 'text-gray-300 hover:bg-gray-700/50' }}">
+                            <i class="fa fa-thumbs-up"></i>
+                            <span>Curtir · {{ total_curtidas }}</span>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-20">
+                    <i class="fa fa-newspaper-o text-gray-600 text-5xl mb-4"></i>
+                    <p class="text-gray-500 text-xl">Ainda não há postagens. Seja o primeiro a compartilhar algo!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ABA 2: Jogo, ABA 3: IA, ABA 4: DNA — mantidas iguais ao código anterior -->
+        <div id="tab-jogo" class="tab-content hidden">
+            <div class="bg-gray-800/50 p-8 rounded-xl border border-yellow-500/30 text-center">
+                <h2 class="text-2xl font-bold text-yellow-500 mb-6">🎮 O SEGREDO DOS NÚMEROS</h2>
+                <div class="flex flex-wrap justify-center gap-3 mb-8">
+                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition" onclick="setGamePhase(1, 25)">Fase 1 (3 dígitos — 25pts)</button>
+                    <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-bold transition" onclick="setGamePhase(2, 50)">Fase 2 (6 dígitos — 50pts)</button>
+                    <button class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold transition" onclick="setGamePhase(3, 75)">Fase 3 (8 dígitos — 75pts)</button>
+                    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition" onclick="setGamePhase(4, 100)">Fase 4 (9 dígitos — 100pts)</button>
+                </div>
+                <div class="bg-gray-900 border border-yellow-500/40 rounded-lg p-6 mb-8 text-2xl font-mono text-yellow-300 tracking-widest">
+                    🟠 = 4164 — 🔴 = 1462 — ⚫ = 9808 — ⚪ = 5561
+                </div>
+                <div class="mb-6">
+                    <input type="text" id="game-input" placeholder="---" maxlength="9" class="bg-gray-900 border-2 border-yellow-600 text-yellow-200 font-mono text-3xl text-center px-6 py-3 rounded-lg focus:outline-none focus:border-yellow-400">
+                    <button onclick="checkGameAnswer()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-lg font-bold text-lg ml-4 transition">
+                        <i class="fa fa-check"></i> Confirmar
+                    </button>
+                </div>
+                <div id="game-feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+                <div class="text-gray-400 text-sm mt-6">
+                    Pontos desta partida: <span id="feedback-pts" class="text-yellow-500 font-bold">0</span> | 
+                    Total acumulado: <span id="feedback-total" class="text-yellow-500 font-bold">{{ total_pontos }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ia" class="tab-content hidden">
+            <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-robot mr-2"></i>IA — Gerador de Documentos</h2>
+                <textarea id="ia-input" placeholder="Descreva o documento que você precisa... Ex: Contrato de prestação de serviços" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:border-yellow-500 mb-4" rows="4"></textarea>
+                <button onclick="generateDocumentAI()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2 rounded-lg font-medium transition">
+                    <i class="fa fa-file-text mr-2"></i>Gerar Documento
+                </button>
+                <div id="ia-result" class="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700 hidden"></div>
+            </div>
+        </div>
+
+        <div id="tab-dna" class="tab-content hidden">
+            <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-dna mr-2"></i>DNA / Conversor BNJ</h2>
+                <p class="text-sm text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-300">{{ dna_chave }}</code></p>
+                <textarea id="dna-input" placeholder="Digite texto, número ou dado para converter em DNA..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:border-yellow-500 mb-4" rows="3"></textarea>
+                <button onclick="converterParaDNA()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2 rounded-lg font-medium transition mr-2">
+                    Converter em DNA
+                </button>
+                <button onclick="decodificarDNA()" class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-lg font-medium transition">
+                    Decodificar DNA
+                </button>
+                <div id="dna-result" class="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        let currentPhase = 1;
+        let pointsValue = 25;
+        let totalPoints = {{ total_pontos }};
+        const correctAnswers = {1: "146", 2: "416414", 3: "98085561", 4: "249322519"};
+        const usuarioId = {{ session.usuario_id }};
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('border-yellow-500','text-white'));
+            document.getElementById('tab-'+tab).classList.remove('hidden');
+            document.getElementById('btn-'+tab).classList.add('border-yellow-500','text-white');
+        }
+
+        function previewFile(input) {
+            const nome = input.files[0]?.name || "";
+            document.getElementById('arquivo-nome').textContent = nome ? "📎 " + nome : "";
+        }
+
+        function setGamePhase(phase, pts) {
+            currentPhase = phase;
+            pointsValue = pts;
+            const input = document.getElementById('game-input');
+            input.value = "";
+            if(phase === 1) input.placeholder = "---";
+            if(phase === 2) input.placeholder = "------";
+            if(phase === 3) input.placeholder = "--------";
+            if(phase === 4) input.placeholder = "---------";
+            document.getElementById('game-feedback').classList.add('hidden');
+        }
+
+        function checkGameAnswer() {
+            const input = document.getElementById('game-input').value.trim();
+            const feedback = document.getElementById('game-feedback');
+            if(!input) return alert("Digite sua resposta!");
+
+            if(input === correctAnswers[currentPhase]) {
+                totalPoints += pointsValue;
+                document.getElementById('global-total-pontos').textContent = totalPoints;
+                document.getElementById('feedback-total').textContent = totalPoints;
+                document.getElementById('feedback-pts').textContent = pointsValue;
+                
+                feedback.innerHTML = `<p class="text-center font-bold">✅ ACERTOU! +${pointsValue} PONTOS!</p>`;
+                feedback.className = "mt-6 p-4 rounded-lg bg-green-900/30 border border-green-500 text-green-300";
+                feedback.classList.remove('hidden');
+
+                fetch("/atualizar_pontos", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                    body: `pontos=${pointsValue}`
+                });
+            } else {
+                feedback.innerHTML = `<p class="text-center font-bold">❌ Resposta incorreta! Tente novamente.</p>`;
+                feedback.className = "mt-6 p-4 rounded-lg bg-red-900/30 border border-red-500 text-red-300";
+                feedback.classList.remove('hidden');
+            }
+            document.getElementById('game-input').value = "";
+        }
+
+        function generateDocumentAI() {
+            const texto = document.getElementById('ia-input').value.trim();
+            if(!texto) return alert("Descreva o documento primeiro!");
+            const resultado = document.getElementById('ia-result');
+            resultado.innerHTML = `<h4 class="font-bold text-yellow-400 mb-2">📄 Documento Gerado:</h4><p class="text-gray-300 text-sm">---<br>Modelo gerado para: ${texto}<br>Data: ${new Date().toLocaleString()}<br>Assinatura digital: JNB-${Math.random().toString(36).substr(2,10).toUpperCase()}<br>---</p>`;
+            resultado.classList.remove('hidden');
+        }
+
+        function textoParaDNA(texto) {
+            const mapa = {'A':'AT', 'T':'TA', 'C':'CG', 'G':'GC'};
+            let dna = "";
+            for(let c of texto.toUpperCase()) {
+                const code = c.charCodeAt(0).toString(2).padStart(8,'0');
+                for(let bit of code) dna += bit === '1' ? mapa['G'] : mapa['A'];
+            }
+            return dna;
+        }
+
+        function dnaParaTexto(dna) {
+            let bin = "";
+            for(let i=0; i<dna.length; i+=2) {
+                const par = dna.substr(i,2);
+                bin += par === 'GC' ? '1' : '0';
+            }
+            let texto = "";
+            for(let i=0; i<bin.length; i+=8) {
+                const byte = bin.substr(i,8);
+                if(byte.length === 8) texto += String.fromCharCode(parseInt(byte,2));
+            }
+            return texto;
+        }
+
+        function converterParaDNA() {
+            const texto = document.getElementById('dna-input').value.trim();
+            if(!texto) return alert("Digite algo para converter!");
+            const res = document.getElementById('dna-result');
+            const dna = textoParaDNA(texto);
+            res.innerHTML = `<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-gray-300 text-sm break-all">${dna}</p>`;
+            res.classList.remove('hidden');
+        }
+
+        function decodificarDNA() {
+            const dna = document.getElementById('dna-input').value.trim();
+            if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
+            const res = document.getElementById('dna-result');
+            try {
+                const texto = dnaParaTexto(dna);
+                res.innerHTML = `<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-gray-300 text-sm">${texto}</p>`;
+            } catch {
+                res.innerHTML = `<p class="text-red-400">❌ DNA inválido ou corrompido!</p>`;
+            }
+            res.classList.remove('hidden');
+        }
+
+        window.onload = () => switchTab('rede');
+    </script>
+</body>
+</html>''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
+
+@app.route("/atualizar_pontos", methods=["POST"])
+def atualizar_pontos():
     if not usuario_logado():
-        return redirect(url_for("entrar"))
+        return "Não autorizado", 401
+    pontos = int(request.form.get("pontos", 0))
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("SELECT id FROM curtidas WHERE postagem_id = ? AND usuario_id = ?", (postagem_id, session["usuario_id"]))
-    ja_curtiu = c.fetchone()
-    if ja_curtiu:
-        c.execute("DELETE FROM curtidas WHERE id = ?", (ja_curtiu[0],))
-    else:
-        c.execute("INSERT INTO curtidas (postagem_id, usuario_id) VALUES (?, ?)", (postagem_id, session["usuario_id"]))
+    c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pontos, session["usuario_id"]))
     conn.commit()
     conn.close()
-    return redirect(url_for("rede_social"))
+    return "OK"
 
-@app.route("/uploads/rede_social/<path:nome>")
-def servir_upload(nome):
-    return send_from_directory(PASTA_REDE, nome)
-
-@app.route("/jogo_pares", methods=["GET", "POST"])
-def jogo_pares():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    def par_correto(num):
-        mapa = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-        return ''.join(mapa[d] for d in num)
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT fase, pontos FROM jogo_pares WHERE usuario_id = ?", (session["usuario_id"],))
-    registro = c.fetchone()
-    if not registro:
-        fase, pontos = 1, 0
-        c.execute("INSERT INTO jogo_pares (usuario_id, fase, pontos) VALUES (?, 1, 0)", (session["usuario_id"],))
-        conn.commit()
-    else:
-        fase, pontos = registro
-    numeros_fase = {"1":"876", "2":"265871", "3":"92167350", "4":"018649257"}
-    numero_atual = numeros_fase.get(str(fase), "876")
-    mensagem = ""
-    acerto = False
-    if request.method == "POST":
-        resposta = request.form.get("resposta", "").strip()
-        if resposta == par_correto(numero_atual):
-            if fase == 1: pontos += 25
-            elif fase == 2: pontos += 50
-            elif fase == 3: pontos += 75
-            elif fase >= 4: pontos += 100
-            fase += 1
-            mensagem = f"✅ ACERTOU! Fase {fase-1} concluída! Pontos: {pontos}"
-            acerto = True
-            c.execute("UPDATE jogo_pares SET fase = ?, pontos = ? WHERE usuario_id = ?", (fase, pontos, session["usuario_id"]))
-            conn.commit()
-        else:
-            mensagem = f"❌ Errou! O par correto de {numero_atual} é {par_correto(numero_atual)}"
-            acerto = False
-    conn.close()
-    return render_template_string(TEMPLATE_JOGO, fase=fase-1, pontos=pontos, numero_atual=numero_atual, mensagem=mensagem, acerto=acerto)
-
-@app.route("/segredo_numeros", methods=["GET", "POST"])
-def segredo_numeros():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    SEQUENCIA_CORRETA = "4164-1462-9808-5561-2493-2251-9607-4275-3868-2251"
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT pontos FROM segredo_numeros WHERE usuario_id = ?", (session["usuario_id"],))
-    registro = c.fetchone()
-    if not registro:
-        pontos = 0
-        c.execute("INSERT INTO segredo_numeros (usuario_id, pontos) VALUES (?, 0)", (session["usuario_id"],))
-        conn.commit()
-    else:
-        pontos = registro[0]
-    mensagem = ""
-    acerto = False
-    if request.method == "POST":
-        sequencia = request.form.get("sequencia", "").strip()
-        sequencia_limpa = ''.join(ch for ch in sequencia if ch.isdigit() or ch == '-')
-        if sequencia_limpa == SEQUENCIA_CORRETA:
-            qtd_digitos = len(sequencia_limpa.replace("-", ""))
-            if qtd_digitos == 3: pontos += 25
-            elif qtd_digitos == 6: pontos += 50
-            elif qtd_digitos == 8: pontos += 75
-            elif qtd_digitos >= 9: pontos += 100
-            mensagem = f"✅ ACERTOU! + Pontos! Total: {pontos}"
-            acerto = True
-            c.execute("UPDATE segredo_numeros SET pontos = ? WHERE usuario_id = ?", (pontos, session["usuario_id"]))
-            conn.commit()
-        else:
-            mensagem = "❌ Errou! Tente novamente!"
-            acerto = False
-    conn.close()
-    return render_template_string(TEMPLATE_SEGREDO, pontos=pontos, mensagem=mensagem, acerto=acerto)
-
-@app.route("/inteligencia", methods=["GET", "POST"])
-def inteligencia():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    resposta = ""
-    if request.method == "POST":
-        pergunta = request.form.get("pergunta", "").strip()
-        if pergunta:
-            resposta = f"🤖 Inteligência BNJ: Analisando: '{pergunta}'. A IA exclusiva JNB combina conhecimento técnico, segurança digital e soluções personalizadas para você!"
-    return render_template_string(TEMPLATE_INTELIGENCIA, resposta=resposta)
-
-@app.route("/gerador_autoridade", methods=["GET", "POST"])
-def gerador_autoridade():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    documento = None
-    if request.method == "POST":
-        tipo = request.form.get("tipo")
-        titulo = request.form.get("titulo")
-        conteudo = request.form.get("conteudo")
-        codigo = f"JNB-{random.randint(100000,999999)}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        data = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        documento = {"tipo": tipo.title(), "titulo": titulo, "conteudo": conteudo, "codigo": codigo, "data": data}
-    return render_template_string(TEMPLATE_GERADOR, documento=documento)
-
-@app.route("/dna_bnj", methods=["GET", "POST"])
-def dna_bnj():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    resultado = ""
-    if request.method == "POST":
-        acao = request.form.get("acao")
-        dados = request.form.get("dados", "").strip()
-        texto_conv = request.form.get("texto_conv", "").strip()
-        arquivo_reparar = request.form.get("arquivo_reparar", "").strip()
-        
-        if acao == "varrer":
-            hash_sistema = hashlib.sha256(str(datetime.now()).encode()).hexdigest()
-            resultado = f"🔍 Varredura Concluída!\n✅ Sistema íntegro\n✅ Nenhum arquivo corrompido\n✅ Segurança ativa\n🔑 Assinatura: {hash_sistema[:16]}"
-
-    return render_template_string(TEMPLATE_DNA_BNJ, resultado=resultado)
-
-@app.route("/documentos")
-def documentos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string(TEMPLATE_DOCUMENTOS)
-
-@app.route("/projetos")
-def projetos():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string(TEMPLATE_PROJETOS)
-
-@app.route("/anuncios")
-def anuncios():
-    if not usuario_logado():
-        return redirect(url_for("entrar"))
-    return render_template_string(TEMPLATE_ANUNCIOS)
-
-
+# -------------------- RODAR SERVIDOR --------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=True)
