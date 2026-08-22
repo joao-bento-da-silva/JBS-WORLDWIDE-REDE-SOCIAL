@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
 # REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
 # POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
@@ -511,9 +511,9 @@ function converterParaDNA() {
     if(!texto) return alert("Digite algo para converter!");
     const res = document.getElementById('dna-result');
     const dna = textoParaDNA(texto);
-    res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">DNA Gerado:</h4>' + dna;
+    res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
     res.classList.remove('hidden');
-
+    
     const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -523,15 +523,15 @@ function converterParaDNA() {
     document.body.removeChild(link);
 }
 
-function functionMarrowDNA() {
+function decodificarDNA() {
     const dna = document.getElementById('dna-input').value.trim();
     if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
     const res = document.getElementById('dna-result');
     try {
         const texto = dnaParaTexto(dna);
-        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">Dados Decodificados:</h4>' + texto;
+        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
     } catch (e) {
-        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido.</p>';
+        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
     }
     res.classList.remove('hidden');
 }
@@ -542,7 +542,7 @@ function lerArquivoDNA(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         document.getElementById('dna-input').value = e.target.result.trim();
-        functionMarrowDNA();
+        decodificarDNA(); 
     };
     reader.readAsText(file);
 }
@@ -551,7 +551,12 @@ window.onload = () => switchTab('rede');
 </script>
 </body>
 </html>
-''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens)
+
+
+        window.onload = () => switchTab('rede');
+    </script>
+</body>
+</html>''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
 
 @app.route("/atualizar_pontos", methods=["POST"])
 def atualizar_pontos():
@@ -565,7 +570,6 @@ def atualizar_pontos():
     conn.close()
     return "OK"
 
-if __name__ == '__main__':
-    import os
-    porta = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=porta)
+# -------------------- RODAR SERVIDOR --------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
