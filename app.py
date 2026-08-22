@@ -1,5 +1,4 @@
-# ==================================================
-# © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
+ # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
 # REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
 # POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
 # PORTA 5000 · TUDO FUNCIONANDO ✅
@@ -14,13 +13,14 @@ import base64
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
+# Inicializar aplicativo
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
 # Configuração de upload de arquivos
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
@@ -34,6 +34,8 @@ def allowed_file(filename):
 def init_db():
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
+    
+    # Tabela de usuários
     c.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,15 +45,19 @@ def init_db():
         pontos INTEGER DEFAULT 0,
         dna_chave TEXT
     )""")
+    
+    # Tabela de postagens
     c.execute("""
     CREATE TABLE IF NOT EXISTS postagens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario_id INTEGER NOT NULL,
-        texto TEXT NOT NULL,
+        texto TEXT,
         arquivo TEXT,
         data_postagem TEXT NOT NULL,
         FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
     )""")
+    
+    # Tabela de curtidas
     c.execute("""
     CREATE TABLE IF NOT EXISTS curtidas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,6 +67,7 @@ def init_db():
         FOREIGN KEY(postagem_id) REFERENCES postagens(id),
         UNIQUE(usuario_id, postagem_id)
     )""")
+    
     conn.commit()
     conn.close()
 
@@ -68,6 +75,7 @@ init_db()
 
 def usuario_logado():
     return "usuario_id" in session
+
 
 # -------------------- ROTAS --------------------
 @app.route("/")
@@ -104,19 +112,19 @@ def inicio():
 </body>
 </html>''')
 
-@app.route("/cadastrar", methods=["GET","POST"])
+@app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
     if request.method == "POST":
-        nome = request.form.get("nome","").strip()
-        email = request.form.get("email","").strip()
-        senha = request.form.get("senha","").strip()
+        nome = request.form.get("nome", "").strip()
+        email = request.form.get("email", "").strip()
+        senha = request.form.get("senha", "").strip()
         if nome and email and senha:
             senha_hash = hashlib.sha256(senha.encode()).hexdigest()
             dna_chave = base64.b64encode(os.urandom(24)).decode()
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
-                c.execute("INSERT INTO usuarios (nome,email,senha_hash,dna_chave) VALUES (?,?,?,?)",
+                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave) VALUES (?, ?, ?, ?)",
                           (nome, email, senha_hash, dna_chave))
                 conn.commit()
                 usuario_id = c.lastrowid
@@ -157,20 +165,22 @@ def cadastrar():
 </body>
 </html>''')
 
+
 @app.route("/entrar", methods=["POST"])
 def entrar():
-    email = request.form.get("email","").strip()
-    senha = request.form.get("senha","").strip()
-    senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
-    usuario = c.fetchone()
-    conn.close()
-    if usuario:
-        session["usuario_id"] = usuario[0]
-        session["nome_usuario"] = usuario[1]
-        return redirect(url_for("plataforma"))
+    email = request.form.get("email", "").strip()
+    senha = request.form.get("senha", "").strip()
+    if email and senha:
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+        usuario = c.fetchone()
+        conn.close()
+        if usuario:
+            session["usuario_id"] = usuario[0]
+            session["nome_usuario"] = usuario[1]
+            return redirect(url_for("plataforma"))
     return "E-mail ou senha inválidos. <a href='/'>Voltar</a>"
 
 @app.route("/sair")
@@ -183,16 +193,16 @@ def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # -------------------- PLATAFORMA UNIFICADA --------------------
-@app.route("/plataforma", methods=["GET","POST"])
+@app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
         return redirect(url_for("inicio"))
-
+    
     usuario_id = session["usuario_id"]
 
     # Postar nova postagem (texto + arquivo)
     if request.method == "POST" and "texto_post" in request.form:
-        texto = request.form.get("texto_post","").strip()
+        texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         nome_arq = None
         if arquivo and allowed_file(arquivo.filename):
@@ -206,6 +216,7 @@ def plataforma():
             conn.commit()
             conn.close()
         return redirect(url_for("plataforma"))
+
 
     # Curtir postagem
     if request.args.get("curtir"):
@@ -221,18 +232,11 @@ def plataforma():
         conn.close()
         return redirect(url_for("plataforma") + "#post-" + postagem_id)
 
-    # # Buscar dados do usuário com tratamento se não existir
-c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
-usuario_dados = c.fetchone()
-
-if not usuario_dados:
-    # Usuário não encontrado — limpa sessão e volta pro login
-    session.clear()
-    conn.close()
-    return redirect(url_for("inicio"))
-
-nome_usuario, total_pontos, dna_chave = usuario_dados
-
+    # Dados do usuário
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
+    nome_usuario, total_pontos, dna_chave = c.fetchone()
     
     # Buscar postagens com dados
     c.execute("""
@@ -245,7 +249,7 @@ nome_usuario, total_pontos, dna_chave = usuario_dados
     postagens = c.fetchall()
     conn.close()
 
-    return render_template_string('''
+    return render_template_string('''""
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -368,7 +372,7 @@ nome_usuario, total_pontos, dna_chave = usuario_dados
             </div>
         </div>
 
-        <!-- ABA 2: Jogo -->
+        <!-- ABA 2: Jogo, ABA 3: IA, ABA 4: DNA — mantidas iguais ao código anterior -->
         <div id="tab-jogo" class="tab-content hidden">
             <div class="bg-gray-800/50 p-8 rounded-xl border border-yellow-500/30 text-center">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-6">🎮 O SEGREDO DOS NÚMEROS</h2>
@@ -395,7 +399,6 @@ nome_usuario, total_pontos, dna_chave = usuario_dados
             </div>
         </div>
 
-        <!-- ABA 3: IA -->
         <div id="tab-ia" class="tab-content hidden">
             <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
                 <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-robot mr-2"></i>IA — Gerador de Documentos</h2>
@@ -407,7 +410,6 @@ nome_usuario, total_pontos, dna_chave = usuario_dados
             </div>
         </div>
 
-        <!-- ABA 4: DNA -->
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
                 <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-dna mr-2"></i>DNA / Conversor BNJ</h2>
@@ -515,53 +517,57 @@ nome_usuario, total_pontos, dna_chave = usuario_dados
             }
             return texto;
         }
+function converterParaDNA() {
+    const texto = document.getElementById('dna-input').value.trim();
+    if(!texto) return alert("Digite algo para converter!");
+    const res = document.getElementById('dna-result');
+    const dna = textoParaDNA(texto);
+    res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
+    res.classList.remove('hidden');
+    
+    const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "documento_dna.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
-        function converterParaDNA() {
-            const texto = document.getElementById('dna-input').value.trim();
-            if(!texto) return alert("Digite algo para converter!");
-            const res = document.getElementById('dna-result');
-            const dna = textoParaDNA(texto);
-            res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
-            res.classList.remove('hidden');
-            
-            const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "documento_dna.txt";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+function decodificarDNA() {
+    const dna = document.getElementById('dna-input').value.trim();
+    if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
+    const res = document.getElementById('dna-result');
+    try {
+        const texto = dnaParaTexto(dna);
+        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
+    } catch (e) {
+        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
+    }
+    res.classList.remove('hidden');
+}
 
-        function decodificarDNA() {
-            const dna = document.getElementById('dna-input').value.trim();
-            if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
-            const res = document.getElementById('dna-result');
-            try {
-                const texto = dnaParaTexto(dna);
-                res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
-            } catch (e) {
-                res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
-            }
-            res.classList.remove('hidden');
-        }
+function lerArquivoDNA(event) {
+    const file = event.target.files;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('dna-input').value = e.target.result.trim();
+        decodificarDNA(); 
+    };
+    reader.readAsText(file);
+}
 
-        function lerArquivoDNA(event) {
-            const file = event.target.files;
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('dna-input').value = e.target.result.trim();
-                decodificarDNA(); 
-            };
-            reader.readAsText(file);
-        }
+window.onload = () => switchTab('rede');
+</script>
+</body>
+</html>
+
 
         window.onload = () => switchTab('rede');
     </script>
 </body>
-</html>
-''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
+</html>''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
 
 @app.route("/atualizar_pontos", methods=["POST"])
 def atualizar_pontos():
