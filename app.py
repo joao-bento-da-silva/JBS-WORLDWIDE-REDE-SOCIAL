@@ -1,4 +1,4 @@
- # ==================================================
+  # ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
 # REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
 # POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
@@ -361,7 +361,7 @@ def plataforma():
             </div>
         </div>
 
-        <!-- ABA 2: Jogo, ABA 3: IA, ABA 4: DNA — mantidas iguais ao código anterior -->
+        <!-- ABA 2: Jogo -->
         <div id="tab-jogo" class="tab-content hidden">
             <div class="bg-gray-800/50 p-8 rounded-xl border border-yellow-500/30 text-center">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-6">🎮 O SEGREDO DOS NÚMEROS</h2>
@@ -388,6 +388,7 @@ def plataforma():
             </div>
         </div>
 
+        <!-- ABA 3: IA -->
         <div id="tab-ia" class="tab-content hidden">
             <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
                 <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-robot mr-2"></i>IA — Gerador de Documentos</h2>
@@ -399,6 +400,7 @@ def plataforma():
             </div>
         </div>
 
+        <!-- ABA 4: DNA -->
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800/50 p-6 rounded-xl border border-yellow-500/30">
                 <h2 class="text-xl font-bold text-yellow-400 mb-4"><i class="fa fa-dna mr-2"></i>DNA / Conversor BNJ</h2>
@@ -506,57 +508,53 @@ def plataforma():
             }
             return texto;
         }
-function converterParaDNA() {
-    const texto = document.getElementById('dna-input').value.trim();
-    if(!texto) return alert("Digite algo para converter!");
-    const res = document.getElementById('dna-result');
-    const dna = textoParaDNA(texto);
-    res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
-    res.classList.remove('hidden');
-    
-    const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "documento_dna.txt";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
 
-function decodificarDNA() {
-    const dna = document.getElementById('dna-input').value.trim();
-    if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
-    const res = document.getElementById('dna-result');
-    try {
-        const texto = dnaParaTexto(dna);
-        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
-    } catch (e) {
-        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
-    }
-    res.classList.remove('hidden');
-}
+        function converterParaDNA() {
+            const texto = document.getElementById('dna-input').value.trim();
+            if(!texto) return alert("Digite algo para converter!");
+            const res = document.getElementById('dna-result');
+            const dna = textoParaDNA(texto);
+            res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
+            res.classList.remove('hidden');
+            
+            const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "documento_dna.txt";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-function lerArquivoDNA(event) {
-    const file = event.target.files;
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        document.getElementById('dna-input').value = e.target.result.trim();
-        decodificarDNA(); 
-    };
-    reader.readAsText(file);
-}
+        function decodificarDNA() {
+            const dna = document.getElementById('dna-input').value.trim();
+            if(!dna.includes('AT') && !dna.includes('TA')) return alert("Digite um DNA válido!");
+            const res = document.getElementById('dna-result');
+            try {
+                const texto = dnaParaTexto(dna);
+                res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
+            } catch (e) {
+                res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
+            }
+            res.classList.remove('hidden');
+        }
 
-window.onload = () => switchTab('rede');
-</script>
-</body>
-</html>
-
+        function lerArquivoDNA(event) {
+            const file = event.target.files;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('dna-input').value = e.target.result.trim();
+                decodificarDNA(); 
+            };
+            reader.readAsText(file);
+        }
 
         window.onload = () => switchTab('rede');
     </script>
 </body>
-</html>''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
+</html>
+''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens, session=session)
 
 @app.route("/atualizar_pontos", methods=["POST"])
 def atualizar_pontos():
