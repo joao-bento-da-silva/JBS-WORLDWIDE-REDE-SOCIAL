@@ -444,19 +444,11 @@ def plataforma():
             if(phase === 2) input.placeholder = "------";
             if(phase === 3) input.placeholder = "--------";
             if(phase === 4) input.placeholder = "---------";
-            document.getElementById('game-feedback').classList.add('hidden');
+            document.getElementById('game...
+document.getElementById('game-feedback').classList.add('hidden');
         }
 
-        function checkGameAnswer() {
-            const input = document.getElementById('game-input').value.trim();
-            const feedback = document.getElementById('game-feedback');
-            if(!input) return alert("Digite sua resposta!");
 
-            if(input === correctAnswers[currentPhase]) {
-                totalPoints += pointsValue;
-                document.getElementById('global-total-pontos').textContent = totalPoints;
-                document.getElementById('feedback-total').textContent = totalPoints;
-                document.getElementById('feedback-pts').textContent = pointsValue;
                 
                 feedback.innerHTML = `<p class="text-center font-bold">✅ ACERTOU! +${pointsValue} PONTOS!</p>`;
                 feedback.className = "mt-6 p-4 rounded-lg bg-green-900/30 border border-green-500 text-green-300";
@@ -514,13 +506,14 @@ function converterParaDNA() {
     res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🧬 DNA Gerado:</h4><p class="text-xs break-all">' + dna + '</p>';
     res.classList.remove('hidden');
     
-    const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "documento_dna.txt";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+            const blob = new Blob([dna], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "documento_dna.txt";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 }
 
 function decodificarDNA() {
@@ -529,9 +522,9 @@ function decodificarDNA() {
     const res = document.getElementById('dna-result');
     try {
         const texto = dnaParaTexto(dna);
-        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">🔓 Dados Decodificados:</h4><p class="text-sm">' + texto + '</p>';
+        res.innerHTML = '<h4 class="font-bold text-yellow-400 mb-2">Dados Decodificados:</h4>' + texto;
     } catch (e) {
-        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido!</p>';
+        res.innerHTML = '<p class="text-red-400">❌ DNA inválido ou corrompido.</p>';
     }
     res.classList.remove('hidden');
 }
@@ -542,18 +535,20 @@ function lerArquivoDNA(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         document.getElementById('dna-input').value = e.target.result.trim();
-        decodificarDNA(); 
+        decodificarDNA();
     };
-    reader.readAsText(file);
+    reader.readAsText(file[0]);
 }
 
 window.onload = () => switchTab('rede');
 </script>
 </body>
 </html>
+''')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
 
 
 
