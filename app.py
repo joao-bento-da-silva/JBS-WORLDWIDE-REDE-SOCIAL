@@ -1,4 +1,4 @@
-  # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
 # REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
 # POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
@@ -221,11 +221,18 @@ def plataforma():
         conn.close()
         return redirect(url_for("plataforma") + "#post-" + postagem_id)
 
-    # Dados do usuário
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
-    nome_usuario, total_pontos, dna_chave = c.fetchone()
+    # # Buscar dados do usuário com tratamento se não existir
+c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
+usuario_dados = c.fetchone()
+
+if not usuario_dados:
+    # Usuário não encontrado — limpa sessão e volta pro login
+    session.clear()
+    conn.close()
+    return redirect(url_for("inicio"))
+
+nome_usuario, total_pontos, dna_chave = usuario_dados
+
     
     # Buscar postagens com dados
     c.execute("""
