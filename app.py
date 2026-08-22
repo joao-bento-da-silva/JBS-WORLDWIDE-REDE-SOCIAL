@@ -1,6 +1,6 @@
 # ==================================================  
 # © 2026 JNB TECNOLOGIA — PLATAFORMA COMPLETA
-# REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ
+# REDE SOCIAL ESTILO FACEBOOK · JOGO · IA · DNA/BNJ  
 # POSTAGEM TEXTO + FOTO + VÍDEO · CURTIDAS · FEED
 # PORTA 5000 · TUDO FUNCIONANDO ✅
 # ==================================================
