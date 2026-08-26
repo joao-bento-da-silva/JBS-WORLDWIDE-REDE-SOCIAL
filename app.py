@@ -496,6 +496,7 @@ def plataforma():
                 {% endif %}
             </div>
         </div>
+<button class="tab-btn" onclick="switchTab('cartas')">🃏 Cartas</button>
 
         <!-- ABA JOGO -->
         <div id="tab-jogo" class="tab-content hidden">
@@ -507,6 +508,10 @@ def plataforma():
                 </a>
             </div>
         </div>
+<button class="tab-btn" onclick="switchTab('jogo')">🎮 Jogo</button>
+<button class="tab-btn" onclick="switchTab('cartas')">🃏 Cartas</button>
+<button class="tab-btn" onclick="switchTab('ia')">📄 IA</button>
+<button class="tab-btn" onclick="switchTab('dna')">🧬 DNA</button>
 
         <!-- ABA IA -->
         <div id="tab-ia" class="tab-content hidden">
