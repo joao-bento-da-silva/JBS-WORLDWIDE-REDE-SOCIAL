@@ -612,6 +612,187 @@ def plataforma():
 </html>
     ''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens)
 
+# ==================================================
+# 🃏 JOGO DAS CARTAS — VISUAL DE BARALHO REAL
+# Y=0 · A=1↔9=Z · B=2↔8=X · C=3↔7=G · D=4↔6=F · E=5
+# CARTAS COM FORMATO DE BARALHO — BORDAS, SOMBRA, FUNDO
+# ==================================================
+
+@app.route("/jogo-cartas-baralho", methods=["GET", "POST"])
+def jogo_cartas_baralho():
+    if not usuario_logado():
+        return redirect(url_for("login"))
+    if not acesso_liberado():
+        return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado,
+            conteudo="<div class='bloqueado bloco'>🔒 Jogo bloqueado — confirme o pagamento!</div>")
+    
+    # 🔒 REGRA SECRETA — EXATAMENTE COMO VOCÊ DEFINIU
+    TABELA_REGRAS = {
+        'Y': 'Y',   # 0 → 0 (neutro)
+        'A': 'Z',   # 1 ↔ 9
+        'B': 'X',   # 2 ↔ 8
+        'C': 'G',   # 3 ↔ 7
+        'D': 'F',   # 4 ↔ 6
+        'E': 'E',   # 5 → 5 (neutro)
+        'F': 'D',   # 6 ↔ 4
+        'G': 'C',   # 7 ↔ 3
+        'X': 'B',   # 8 ↔ 2
+        'Z': 'A'    # 9 ↔ 1
+    }
+    
+    # 🎴 CARTAS — VISUAL DE BARALHO DE VERDADE
+    CARTAS_DISPONIVEIS = [
+        {'letra': 'Y', 'cor_fundo': '#fef3c7', 'cor_texto': '#92400e', 'borda': '#f59e0b'},
+        {'letra': 'A', 'cor_fundo': '#dcfce7', 'cor_texto': '#166534', 'borda': '#22c55e'},
+        {'letra': 'B', 'cor_fundo': '#fef9c3', 'cor_texto': '#854d0e', 'borda': '#eab308'},
+        {'letra': 'C', 'cor_fundo': '#fee2e2', 'cor_texto': '#991b1b', 'borda': '#ef4444'},
+        {'letra': 'D', 'cor_fundo': '#dbeafe', 'cor_texto': '#1e40af', 'borda': '#3b82f6'},
+        {'letra': 'E', 'cor_fundo': '#f8fafc', 'cor_texto': '#0f172a', 'borda': '#94a3b8'},
+        {'letra': 'F', 'cor_fundo': '#dbeafe', 'cor_texto': '#1e40af', 'borda': '#3b82f6'},
+        {'letra': 'G', 'cor_fundo': '#fee2e2', 'cor_texto': '#991b1b', 'borda': '#ef4444'},
+        {'letra': 'X', 'cor_fundo': '#fef9c3', 'cor_texto': '#854d0e', 'borda': '#eab308'},
+        {'letra': 'Z', 'cor_fundo': '#dcfce7', 'cor_texto': '#166534', 'borda': '#22c55e'}
+    ]
+    
+    TODAS_LETRAS = ['Y', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'X', 'Z']
+    
+    mensagem = ""
+    fase = session.get("fase_cartas", 1)
+    pontuacao = session.get("pontos", 0)
+    cartas_alvo = session.get("cartas_alvo", [])
+    resposta_selecionada = session.get("resposta_selecionada", [])
+    
+    qtd = {1:3, 2:6, 3:8, 4:9}[fase]
+    pontos_por_acerto = {1:100, 2:300, 3:500, 4:1000}[fase]
+    
+    if request.method == "POST":
+        if "nova" in request.form:
+            import random
+            cartas_alvo = random.sample(CARTAS_DISPONIVEIS, qtd)
+            session["cartas_alvo"] = cartas_alvo
+            resposta_selecionada = []
+            session["resposta_selecionada"] = []
+            mensagem = "🔄 Novas cartas geradas!"
+        
+        elif "selecionar" in request.form:
+            letra = request.form["selecionar"]
+            resposta_selecionada.append(letra)
+            session["resposta_selecionada"] = resposta_selecionada
+        
+        elif "verificar" in request.form:
+            if len(resposta_selecionada) != len(cartas_alvo):
+                mensagem = "<div class='erro'>❌ Selecione todas as cartas primeiro!</div>"
+            else:
+                resposta_correta = [TABELA_REGRAS[carta['letra']] for carta in cartas_alvo]
+                if resposta_selecionada == resposta_correta:
+                    pontuacao += pontos_por_acerto
+                    session["pontos"] = pontuacao
+                    mensagem = f"<div class='sucesso'>✅ ACERTOU! +{pontos_por_acerto} PONTOS! 🏆</div>"
+                    if fase < 4:
+                        fase += 1
+                        session["fase_cartas"] = fase
+                        mensagem += f"<div class='aviso'>🎉 AVANÇOU PARA FASE {fase}! +{pontos_por_acerto} pts</div>"
+                    qtd = {1:3, 2:6, 3:8, 4:9}[fase]
+                    import random
+                    cartas_alvo = random.sample(CARTAS_DISPONIVEIS, qtd)
+                    session["cartas_alvo"] = cartas_alvo
+                    resposta_selecionada = []
+                    session["resposta_selecionada"] = []
+                else:
+                    mensagem = "<div class='erro'>❌ Errou! Tente de novo!</div>"
+                    resposta_selecionada = []
+                    session["resposta_selecionada"] = []
+    
+    if not cartas_alvo:
+        import random
+        cartas_alvo = random.sample(CARTAS_DISPONIVEIS, qtd)
+        session["cartas_alvo"] = cartas_alvo
+    
+    # 🎴 RENDERIZA CARTAS ALVO — VISUAL DE BARALHO
+    html_alvo = "".join([
+        f"<div style='background:linear-gradient(145deg, {carta['cor_fundo']}, #ffffff); "
+        f"color:{carta['cor_texto']}; border: 4px solid {carta['borda']};' "
+        f"class='w-20 h-28 md:w-24 md:h-32 rounded-xl flex flex-col items-center justify-center text-3xl font-bold shadow-2xl transform hover:scale-105 transition-transform'>"
+        f"<span class='text-xs absolute top-2 left-2'>{carta['letra']}</span>"
+        f"<span class='text-4xl'>{carta['letra']}</span>"
+        f"<span class='text-xs absolute bottom-2 right-2 rotate-180'>{carta['letra']}</span>"
+        f"</div>"
+        for carta in cartas_alvo
+    ])
+    
+    # 🎴 CARTAS PRA CLICAR — VISUAL DE BARALHO
+    html_disponiveis = "".join([
+        f"<button type='submit' name='selecionar' value='{carta['letra']}' "
+        f"style='background:linear-gradient(145deg, {carta['cor_fundo']}, #ffffff); "
+        f"color:{carta['cor_texto']}; border: 3px solid {carta['borda']};' "
+        f"class='w-16 h-24 md:w-18 md:h-26 rounded-lg flex flex-col items-center justify-center text-2xl font-bold shadow-lg hover:shadow-2xl hover:scale-110 transition-all active:scale-95'>"
+        f"<span class='text-xs'>{carta['letra']}</span>"
+        f"<span class='text-3xl'>{carta['letra']}</span>"
+        f"</button>"
+        for carta in CARTAS_DISPONIVEIS
+    ])
+    
+    # ✅ RESPOSTA DO JOGADOR
+    html_resposta = "".join([
+        f"<div style='background:linear-gradient(145deg, #bbf7d0, #ffffff); color:#166534; border:3px solid #22c55e;' "
+        f"class='w-16 h-24 rounded-lg flex items-center justify-center text-2xl font-bold shadow-lg'>{letra}</div>"
+        for letra in resposta_selecionada
+    ]) or f"<p class='text-gray-400 text-center py-6 text-lg'>🎴 Clique nas cartas para formar sua resposta...</p>"
+    
+    return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado,
+        conteudo=f"""
+        <div class="bloco max-w-4xl mx-auto">
+            <!-- 🏆 PONTUAÇÃO E FASE -->
+            <div class="bg-gradient-to-r from-yellow-900/50 to-amber-900/50 p-4 rounded-xl mb-6 flex justify-between items-center border border-yellow-600">
+                <div>
+                    <h3 class="text-2xl font-bold text-yellow-400">🃏 Jogo das Cartas</h3>
+                    <p class="text-yellow-200 text-sm">FASE {fase}/4 · {qtd} cartas alvo</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold text-white">🏆 {pontuacao}</p>
+                    <p class="text-yellow-300 text-sm">pontos</p>
+                </div>
+            </div>
+            
+            <!-- 🎯 CARTAS ALVO — O QUE PRECISA ACERTAR -->
+            <div class="bg-gray-900 p-6 rounded-xl mb-6 border-2 border-gray-700">
+                <p class="text-center text-lg text-gray-300 mb-4">🎴 Cartas Alvo — Encontre a correspondente:</p>
+                <div class="flex justify-center gap-4 flex-wrap">{html_alvo}</div>
+            </div>
+            
+            <!-- ✅ RESPOSTA DO JOGADOR -->
+            <div class="bg-gray-800 p-6 rounded-xl mb-6 border-2 border-dashed border-green-600">
+                <p class="text-center text-lg text-gray-300 mb-4">✅ Sua Resposta ({len(resposta_selecionada)}/{len(cartas_alvo)}):</p>
+                <div class="flex justify-center gap-3 flex-wrap min-h-[120px] items-center">{html_resposta}</div>
+            </div>
+            
+            {mensagem}
+            
+            <!-- 🃏 CARTAS DISPONÍVEIS PRA CLICAR -->
+            <div class="bg-gray-800 p-6 rounded-xl mb-6 border-2 border-gray-600">
+                <p class="text-center text-lg text-gray-300 mb-4">🎴 Clique nas cartas para responder:</p>
+                <form method="POST" class="flex justify-center gap-3 flex-wrap">{html_disponiveis}</form>
+            </div>
+            
+            <!-- 🔘 BOTÕES -->
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <form method="POST">
+                    <button type="submit" name="verificar" value="1" class="w-full py-4 text-xl font-bold bg-green-600 hover:bg-green-500 rounded-xl transition-colors">✅ Verificar Resposta</button>
+                </form>
+                <form method="POST">
+                    <button type="submit" name="nova" value="1" class="w-full py-4 text-xl font-bold bg-amber-600 hover:bg-amber-500 rounded-xl transition-colors">🔄 Novas Cartas</button>
+                </form>
+            </div>
+            
+            <!-- 📊 REGRAS E PONTOS -->
+            <div class="mt-6 p-4 bg-gray-900/50 rounded-xl text-center text-sm text-gray-400">
+                <p class="mb-2">📖 Regra: Y=0 · A↔Z · B↔X · C↔G · D↔F · E=5</p>
+                <p>💰 Pontos: F1=100 · F2=300 · F3=500 · F4=1000</p>
+            </div>
+        </div>
+        """)
+
+
 # ============= EXECUÇÃO DO SERVIDOR =============
 if __name__ == "__main__":
     print("🚀 JNB TECNOLOGIA — Servidor iniciando na porta 5000...")
