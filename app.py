@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — CÓDIGO FINAL COMPLETO ✅
 # REDE SOCIAL · JOGO BENTINHO · IA · DNA · CADASTRO
 # POSTAGENS · CURTIDAS · PONTUAÇÃO · PORTA 5000
@@ -265,7 +265,7 @@ def jogo_bentinho():
         resposta = request.form.get("resposta", "").strip()
         alvo = session.get("bent_alvo", "")
 
-        # Compara exato — 000 = &&& ✅
+        # Compara exato — 000 = 000 ✅
         if resposta == alvo:
             pts = PONTOS[session["bent_fase"]]
             session["bent_pontos"] += pts
