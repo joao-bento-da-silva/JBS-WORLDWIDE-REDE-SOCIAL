@@ -1,4 +1,4 @@
-# ==================================================
+# ================================================== 
 # © 2026 JNB TECNOLOGIA — CÓDIGO FINAL COMPLETO ✅
 # REDE SOCIAL · JOGO BENTINHO · IA · DNA · CADASTRO
 # POSTAGENS · CURTIDAS · PONTUAÇÃO · PORTA 5000
