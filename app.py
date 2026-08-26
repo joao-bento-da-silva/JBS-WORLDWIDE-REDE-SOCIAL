@@ -190,7 +190,6 @@ def uploaded_file(filename):
 
 # ==================================================
 # 🃏 JOGO DAS CARTAS — INTEGRADO ✅
-# Regra: Y=0 · A↔Z · B↔X · C↔G · D↔F · E=5
 # ==================================================
 @app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
