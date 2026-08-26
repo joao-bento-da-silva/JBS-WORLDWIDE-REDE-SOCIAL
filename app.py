@@ -265,7 +265,7 @@ def jogo_bentinho():
         resposta = request.form.get("resposta", "").strip()
         alvo = session.get("bent_alvo", "")
 
-        # Compara exato — 000 = kwy ✅
+        # Compara exato — 000 = &&& ✅
         if resposta == alvo:
             pts = PONTOS[session["bent_fase"]]
             session["bent_pontos"] += pts
