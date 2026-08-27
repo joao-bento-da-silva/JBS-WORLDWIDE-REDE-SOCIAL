@@ -1,4 +1,4 @@
-  # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — COM JOGO DAS CARTAS 🃏
 # REDE · JOGO BENTINHO · JOGO CARTAS · IA · DNA
 # TUDO INTEGRADO · PRONTO PARA USAR ✅
