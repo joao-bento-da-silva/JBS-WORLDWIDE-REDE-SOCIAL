@@ -1,6 +1,6 @@
 # ==================================================
 # © 2026 JNB TECNOLOGIA — COM JOGO DAS CARTAS 🃏
-# REDE · JOGO BENTINHO · JOGO CARTAS · IA · DNA
+# REDE · JOGO BENTINHO · JOGO SEGREDO DAS CARTASCARTAS · IA · DNA
 # TUDO INTEGRADO · PRONTO PARA USAR ✅
 # ==================================================
 
@@ -189,10 +189,10 @@ def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # ==================================================
-# 🃏 JOGO DAS CARTAS — INTEGRADO ✅
+# 🃏 JOGO SEGREDO DAS CARTAS — INTEGRADO ✅
 # ==================================================
-@app.route("/jogo_cartas", methods=["GET", "POST"])
-def jogo_cartas():
+@app.route("/jogo_segredo_cartas", methods=["GET", "POST"])
+def jogo_segredo_cartas():
     if not usuario_logado():
         return redirect(url_for("inicio"))
 
