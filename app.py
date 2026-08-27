@@ -190,8 +190,9 @@ def uploaded_file(filename):
 
 # ==================================================
 # 🃏 JOGO DAS CARTAS — INTEGRADO ✅
+# regra do jogo invisível ao jogador 
 # ==================================================
-@app.route("/jogo_segredo_cartas", methods=["GET", "POST"])
+@app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
     if not usuario_logado():
         return redirect(url_for("inicio"))
@@ -392,7 +393,7 @@ def jogo_bentinho():
 </html>''')
 
 # ==================================================
-# 🏛️ PLATAFORMA PRINCIPAL- COM ABA DO JOGO DE CARTAS
+# 🏛️ PLATAFORMA PRINCIPAL - COM ABA DO JOGO DE CARTAS
 # ==================================================
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
