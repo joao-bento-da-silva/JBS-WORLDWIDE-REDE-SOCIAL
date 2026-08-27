@@ -392,7 +392,7 @@ def jogo_bentinho():
 </html>''')
 
 # ==================================================
-# 🏛️ PLATAFORMA PRINCIPAL 
+# 🏛️ PLATAFORMA PRINCIPAL- COM ABA DO JOGO DE CARTAS
 # ==================================================
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
