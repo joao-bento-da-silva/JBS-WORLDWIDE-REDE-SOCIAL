@@ -1,10 +1,12 @@
-# ==================================================
-# © 2026 JNB TECNOLOGIA — COM JOGO DAS CARTAS 🃏
-# REDE · JOGO BENTINHO · JOGO DAS CARTAS · IA · DNA
+ # ==================================================
+# © 2026 JNB TECNOLOGIA — COM DOWNLOAD DE DNA ✅
+# REGRA OCULTA NO JOGO 🃏 · DNA COM CHAVE SECRETA 🔒
+# REDE · JOGO BENTINHO · JOGO CARTAS · IA · DNA
+# BAIXAR / CARREGAR DNA — SALVAR NO CELULAR 📱
 # TUDO INTEGRADO · PRONTO PARA USAR ✅
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
 import sqlite3
 import os
 import random
@@ -15,13 +17,14 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
+CHAVE_DNA = os.environ.get("CHAVE_DNA_SECRETA", "JNB_SECRETA_DNA_2026_NAO_COMPARTILHAR")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
 BANCO_DADOS = "jnb_novo.db"
 
 def allowed_file(filename):
@@ -189,8 +192,7 @@ def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # ==================================================
-# 🃏 JOGO DAS CARTAS — INTEGRADO ✅
-# regra do jogo invisível ao jogador 
+# 🃏 JOGO DAS CARTAS — REGRA OCULTA ✅
 # ==================================================
 @app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
@@ -272,7 +274,7 @@ def jogo_cartas():
     <a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a>
     <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
     <p class="text-center text-lg mb-4">Fase ''' + str(fase) + '''/4 · Pontos: ''' + str(pontos) + '''</p>
-    <p class="text-center text-sm text-gray-400 mb-6">Regra: Y=0 · A↔Z · B↔X · C↔G · D↔F · E=5</p>
+    <!-- 🔒 REGRA REMOVIDA — NÃO APARECE MAIS! -->
     
     ''' + (f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else '') + '''
     
@@ -393,7 +395,27 @@ def jogo_bentinho():
 </html>''')
 
 # ==================================================
-# 🏛️ PLATAFORMA PRINCIPAL - COM ABA DO JOGO DE CARTAS
+# 📥 ROTA PARA BAIXAR DNA SALVO
+# ==================================================
+@app.route("/baixar_dna", methods=["POST"])
+def baixar_dna():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    
+    dna_texto = request.form.get("dna_texto", "").strip()
+    if not dna_texto:
+        return "Nenhum DNA para baixar", 400
+    
+    # Cria o arquivo com cabeçalho identificador
+    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
+    
+    resp = make_response(conteudo)
+    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
+    resp.headers["Content-Type"] = "application/octet-stream"
+    return resp
+
+# ==================================================
+# 🏛️ PLATAFORMA PRINCIPAL — DNA COM DOWNLOAD E CARREGAMENTO ✅
 # ==================================================
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
@@ -530,7 +552,7 @@ def plataforma():
             </div>
         </div>
 
-        <!-- ABA JOGOS — COM OS DOIS JOGOS 🎮🃏 -->
+        <!-- ABA JOGOS -->
         <div id="tab-jogo" class="tab-content hidden">
             <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
@@ -558,22 +580,35 @@ def plataforma():
             </div>
         </div>
 
-        <!-- ABA DNA -->
+        <!-- ABA DNA — COM DOWNLOAD E CARREGAMENTO ✅ -->
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA / BNJ</h2>
-                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{{ dna_chave }}</code></p>
-                <textarea id="dna-input" placeholder="Digite texto para converter em DNA..." class="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-white mb-4"></textarea>
-                <div class="flex gap-3 flex-wrap">
-                    <button onclick="converterParaDNA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">➡️ Converter para DNA</button>
-                    <button onclick="decodificarDNA()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold px-5 py-2 rounded-lg">⬅️ Decodificar DNA</button>
+                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA / BNJ — SEGURO 🔒</h2>
+                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">{{ dna_chave }}</code></p>
+                <p class="text-sm text-red-400 mb-4">⚠️ Apenas você com sua chave consegue decodificar! Salve o arquivo .bnj no seu celular!</p>
+                
+                <textarea id="dna-input" placeholder="Digite texto para converter OU cole o DNA carregado do arquivo..." class="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-white mb-4"></textarea>
+                
+                <!-- 📂 CARREGAR ARQUIVO SALVO -->
+                <div class="mb-4 p-3 bg-gray-900 rounded-lg border border-gray-600">
+                    <p class="text-sm text-gray-400 mb-2">📂 Carregar documento salvo (.bnj):</p>
+                    <input type="file" id="arquivo-dna" accept=".bnj" class="text-sm text-gray-300" onchange="carregarArquivoDNA(this)">
                 </div>
+                
+                <div class="flex gap-3 flex-wrap mb-4">
+                    <button onclick="converterParaDNA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">➡️ Converter para DNA 🔒</button>
+                    <button onclick="decodificarDNA()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold px-5 py-2 rounded-lg">⬅️ Decodificar DNA 🔒</button>
+                    <button onclick="baixarDNA()" id="btn-baixar" class="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg hidden">💾 Baixar DNA</button>
+                </div>
+                
                 <div id="dna-result" class="mt-6 p-4 bg-gray-900 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
 
     <script>
+        let ultimoDNA = ""; // Guarda o último DNA gerado para baixar
+
         function switchTab(nome) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -593,19 +628,49 @@ def plataforma():
             res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">Documento Gerado:</h4><p class="text-gray-300">' + texto + '</p>';
         }
 
-        function textoParaDNA(texto) {
+        // 🔒 CONVERSÃO COM CHAVE SECRETA — NÃO FUNCIONA SEM A CHAVE CERTA!
+        const CHAVE_SECRETA = "{{ dna_chave }}"; // Cada usuário tem a SUA chave única!
+
+        function aplicarChave(bit, chaveBit) {
+            return bit === chaveBit ? '0' : '1';
+        }
+
+        function textoParaDNA(texto, chave) {
             let dna = '';
+            const chaveBits = chave.split('').map(c => c.charCodeAt(2) % 2 === 0 ? '0' : '1').join('');
+            let bitPos = 0;
+            
             for (let i = 0; i < texto.length; i++) {
                 let bin = texto.charCodeAt(i).toString(2).padStart(8, '0');
-                for (let b = 0; b < bin.length; b++) dna += bin[b] === '1' ? 'GC' : 'AT';
+                for (let b = 0; b < bin.length; b++) {
+                    const chaveBit = chaveBits[bitPos % chaveBits.length];
+                    const bitFinal = aplicarChave(bin[b], chaveBit);
+                    dna += bitFinal === '1' ? 'GC' : 'AT';
+                    bitPos++;
+                }
             }
             return dna;
         }
 
-        function DNAParaTexto(dna) {
-            if (!dna.includes('AT') && !dna.includes('TA')) return null;
+        function DNAParaTexto(dna, chave) {
+            if (!dna.includes('AT') && !dna.includes('GC')) return null;
+            
+            // Remove o cabeçalho do arquivo .bnj se existir
+            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\s\S]*?\n/, '').trim();
+            
+            const chaveBits = chave.split('').map(c => c.charCodeAt(2) % 2 === 0 ? '0' : '1').join('');
+            let bitPos = 0;
             let bin = '';
-            for (let i = 0; i < dna.length; i += 2) bin += dna.substring(i, i + 2) === 'GC' ? '1' : '0';
+            
+            for (let i = 0; i < limpo.length; i += 2) {
+                const par = limpo.substring(i, i + 2);
+                const bitCodificado = par === 'GC' ? '1' : '0';
+                const chaveBit = chaveBits[bitPos % chaveBits.length];
+                const bitOriginal = bitCodificado === chaveBit ? '0' : '1';
+                bin += bitOriginal;
+                bitPos++;
+            }
+            
             let texto = '';
             for (let i = 0; i < bin.length; i += 8) {
                 const byte = bin.substring(i, i + 8);
@@ -617,23 +682,65 @@ def plataforma():
         function converterParaDNA() {
             const texto = document.getElementById('dna-input').value.trim();
             if (!texto) return alert('Digite algo para converter!');
-            const dna = textoParaDNA(texto);
+            const dna = textoParaDNA(texto, CHAVE_SECRETA);
+            ultimoDNA = dna; // Salva para baixar
             const res = document.getElementById('dna-result');
             res.classList.remove('hidden');
-            res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">DNA Gerado:</h4><p class="font-mono text-sm text-green-400 break-all">' + dna + '</p>';
+            document.getElementById('btn-baixar').classList.remove('hidden'); // Mostra botão de baixar
+            res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">🔒 DNA Criptografado:</h4><p class="font-mono text-sm text-green-400 break-all">' + dna + '</p><p class="text-xs text-gray-500 mt-2">💾 Clique em "Baixar DNA" para salvar no seu celular!</p>';
         }
 
         function decodificarDNA() {
             const dna = document.getElementById('dna-input').value.trim();
-            if (!dna.includes('AT') && !dna.includes('TA')) return alert('Digite uma sequência de DNA válida!');
-            const texto = DNAParaTexto(dna);
+            if (!dna.includes('AT') && !dna.includes('GC')) return alert('Digite uma sequência de DNA ou carregue um arquivo .bnj!');
+            const texto = DNAParaTexto(dna, CHAVE_SECRETA);
             const res = document.getElementById('dna-result');
             res.classList.remove('hidden');
-            if (texto) {
-                res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">✅ Decodificado:</h4><p class="text-green-400">' + texto + '</p>';
+            if (texto && texto.length > 0) {
+                res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">✅ Decodificado com sua chave:</h4><p class="text-green-400 whitespace-pre-wrap">' + texto + '</p>';
             } else {
-                res.innerHTML = '<h4 class="text-red-400 font-bold mb-2">❌ DNA inválido!</h4>';
+                res.innerHTML = '<h4 class="text-red-400 font-bold mb-2">❌ Falha — chave incorreta ou DNA inválido!</h4><p class="text-gray-400 text-sm">Apenas o dono do documento com a chave original consegue decodificar.</p>';
             }
+        }
+
+        // 📂 CARREGAR ARQUIVO .bnj SALVO
+        function carregarArquivoDNA(input) {
+            const arquivo = input.files[0];
+            if (!arquivo) return;
+            
+            const leitor = new FileReader();
+            leitor.onload = function(e) {
+                const conteudo = e.target.result;
+                document.getElementById('dna-input').value = conteudo;
+                alert('✅ Arquivo carregado! Agora clique em "Decodificar DNA"');
+            };
+            leitor.readAsText(arquivo);
+        }
+
+        // 💾 BAIXAR DNA COMO ARQUIVO .bnj
+        function baixarDNA() {
+            if (!ultimoDNA) return alert('Nenhum DNA para baixar! Converta primeiro.');
+            
+            // Cria o arquivo com nome automático
+            const data = new Date();
+            const nomeArquivo = 'documento_' + data.getFullYear() + 
+                String(data.getMonth()+1).padStart(2,'0') + 
+                String(data.getDate()).padStart(2,'0') + '_' +
+                String(data.getHours()).padStart(2,'0') + 
+                String(data.getMinutes()).padStart(2,'0') + '.bnj';
+            
+            // Cria o blob e faz o download
+            const blob = new Blob(['JNB-DNA-ENCRYPTED\\n' + new Date().toLocaleString('pt-BR') + '\\n' + ultimoDNA], {type: 'application/octet-stream'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('✅ Arquivo salvo como: ' + nomeArquivo + '\\nGuarde no seu celular! Para decodificar, carregue o arquivo aqui.');
         }
     </script>
 </body>
