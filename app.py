@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — COM DOWNLOAD DE DNA ✅
 # REGRA OCULTA NO JOGO 🃏 · DNA COM CHAVE SECRETA 🔒
 # REDE · JOGO BENTINHO · JOGO CARTAS · IA · DNA
@@ -274,8 +274,6 @@ def jogo_cartas():
     <a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a>
     <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
     <p class="text-center text-lg mb-4">Fase ''' + str(fase) + '''/4 · Pontos: ''' + str(pontos) + '''</p>
-    <!-- 🔒 REGRA REMOVIDA — NÃO APARECE MAIS! -->
-    
     ''' + (f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else '') + '''
     
     <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
@@ -395,7 +393,7 @@ def jogo_bentinho():
 </html>''')
 
 # ==================================================
-# 📥 ROTA PARA BAIXAR DNA SALVO
+# 📥 ROTA PARA BAIXAR DNA — CORRIGIDA ✅
 # ==================================================
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
@@ -406,7 +404,6 @@ def baixar_dna():
     if not dna_texto:
         return "Nenhum DNA para baixar", 400
     
-    # Cria o arquivo com cabeçalho identificador
     conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
     
     resp = make_response(conteudo)
@@ -415,7 +412,7 @@ def baixar_dna():
     return resp
 
 # ==================================================
-# 🏛️ PLATAFORMA PRINCIPAL — DNA COM DOWNLOAD E CARREGAMENTO ✅
+# 🏛️ PLATAFORMA PRINCIPAL — TODAS AS FUNÇÕES ✅
 # ==================================================
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
@@ -487,11 +484,11 @@ def plataforma():
         <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
             <div>
                 <h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1>
-                <p class="text-gray-400">Bem-vindo, {{ nome_usuario }}!</p>
+                <p class="text-gray-400">Bem-vindo, ''' + nome_usuario + '''!</p>
             </div>
             <div class="text-right">
                 <p class="text-sm text-gray-400">Total de Pontos</p>
-                <p class="text-xl font-bold text-yellow-500">{{ total_pontos }}</p>
+                <p class="text-xl font-bold text-yellow-500">''' + str(total_pontos) + '''</p>
                 <a href="/sair" class="text-red-400 hover:text-red-300 text-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></a>
             </div>
         </div>
@@ -520,7 +517,7 @@ def plataforma():
                 </form>
             </div>
             <div class="space-y-4">
-                {% if postagens %}
+                ''' + ("""{% if postagens %}
                     {% for p in postagens %}
                     <div id="post-{{ p[0] }}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30">
                         <h4 class="font-bold text-yellow-400">{{ p[4] }}</h4>
@@ -548,7 +545,10 @@ def plataforma():
                         <i class="fa-solid fa-newspaper text-4xl mb-3"></i>
                         <p>Ainda não há postagens. Seja o primeiro a compartilhar!</p>
                     </div>
-                {% endif %}
+                {% endif %}""" if postagens else """<div class="text-center py-10 text-gray-500">
+                        <i class="fa-solid fa-newspaper text-4xl mb-3"></i>
+                        <p>Ainda não há postagens. Seja o primeiro a compartilhar!</p>
+                    </div>""") + '''
             </div>
         </div>
 
@@ -584,7 +584,7 @@ def plataforma():
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA / BNJ — SEGURO 🔒</h2>
-                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">{{ dna_chave }}</code></p>
+                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">''' + dna_chave + '''</code></p>
                 <p class="text-sm text-red-400 mb-4">⚠️ Apenas você com sua chave consegue decodificar! Salve o arquivo .bnj no seu celular!</p>
                 
                 <textarea id="dna-input" placeholder="Digite texto para converter OU cole o DNA carregado do arquivo..." class="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-white mb-4"></textarea>
@@ -607,7 +607,7 @@ def plataforma():
     </div>
 
     <script>
-        let ultimoDNA = ""; // Guarda o último DNA gerado para baixar
+        let ultimoDNA = "";
 
         function switchTab(nome) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -628,8 +628,7 @@ def plataforma():
             res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">Documento Gerado:</h4><p class="text-gray-300">' + texto + '</p>';
         }
 
-        // 🔒 CONVERSÃO COM CHAVE SECRETA — NÃO FUNCIONA SEM A CHAVE CERTA!
-        const CHAVE_SECRETA = "{{ dna_chave }}"; // Cada usuário tem a SUA chave única!
+        const CHAVE_SECRETA = "''' + dna_chave + '''";
 
         function aplicarChave(bit, chaveBit) {
             return bit === chaveBit ? '0' : '1';
@@ -655,8 +654,7 @@ def plataforma():
         function DNAParaTexto(dna, chave) {
             if (!dna.includes('AT') && !dna.includes('GC')) return null;
             
-            // Remove o cabeçalho do arquivo .bnj se existir
-            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\s\S]*?\n/, '').trim();
+            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\\s\\S]*?\\n/, '').trim();
             
             const chaveBits = chave.split('').map(c => c.charCodeAt(2) % 2 === 0 ? '0' : '1').join('');
             let bitPos = 0;
@@ -683,10 +681,10 @@ def plataforma():
             const texto = document.getElementById('dna-input').value.trim();
             if (!texto) return alert('Digite algo para converter!');
             const dna = textoParaDNA(texto, CHAVE_SECRETA);
-            ultimoDNA = dna; // Salva para baixar
+            ultimoDNA = dna;
             const res = document.getElementById('dna-result');
             res.classList.remove('hidden');
-            document.getElementById('btn-baixar').classList.remove('hidden'); // Mostra botão de baixar
+            document.getElementById('btn-baixar').classList.remove('hidden');
             res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">🔒 DNA Criptografado:</h4><p class="font-mono text-sm text-green-400 break-all">' + dna + '</p><p class="text-xs text-gray-500 mt-2">💾 Clique em "Baixar DNA" para salvar no seu celular!</p>';
         }
 
@@ -703,7 +701,6 @@ def plataforma():
             }
         }
 
-        // 📂 CARREGAR ARQUIVO .bnj SALVO
         function carregarArquivoDNA(input) {
             const arquivo = input.files[0];
             if (!arquivo) return;
@@ -717,11 +714,9 @@ def plataforma():
             leitor.readAsText(arquivo);
         }
 
-        // 💾 BAIXAR DNA COMO ARQUIVO .bnj
         function baixarDNA() {
             if (!ultimoDNA) return alert('Nenhum DNA para baixar! Converta primeiro.');
             
-            // Cria o arquivo com nome automático
             const data = new Date();
             const nomeArquivo = 'documento_' + data.getFullYear() + 
                 String(data.getMonth()+1).padStart(2,'0') + 
@@ -729,8 +724,7 @@ def plataforma():
                 String(data.getHours()).padStart(2,'0') + 
                 String(data.getMinutes()).padStart(2,'0') + '.bnj';
             
-            // Cria o blob e faz o download
-            const blob = new Blob(['JNB-DNA-ENCRYPTED\\n' + new Date().toLocaleString('pt-BR') + '\\n' + ultimoDNA], {type: 'application/octet-stream'});
+            const blob = new Blob(['JNB-DNA-ENCRYPTED\\n' + data.toLocaleString('pt-BR') + '\\n' + ultimoDNA], {type: 'application/octet-stream'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -745,7 +739,7 @@ def plataforma():
     </script>
 </body>
 </html>
-    ''', nome_usuario=nome_usuario, total_pontos=total_pontos, dna_chave=dna_chave, postagens=postagens)
+    ''')
 
 # ============= EXECUÇÃO =============
 if __name__ == "__main__":
