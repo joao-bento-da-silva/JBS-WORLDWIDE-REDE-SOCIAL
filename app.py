@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — CÓDIGO FINAL CORRIGIDO ✅
 # REDE · JOGOS · IA · DNA (CONVERSÃO + DOWNLOAD + DECODIFICAÇÃO)
 # PORTA 5000 · SEM ERROS · 100% FUNCIONAL ✅
