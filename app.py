@@ -390,27 +390,7 @@ def jogo_bentinho():
 </body>
 </html>''')
 
-# ROTA PARA BAIXAR DNA — COLA AQUI!
-@app.route("/baixar_dna", methods=["POST"])
-def baixar_dna():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    
-    dna_texto = request.form.get("dna_texto", "").strip()
-    if not dna_texto:
-        return "Nenhum DNA para baixar", 400
-    
-    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
-    
-    resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
-    resp.headers["Content-Type"] = "application/octet-stream"
-    return resp
-
-# A rota da plataforma continua aqui — NÃO MEXE NELA!
-@app.route("/plataforma", methods=["GET", "POST"])
-def plataforma():
-    ...
+# ROT
 
 
 
