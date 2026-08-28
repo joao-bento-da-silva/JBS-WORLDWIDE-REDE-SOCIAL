@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — COM DOWNLOAD DE DNA ✅
 # REGRA OCULTA NO JOGO 🃏 · DNA COM CHAVE SECRETA 🔒
 # REDE · JOGO BENTINHO · JOGO CARTAS · IA · DNA
