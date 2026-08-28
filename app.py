@@ -259,34 +259,34 @@ def jogo_cartas():
     resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas abaixo...</p>"
     disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS_DISPONIVEIS])
     
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🃏 Jogo das Cartas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}</style>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
 </head>
 <body class="p-6 max-w-2xl mx-auto">
     <a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a>
     <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
-    <p class="text-center text-lg mb-4">Fase ''' + str(fase) + '''/4 · Pontos: ''' + str(pontos) + '''</p>
-    ''' + (f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else '') + '''
+    <p class="text-center text-lg mb-4">Fase {fase}/4 · Pontos: {pontos}</p>
+    {f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
     
     <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
         <p class="text-center mb-3 text-gray-400">🎯 Cartas Alvo — Encontre a correspondente:</p>
-        <div class="flex flex-wrap justify-center">''' + alvo_html + '''</div>
+        <div class="flex flex-wrap justify-center">{alvo_html}</div>
     </div>
     
     <div class="bg-gray-800 p-5 rounded-lg border border-green-500/30 mb-5">
         <p class="text-center mb-3 text-gray-400">✅ Sua Resposta:</p>
-        <div class="flex flex-wrap justify-center">''' + resp_html + '''</div>
+        <div class="flex flex-wrap justify-center">{resp_html}</div>
     </div>
     
     <form method="POST" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
         <p class="text-center mb-3 text-gray-400">🃏 Clique para selecionar:</p>
-        <div class="flex flex-wrap justify-center">''' + disp_html + '''</div>
+        <div class="flex flex-wrap justify-center">{disp_html}</div>
     </form>
     
     <div class="flex gap-3 justify-center flex-wrap">
@@ -359,27 +359,27 @@ def jogo_bentinho():
     pontos = session["bent_pontos"]
     placeholder = {1:"___",2:"______",3:"________",4:"_________"}[fase]
 
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎮 Segredo dos Números</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}</style>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
 </head>
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
         <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
         <p class="text-center text-gray-400 mb-6">Autor: João Bento da Silva</p>
-        <p class="text-center text-lg mb-6">Fase ''' + str(fase) + '''/4 · Pontos: ''' + str(pontos) + '''</p>
-        ''' + (f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else '') + '''
+        <p class="text-center text-lg mb-6">Fase {fase}/4 · Pontos: {pontos}</p>
+        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
             <p class="text-gray-400 mb-2">Número do Avatar:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">''' + num + '''</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{num}</p>
         </div>
         <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="''' + placeholder + '''" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
+            <input type="text" name="resposta" placeholder="{placeholder}" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
             <div class="flex gap-3">
                 <button type="submit" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
                 <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
@@ -467,56 +467,7 @@ def plataforma():
     postagens = c.fetchall()
     conn.close()
     
-    return render_template_string('''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma — JNB TECNOLOGIA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>.hidden{display:none !important;}</style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6">
-        <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1>
-                <p class="text-gray-400">Bem-vindo, ''' + nome_usuario + '''!</p>
-            </div>
-            <div class="text-right">
-                <p class="text-sm text-gray-400">Total de Pontos</p>
-                <p class="text-xl font-bold text-yellow-500">''' + str(total_pontos) + '''</p>
-                <a href="/sair" class="text-red-400 hover:text-red-300 text-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></a>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
-            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">📄 IA</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
-        </div>
-
-        <!-- ABA REDE -->
-        <div id="tab-rede" class="tab-content">
-            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" enctype="multipart/form-data">
-                    <textarea name="texto_post" placeholder="Escreva algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                            <i class="fa-solid fa-paperclip mr-1"></i> Foto/Vídeo
-                            <input type="file" name="arquivo" accept="image/*,video/*" class="hidden">
-                        </label>
-                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">
-                            <i class="fa-solid fa-paper-plane mr-1"></i> Publicar
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div class="space-y-4">
-                '''
-    # Renderizar postagens dinamicamente
+    # Montar HTML das postagens FORA do render_template_string
     postagens_html = ""
     if postagens:
         for p in postagens:
@@ -552,7 +503,56 @@ def plataforma():
                         <p>Ainda não há postagens. Seja o primeiro a compartilhar!</p>
                     </div>
         '''
-    postagens_html += '''
+    
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma — JNB TECNOLOGIA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>.hidden{{display:none !important;}}</style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1>
+                <p class="text-gray-400">Bem-vindo, {nome_usuario}!</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-400">Total de Pontos</p>
+                <p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
+                <a href="/sair" class="text-red-400 hover:text-red-300 text-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
+            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">📄 IA</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
+        </div>
+
+        <!-- ABA REDE -->
+        <div id="tab-rede" class="tab-content">
+            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
+                <form method="POST" enctype="multipart/form-data">
+                    <textarea name="texto_post" placeholder="Escreva algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
+                            <i class="fa-solid fa-paperclip mr-1"></i> Foto/Vídeo
+                            <input type="file" name="arquivo" accept="image/*,video/*" class="hidden">
+                        </label>
+                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">
+                            <i class="fa-solid fa-paper-plane mr-1"></i> Publicar
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="space-y-4">
+                {postagens_html}
             </div>
         </div>
 
@@ -588,7 +588,7 @@ def plataforma():
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA / BNJ — SEGURO 🔒</h2>
-                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">''' + dna_chave + '''</code></p>
+                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">{dna_chave}</code></p>
                 <p class="text-sm text-red-400 mb-4">⚠️ Apenas você com sua chave consegue decodificar! Salve o arquivo .bnj no seu celular!</p>
                 
                 <textarea id="dna-input" placeholder="Digite texto para converter OU cole o DNA OU carregue o arquivo .bnj..." 
@@ -614,75 +614,75 @@ def plataforma():
     <script>
         let ultimoDNA = "";
 
-        function switchTab(nome) {
+        function switchTab(nome) {{
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(btn => {
+            document.querySelectorAll('.tab-btn').forEach(btn => {{
                 btn.classList.remove('bg-yellow-600', 'text-black');
                 btn.classList.add('bg-gray-700', 'hover:bg-gray-600');
-            });
+            }});
             document.getElementById('tab-' + nome).classList.remove('hidden');
             event.target.classList.add('bg-yellow-600', 'text-black');
             event.target.classList.remove('bg-gray-700');
-        }
+        }}
 
-        function gerarDocumento() {
+        function gerarDocumento() {{
             const texto = document.getElementById('ia-input').value.trim();
             if (!texto) return alert('Digite algo para gerar!');
             const res = document.getElementById('ia-result');
             res.classList.remove('hidden');
             res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">Documento Gerado:</h4><p class="text-gray-300">' + texto + '</p>';
-        }
+        }}
 
-        const CHAVE_SECRETA = "''' + dna_chave + '''";
+        const CHAVE_SECRETA = "{dna_chave}";
 
-        function aplicarChave(bit, chaveBit) {
+        function aplicarChave(bit, chaveBit) {{
             return bit === chaveBit ? '0' : '1';
-        }
+        }}
 
-        function textoParaDNA(texto, chave) {
+        function textoParaDNA(texto, chave) {{
             let dna = '';
             const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
             let bitPos = 0;
             
-            for (let i = 0; i < texto.length; i++) {
+            for (let i = 0; i < texto.length; i++) {{
                 let bin = texto.charCodeAt(i).toString(2).padStart(8, '0');
-                for (let b = 0; b < bin.length; b++) {
+                for (let b = 0; b < bin.length; b++) {{
                     const chaveBit = chaveBits[bitPos % chaveBits.length];
                     const bitFinal = aplicarChave(bin[b], chaveBit);
                     dna += bitFinal === '1' ? 'GC' : 'AT';
                     bitPos++;
-                }
-            }
+                }}
+            }}
             return dna;
-        }
+        }}
 
-        function DNAParaTexto(dna, chave) {
+        function DNAParaTexto(dna, chave) {{
             if (!dna.includes('AT') && !dna.includes('GC')) return null;
             
-            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\s\S]*?\n/, '').trim();
+            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\\s\\S]*?\\n/, '').trim();
             
             const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
             let bitPos = 0;
             let bin = '';
             
-            for (let i = 0; i < limpo.length; i += 2) {
+            for (let i = 0; i < limpo.length; i += 2) {{
                 const par = limpo.substring(i, i + 2);
                 const bitCodificado = par === 'GC' ? '1' : '0';
                 const chaveBit = chaveBits[bitPos % chaveBits.length];
                 const bitOriginal = bitCodificado === chaveBit ? '0' : '1';
                 bin += bitOriginal;
                 bitPos++;
-            }
+            }}
             
             let texto = '';
-            for (let i = 0; i < bin.length; i += 8) {
+            for (let i = 0; i < bin.length; i += 8) {{
                 const byte = bin.substring(i, i + 8);
                 if (byte.length === 8) texto += String.fromCharCode(parseInt(byte, 2));
-            }
+            }}
             return texto;
-        }
+        }}
 
-        function converterParaDNA() {
+        function converterParaDNA() {{
             const texto = document.getElementById('dna-input').value.trim();
             if (!texto) return alert('Digite algo para converter!');
             const dna = textoParaDNA(texto, CHAVE_SECRETA);
@@ -691,35 +691,35 @@ def plataforma():
             res.classList.remove('hidden');
             document.getElementById('btn-baixar').classList.remove('hidden');
             res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">🔒 DNA Criptografado:</h4><p class="font-mono text-sm text-green-400 break-all">' + dna + '</p><p class="text-xs text-gray-500 mt-2">💾 Clique em "Baixar DNA" para salvar no seu celular!</p>';
-        }
+        }}
 
-        function decodificarDNA() {
+        function decodificarDNA() {{
             const dna = document.getElementById('dna-input').value.trim();
             if (!dna.includes('AT') && !dna.includes('GC')) return alert('Digite uma sequência de DNA ou carregue um arquivo .bnj!');
             const texto = DNAParaTexto(dna, CHAVE_SECRETA);
             const res = document.getElementById('dna-result');
             res.classList.remove('hidden');
-            if (texto && texto.length > 0) {
+            if (texto && texto.length > 0) {{
                 res.innerHTML = '<h4 class="text-yellow-400 font-bold mb-2">✅ Decodificado com sua chave:</h4><p class="text-green-400 whitespace-pre-wrap">' + texto + '</p>';
-            } else {
+            }} else {{
                 res.innerHTML = '<h4 class="text-red-400 font-bold mb-2">❌ Falha — chave incorreta ou DNA inválido!</h4><p class="text-gray-400 text-sm">Apenas o dono do documento com a chave original consegue decodificar.</p>';
-            }
-        }
+            }}
+        }}
 
-        function carregarArquivoDNA(input) {
+        function carregarArquivoDNA(input) {{
             const arquivo = input.files[0];
             if (!arquivo) return;
             
             const leitor = new FileReader();
-            leitor.onload = function(e) {
+            leitor.onload = function(e) {{
                 const conteudo = e.target.result;
                 document.getElementById('dna-input').value = conteudo;
                 alert('✅ Arquivo carregado! Agora clique em "Decodificar DNA"');
-            };
+            }};
             leitor.readAsText(arquivo);
-        }
+        }}
 
-        function baixarDNA() {
+        function baixarDNA() {{
             if (!ultimoDNA) return alert('Nenhum DNA para baixar! Converta primeiro.');
             
             const form = document.createElement('form');
@@ -738,13 +738,10 @@ def plataforma():
             document.body.removeChild(form);
             
             alert('✅ Arquivo baixado com sucesso! Guarde no seu celular. Para decodificar, carregue o arquivo aqui.');
-        }
+        }}
     </script>
 </body>
-</html>
-    ''' + postagens_html + '''
-    </div>
-    ''')
+</html>''')
 
 # ============= EXECUÇÃO =============
 if __name__ == "__main__":
