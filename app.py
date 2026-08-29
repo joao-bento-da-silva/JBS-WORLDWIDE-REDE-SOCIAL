@@ -407,9 +407,6 @@ def baixar_dna():
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
 
-
-
-
 # ==================================================
 # 🏛️ PLATAFORMA PRINCIPAL — TUDO CORRIGIDO ✅
 # ==================================================
