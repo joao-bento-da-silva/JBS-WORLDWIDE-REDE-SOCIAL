@@ -390,7 +390,7 @@ def jogo_bentinho():
 </body>
 </html>''')
 
-# ROTA PARA BAIXAR DNA
+# ROTA PARA BAIXAR DNA — NÃO MEXE! JÁ ESTÁ CERTA ✅
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
     if not usuario_logado():
@@ -406,6 +406,7 @@ def baixar_dna():
     resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
+
 
 # ==================================================
 # 🏛️ PLATAFORMA PRINCIPAL — TUDO CORRIGIDO ✅
