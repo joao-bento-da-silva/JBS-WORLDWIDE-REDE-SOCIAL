@@ -1,8 +1,7 @@
  # ==================================================
-# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ PERMANENTE
+# © 2026 JNB TECNOLOGIA — CHAVE FIXA + USUÁRIO ÚNICO
+# PORTA 5000 ✅ CADA UM COM SUA CHAVE ✅ NUNCA MUDA ✅
 # REDE · JOGOS · IA · DNA — TUDO FUNCIONAL ✅
-# CADASTRO PERMANENTE · POSTAGENS PERMANENTES ✅
-# PORTA 5000 — DEFINIDA NO FINAL ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -14,716 +13,437 @@ import base64
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
+# 🔑 CHAVE MESTRA — FIXA, NUNCA MUDA. NÃO ALTERAR!
+CHAVE_MESTRA = "JNB_TECNOLOGIA_2026_FIXA_NAO_MUDA_1234567890"
+
 app = Flask(__name__)
-app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
-CHAVE_DNA = os.environ.get("CHAVE_DNA_SECRETA", "JNB_SECRETA_DNA_2026_NAO_COMPARTILHAR")
+app.secret_key = CHAVE_MESTRA
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # 10 ANOS = PERMANENTE
+app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
-BANCO_DADOS = "jnb_novo.db"
+BANCO_DADOS = "jnb_dados.db"
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# ============= BANCO DE DADOS — PERMANENTE =============
 def init_db():
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha_hash TEXT NOT NULL,
-            pontos INTEGER DEFAULT 0,
-            dna_chave TEXT,
-            data_cadastro TEXT NOT NULL
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS postagens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            texto TEXT,
-            arquivo TEXT,
-            data_postagem TEXT NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS curtidas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            postagem_id INTEGER NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-            FOREIGN KEY (postagem_id) REFERENCES postagens(id),
-            UNIQUE(usuario_id, postagem_id)
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS conversas_ia (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            pergunta TEXT NOT NULL,
-            resposta TEXT NOT NULL,
-            data_hora TEXT NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    """)
+    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha_hash TEXT NOT NULL,
+        chave_usuario TEXT NOT NULL,
+        pontos INTEGER DEFAULT 0,
+        data_cadastro TEXT NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS postagens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        texto TEXT,
+        arquivo TEXT,
+        data_postagem TEXT NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        postagem_id INTEGER NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+        FOREIGN KEY (postagem_id) REFERENCES postagens(id),
+        UNIQUE(usuario_id, postagem_id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS ia_conhecimento (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pergunta TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        data_criado TEXT NOT NULL
+    )""")
     conn.commit()
     conn.close()
 
 init_db()
 
-def usuario_logado():
-    return "usuario_id" in session
+def gerar_chave_usuario():
+    return base64.b64encode(os.urandom(32)).decode('utf-8')
 
-# ============= IA — RESPOSTAS INTELIGENTES =============
+def usuario_logado():
+    return 'usuario_id' in session
+
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
-    if "brasil" in p and ("descobriu" in p or "descoberto" in p or "chegada" in p or "ano" in p):
-        return "O Brasil foi descoberto em 22 de abril de 1500 pela esquadra portuguesa comandada por Pedro Álvares Cabral, que atracou na região do litoral sul da Bahia."
-    elif "quem é você" in p or "quem criou" in p or "seu criador" in p:
-        return "Eu sou a IA da JNB TECNOLOGIA, criada por João Bento da Silva. Estou aqui para ajudar, responder perguntas e gerar documentos!"
-    elif "jogo" in p and ("cartas" in p or "carta" in p):
-        return "🃏 O Jogo das Cartas tem 4 fases! Descubra a carta correspondente. Y→Y, A→Z, Z→A, B→X, X→B, C→G, G→C, D→F, F→D, E→E. Boa sorte!"
-    elif "bentinho" in p or "números" in p:
-        return "🎮 Cada número se inverte: 0→0, 1→9, 2→8, 3→7, 4→6, 5→5, 6→4, 7→3, 8→2, 9→1. Descubra o número convertido!"
-    elif "dna" in p or "criptograf" in p:
-        return "🧬 O DNA converte texto em AT/GC. Apenas você com sua chave decodifica! Salve o .bnj no celular."
-    elif "cadastro" in p or "registro" in p:
-        return "✅ Seu cadastro é PERMANENTE! Dados, postagens e pontos NUNCA são apagados."
-    elif "oi" in p or "olá" in p or "bom dia" in p or "boa tarde" in p or "boa noite" in p:
-        return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA! Em que posso ajudar?"
-    else:
-        return f"Entendi! Você perguntou: \"{pergunta}\"\n\n🔹 Sou a IA da JNB TECNOLOGIA. Estou aqui para ajudar!"
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT resposta FROM ia_conhecimento WHERE pergunta LIKE ?", (f"%{p}%",))
+    r = c.fetchone()
+    conn.close()
+    if r: return r[0]
+    respostas = {
+        "brasil": "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral.",
+        "jogo cartas": "🃏 Y=Y, A=Z, Z=A, B=X, X=B, C=G, G=C, D=F, F=D, E=E",
+        "jogo numeros": "🎮 0=0, 1=9, 2=8, 3=7, 4=6, 5=5, 6=4, 7=3, 8=2, 9=1",
+        "cadastro": "✅ Seu cadastro é permanente, seus dados ficam para sempre."
+    }
+    for k, v in respostas.items():
+        if k in p: return v
+    return "Não sei essa ainda. Vou aprendendo com o tempo!"
 
-# ============= LOGIN / CADASTRO =============
 @app.route("/")
 def inicio():
-    if usuario_logado():
-        return redirect(url_for("plataforma"))
+    if usuario_logado(): return redirect(url_for("plataforma"))
     return render_template_string('''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JNB TECNOLOGIA</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
-        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
-        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
-        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
-        .link a{color:#f59e0b;text-decoration:none;}
-    </style>
-</head>
-<body>
-    <div class="caixa">
-        <h1>JNB TECNOLOGIA</h1>
-        <form action="/entrar" method="POST">
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
-            <button type="submit">Entrar</button>
-        </form>
-        <div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se — PERMANENTE ✅</a></div>
-    </div>
-</body>
-</html>''')
+<html><head><meta charset="UTF-8"><title>JNB TECNOLOGIA</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
+h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+.link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+.link a{color:#f59e0b;text-decoration:none;}</style></head>
+<body><div class="caixa"><h1>JNB TECNOLOGIA</h1>
+<form action="/entrar" method="POST"><input type="email" name="email" placeholder="E-mail" required>
+<input type="password" name="senha" placeholder="Senha" required><button>Entrar</button></form>
+<div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se — Permanente ✅</a></div></div></body></html>''')
 
-@app.route("/cadastrar", methods=["GET", "POST"])
+@app.route("/cadastrar", methods=["GET","POST"])
 def cadastrar():
     if request.method == "POST":
-        nome = request.form.get("nome", "").strip()
-        email = request.form.get("email", "").strip()
-        senha = request.form.get("senha", "").strip()
-        if nome and email and senha:
-            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-            dna_chave = base64.b64encode(os.urandom(24)).decode()
-            data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            try:
-                conn = sqlite3.connect(BANCO_DADOS)
-                c = conn.cursor()
-                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
-                          (nome, email, senha_hash, dna_chave, data_cad))
-                conn.commit()
-                usuario_id = c.lastrowid
-                conn.close()
-                session["usuario_id"] = usuario_id
-                session["nome_usuario"] = nome
-                return redirect(url_for("plataforma"))
-            except sqlite3.IntegrityError:
-                return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
-                    <h2 style="color:red;">E-mail já cadastrado!</h2>
-                    <a href="/cadastrar" style="color:#f59e0b;">Voltar</a>
-                </div>'''
+        nome = request.form.get("nome","").strip()
+        email = request.form.get("email","").strip()
+        senha = request.form.get("senha","").strip()
+        if not nome or not email or not senha: return "Preencha tudo", 400
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        chave = gerar_chave_usuario()
+        agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            conn = sqlite3.connect(BANCO_DADOS)
+            c = conn.cursor()
+            c.execute("INSERT INTO usuarios (nome,email,senha_hash,chave_usuario,data_cadastro) VALUES (?,?,?,?,?)",
+                     (nome,email,senha_hash,chave,agora))
+            conn.commit()
+            conn.close()
+            return redirect(url_for("inicio"))
+        except: return "E-mail já cadastrado", 400
     return render_template_string('''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar — JNB TECNOLOGIA</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
-        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
-        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
-        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
-        .link a{color:#f59e0b;text-decoration:none;}
-    </style>
-</head>
-<body>
-    <div class="caixa">
-        <h1>Cadastrar ✅ PERMANENTE</h1>
-        <form method="POST">
-            <input type="text" name="nome" placeholder="Seu nome" required>
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
-            <button type="submit">Cadastrar — Para Sempre</button>
-        </form>
-        <div class="link">Já tem conta? <a href="/">Entrar</a></div>
-    </div>
-</body>
-</html>''')
+<html><head><meta charset="UTF-8"><title>Cadastrar</title>
+<style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
+h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}</style></head>
+<body><div class="caixa"><h1>Cadastrar ✅ Permanente</h1>
+<form method="POST"><input name="nome" placeholder="Seu nome" required>
+<input name="email" placeholder="E-mail" required>
+<input type="password" name="senha" placeholder="Senha" required>
+<button>Cadastrar</button></form></div></body></html>''')
 
 @app.route("/entrar", methods=["POST"])
 def entrar():
-    email = request.form.get("email", "").strip()
-    senha = request.form.get("senha", "").strip()
-    if email and senha:
-        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
-        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
-        usuario = c.fetchone()
-        conn.close()
-        if usuario:
-            session["usuario_id"] = usuario[0]
-            session["nome_usuario"] = usuario[1]
-            session.permanent = True
-            return redirect(url_for("plataforma"))
-    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
-        <h2 style="color:red;">E-mail ou senha inválidos!</h2>
-        <a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
-    </div>'''
+    email = request.form.get("email","").strip()
+    senha = request.form.get("senha","").strip()
+    senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT id,nome FROM usuarios WHERE email=? AND senha_hash=?", (email,senha_hash))
+    user = c.fetchone()
+    conn.close()
+    if user:
+        session['usuario_id'] = user[0]
+        session['nome_usuario'] = user[1]
+        return redirect(url_for("plataforma"))
+    return "Dados inválidos", 400
 
 @app.route("/sair")
 def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
-@app.route("/uploads/<filename>")
-def uploaded_file(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+@app.route("/uploads/<nome>")
+def uploads(nome):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], nome)
 
-# ============= IA — ROTA =============
-@app.route("/responder_ia", methods=["POST"])
-def responder_ia_rota():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    pergunta = request.form.get("pergunta", "").strip()
-    if not pergunta:
-        return "Digite uma pergunta!"
-    resposta = responder_ia(pergunta)
-    data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+@app.route("/resposta_ia", methods=["POST"])
+def resposta_ia():
+    if not usuario_logado(): return redirect(url_for("inicio"))
+    pergunta = request.form.get("pergunta","").strip()
+    if not pergunta: return "Pergunte algo!"
+    return responder_ia(pergunta)
+
+@app.route("/jogo_cartas", methods=["GET","POST"])
+def jogo_cartas():
+    if not usuario_logado(): return redirect(url_for("inicio"))
+    REGRAS = {'Y':'Y','A':'Z','Z':'A','B':'X','X':'B','C':'G','G':'C','D':'F','F':'D','E':'E'}
+    if "fase_carta" not in session: session["fase_carta"] = 1
+    if "pontos_carta" not in session: session["pontos_carta"] = 0
+    fases = [['Y','A','B'],['C','D','E','F','G','X'],['Y','A','B','C','D','E','F','G','X'],['Y','A','B','C','D','E','F','G','X']]
+    valores = [100,300,500,1000]
+    fase = session["fase_carta"]
+    cartas = fases[fase-1]
+    if request.method == "POST":
+        escolha = request.form.get("carta","")
+        alvo = random.choice(cartas)
+        correta = REGRAS.get(alvo)
+        if escolha == correta:
+            session["pontos_carta"] += valores[fase-1]
+            if fase < 4: session["fase_carta"] += 1
+        else:
+            session["fase_carta"] = 1
+    return render_template_string('''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>🃏 Jogo das Cartas</title>
+<style>body{background:#0f172a;color:white;min-height:100vh;padding:20px;font-family:Arial;}
+.carta{display:inline-block;width:80px;height:120px;background:linear-gradient(45deg,#f59e0b,#d97706);border-radius:8px;line-height:120px;text-align:center;font-size:30px;font-weight:bold;margin:10px;cursor:pointer;box-shadow:2px 4px 8px rgba(0,0,0,0.3);}
+.carta:hover{transform:scale(1.05);}
+.voltar{color:#f59e0b;text-decoration:none;display:inline-block;margin-bottom:20px;}</style></head>
+<body><a href="/plataforma" class="voltar">← Voltar</a>
+<h1>🃏 Fase {{fase}} — Pontos: {{pontos}}</h1>
+<form method="POST">
+{% for c in cartas %}<button class="carta" name="carta" value="{{c}}">{{c}}</button>{% endfor %}
+</form></body></html>''', fase=fase, pontos=session["pontos_carta"], cartas=cartas)
+
+@app.route("/jogo_numeros", methods=["GET","POST"])
+def jogo_numeros():
+    if not usuario_logado(): return redirect(url_for("inicio"))
+    TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
+    if "fase_num" not in session: session["fase_num"] = 1
+    if "pontos_num" not in session: session["pontos_num"] = 0
+    digitos = [3,4,5,6]
+    valores = [250000,2500000,25000000,1000000000]
+    fase = session["fase_num"]
+    if request.method == "POST":
+        resposta = request.form.get("resposta","").strip()
+        numero = session.get("num_gerado","")
+        correta = "".join(TABELA[d] for d in numero)
+        if resposta == correta:
+            session["pontos_num"] += valores[fase-1]
+            if fase < 4: session["fase_num"] += 1
+        else:
+            session["fase_num"] = 1
+        session.pop("num_gerado", None)
+    num = "".join(random.choice(list(TABELA.keys())) for _ in range(digitos[fase-1]))
+    session["num_gerado"] = num
+    return render_template_string('''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>🎮 Jogo dos Números</title>
+<style>body{background:#0f172a;color:white;min-height:100vh;padding:20px;font-family:Arial;}
+.voltar{color:#f59e0b;text-decoration:none;}</style></head>
+<body><a href="/plataforma" class="voltar">← Voltar</a>
+<h1>🎮 Fase {{fase}} — Pontos: {{pontos}}</h1>
+<h2>Número: {{num}}</h2>
+<form method="POST"><input name="resposta" placeholder="Digite o número convertido..." required style="padding:12px;font-size:18px;width:300px;">
+<button type="submit" style="padding:12px 24px;background:#f59e0b;color:black;border:none;border-radius:6px;font-weight:bold;margin-left:10px;">Enviar</button>
+</form></body></html>''', fase=fase, pontos=session["pontos_num"], num=num)
+
+@app.route("/plataforma", methods=["GET","POST"])
+def plataforma():
+    if not usuario_logado(): return redirect(url_for("inicio"))
+    usuario_id = session['usuario_id']
+    nome_usuario = session['nome_usuario']
+    
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("INSERT INTO conversas_ia (usuario_id, pergunta, resposta, data_hora) VALUES (?, ?, ?, ?)",
-              (session["usuario_id"], pergunta, resposta, data_hora))
-    conn.commit()
-    conn.close()
-    return resposta
-
-# ============= JOGO DAS CARTAS =============
-@app.route("/jogo_cartas", methods=["GET", "POST"])
-def jogo_cartas():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    REGRAS = {'Y':'Y','A':'Z','Z':'A','B':'X','X':'B','C':'G','G':'C','D':'F','F':'D','E':'E'}
-    CARTAS_DISPONIVEIS = ['Y','A','B','C','D','E','F','G','X','Z']
-    if "cartas_fase" not in session: session["cartas_fase"] = 1
-    if "cartas_pontos" not in session: session["cartas_pontos"] = 0
-    fase = session["cartas_fase"]
-    pontos = session["cartas_pontos"]
-    qtd = {1:3,2:6,3:8,4:9}[fase]
-    valor = {1:100,2:300,3:500,4:1000}[fase]
-    mensagem = ""
-    if "cartas_alvo" not in session or len(session.get("cartas_alvo",[])) != qtd:
-        session["cartas_alvo"] = random.sample(CARTAS_DISPONIVEIS, qtd)
-        session["cartas_resposta"] = []
-    alvo = session["cartas_alvo"]
-    resposta = session["cartas_resposta"]
-    if request.method == "POST":
-        if "nova" in request.form:
-            session["cartas_alvo"] = random.sample(CARTAS_DISPONIVEIS, qtd)
-            session["cartas_resposta"] = []
-            mensagem = "🔄 Novas cartas geradas!"
-        elif "selecionar" in request.form:
-            resposta.append(request.form["selecionar"])
-            session["cartas_resposta"] = resposta
-        elif "verificar" in request.form:
-            if len(resposta) != len(alvo):
-                mensagem = "❌ Selecione todas as cartas primeiro!"
-            else:
-                correta = [REGRAS[c] for c in alvo]
-                if resposta == correta:
-                    pontos += valor
-                    session["cartas_pontos"] = pontos
-                    mensagem = f"✅ ACERTOU! +{valor} PONTOS!"
-                    try:
-                        conn = sqlite3.connect(BANCO_DADOS)
-                        c = conn.cursor()
-                        c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (valor, session["usuario_id"]))
-                        conn.commit()
-                        conn.close()
-                    except: pass
-                    if fase < 4:
-                        session["cartas_fase"] += 1
-                        session.pop("cartas_alvo", None)
-                        session.pop("cartas_resposta", None)
-                    else:
-                        mensagem = "🏆 PARABÉNS! VENCEU O JOGO DAS CARTAS!"
-                        session["cartas_fase"] = 1
-                        session.pop("cartas_alvo", None)
-                        session.pop("cartas_resposta", None)
-                else:
-                    mensagem = "❌ Errou! Tente de novo."
-                    session["cartas_resposta"] = []
-    alvo_html = "".join([f"<span style='background:#f59e0b;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in alvo])
-    resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas abaixo...</p>"
-    disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS_DISPONIVEIS])
-    return render_template_string(f'''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🃏 Jogo das Cartas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
-</head>
-<body class="p-6 max-w-2xl mx-auto">
-    <a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a>
-    <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
-    <p class="text-center text-lg mb-4">Fase {fase}/4 · Pontos: {pontos}</p>
-    {f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
-    <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
-        <p class="text-center mb-3 text-gray-400">🎯 Cartas Alvo — Encontre a correspondente:</p>
-        <div class="flex flex-wrap justify-center">{alvo_html}</div>
-    </div>
-    <div class="bg-gray-800 p-5 rounded-lg border border-green-500/30 mb-5">
-        <p class="text-center mb-3 text-gray-400">✅ Sua Resposta:</p>
-        <div class="flex flex-wrap justify-center">{resp_html}</div>
-    </div>
-    <form method="POST" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
-        <p class="text-center mb-3 text-gray-400">🃏 Clique para selecionar:</p>
-        <div class="flex flex-wrap justify-center">{disp_html}</div>
-    </form>
-    <div class="flex gap-3 justify-center flex-wrap">
-        <form method="POST"><button type="submit" name="verificar" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg text-lg">✅ Verificar</button></form>
-        <form method="POST"><button type="submit" name="nova" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">🔄 Novas</button></form>
-    </div>
-</body>
-</html>''')
-
-# ============= JOGO BENTINHO =============
-@app.route("/jogo_bentinho", methods=["GET", "POST"])
-def jogo_bentinho():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num_str): return "".join(TABELA[d] for d in num_str)
-    def novo_desafio(fase):
-        tam = {1:3,2:6,3:8,4:9}[fase]
-        num = "".join(random.choice("0123456789") for _ in range(tam))
-        return num, inverter(num)
-    if "bent_fase" not in session: session["bent_fase"] = 1
-    if "bent_pontos" not in session: session["bent_pontos"] = 0
-    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
-        session["bent_num"], session["bent_alvo"] = novo_desafio(session["bent_fase"])
-        session["bent_fase_atual"] = session["bent_fase"]
-    mensagem = ""
-    PONTOS = {1:250000,2:2500000,3:25000000,4:1000000000}
-    if request.method == "POST":
-        if request.form.get("acao") == "reiniciar":
-            session["bent_fase"] = 1
-            session["bent_pontos"] = 0
-            session.pop("bent_num", None)
-            return redirect(url_for("jogo_bentinho"))
-        resposta = request.form.get("resposta", "").strip()
-        alvo = session.get("bent_alvo", "")
-        if resposta == alvo:
-            pts = PONTOS[session["bent_fase"]]
-            session["bent_pontos"] += pts
-            mensagem = f"✅ ACERTOU! +{pts} PONTOS!"
-            try:
-                conn = sqlite3.connect(BANCO_DADOS)
-                c = conn.cursor()
-                c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
-                conn.commit()
-                conn.close()
-            except: pass
-            if session["bent_fase"] < 4:
-                session["bent_fase"] += 1
-                session.pop("bent_num", None)
-            else:
-                mensagem = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
-                session["bent_fase"] = 1
-                session.pop("bent_num", None)
-        else:
-            mensagem = "❌ Errou! Tente de novo."
-            session["bent_pontos"] = 0
-            session["bent_num"], session["bent_alvo"] = novo_desafio(session["bent_fase"])
-    fase = session["bent_fase"]
-    num = session.get("bent_num", "000")
-    pontos = session["bent_pontos"]
-    placeholder = {1:"___",2:"______",3:"________",4:"_________"}[fase]
-    return render_template_string(f'''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 Segredo dos Números</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
-</head>
-<body class="flex items-center justify-center p-4">
-    <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
-        <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Autor: João Bento da Silva</p>
-        <p class="text-center text-lg mb-6">Fase {fase}/4 · Pontos: {pontos}</p>
-        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
-        <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
-            <p class="text-gray-400 mb-2">Número do Avatar:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{num}</p>
-        </div>
-        <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="{placeholder}" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
-            <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
-                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
-            </div>
-        </form>
-        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a></p>
-    </div>
-</body>
-</html>''')
-
-# ============= BAIXAR DNA =============
-@app.route("/baixar_dna", methods=["POST"])
-def baixar_dna():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    dna_texto = request.form.get("dna_texto", "").strip()
-    if not dna_texto:
-        return "Nenhum DNA para baixar", 400
-    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
-    resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
-    resp.headers["Content-Type"] = "application/octet-stream"
-    return resp
-
-# ============= PLATAFORMA PRINCIPAL =============
-@app.route("/plataforma", methods=["GET", "POST"])
-def plataforma():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    usuario_id = session["usuario_id"]
+    c.execute("SELECT chave_usuario, pontos FROM usuarios WHERE id=?", (usuario_id,))
+    dados = c.fetchone()
+    chave_usuario = dados[0]
+    pontos_totais = dados[1]
     
-    # POSTAGEM — PERMANENTE
     if request.method == "POST" and "texto_post" in request.form:
-        texto = request.form.get("texto_post", "").strip()
-        arquivo = request.files.get("arquivo")
-        nome_arq = None
-        if arquivo and allowed_file(arquivo.filename):
-            nome_arq = secure_filename(arquivo.filename)
-            arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
-        if texto or nome_arq:
-            conn = sqlite3.connect(BANCO_DADOS)
-            c = conn.cursor()
-            c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
-                      (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        texto = request.form.get("texto_post","").strip()
+        arquivo_nome = None
+        if 'arquivo' in request.files:
+            arq = request.files['arquivo']
+            if arq.filename:
+                ext = arq.filename.rsplit('.',1)[-1].lower()
+                if ext in ALLOWED_EXTENSIONS:
+                    arquivo_nome = secure_filename(f"{usuario_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}")
+                    arq.save(os.path.join(app.config["UPLOAD_FOLDER"], arquivo_nome))
+        if texto or arquivo_nome:
+            c.execute("INSERT INTO postagens (usuario_id,texto,arquivo,data_postagem) VALUES (?,?,?,?)",
+                     (usuario_id,texto,arquivo_nome,datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
-            conn.close()
         return redirect(url_for("plataforma"))
     
-    # CURTIR
     if "curtir" in request.args:
-        postagem_id = request.args.get("curtir")
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
+        post_id = request.args.get("curtir")
         try:
-            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, postagem_id))
-        except sqlite3.IntegrityError:
-            c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, postagem_id))
+            c.execute("INSERT INTO curtidas (usuario_id,postagem_id) VALUES (?,?)", (usuario_id,post_id))
+        except:
+            c.execute("DELETE FROM curtidas WHERE usuario_id=? AND postagem_id=?", (usuario_id,post_id))
         conn.commit()
-        conn.close()
-        return redirect(url_for("plataforma") + "#post-" + postagem_id)
+        return redirect(url_for("plataforma", _anchor=f"post-{post_id}"))
     
-    # DADOS USUÁRIO
-    conn = sqlite3.connect(BANCO_DADOS)
-    c = conn.cursor()
-    c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
-    usuario_dados = c.fetchone()
-    if not usuario_dados:
-        conn.close()
-        session.clear()
-        return redirect(url_for("inicio"))
-    nome_usuario, total_pontos, dna_chave = usuario_dados
-    
-    # POSTAGENS — TODAS PERMANENTES
-    c.execute("""
-        SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
-               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
-               EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
-        FROM postagens p JOIN usuarios u ON p.usuario_id = u.id
-        ORDER BY p.data_postagem DESC
-    """, (usuario_id,))
-    postagens = c.fetchall()
+    c.execute("""SELECT p.id,p.texto,p.arquivo,p.data_postagem,u.nome,
+       (SELECT COUNT(*) FROM curtidas WHERE postagem_id=p.id) as curtidas
+       FROM postagens p JOIN usuarios u ON p.usuario_id=u.id ORDER BY p.data_postagem DESC""")
+    posts = c.fetchall()
     conn.close()
     
-    postagens_html = ""
-    if postagens:
-        for p in postagens:
-            pid, texto, arquivo, data, autor, curtidas, curtiu = p
-            curtida_classe = "red" if curtiu else "gray"
-            plural = "s" if curtidas != 1 else ""
-            postagens_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
-                <h4 class="font-bold text-yellow-400">{autor}</h4>
-                <p class="text-sm text-gray-400 mb-3">{data}</p>
-                {f'<p class="mb-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
-            if arquivo:
-                ext = arquivo.split(".")[-1].lower()
-                if ext in ["jpg", "jpeg", "png", "gif"]:
-                    postagens_html += f'<img src="/uploads/{arquivo}" class="max-w-full rounded-lg mb-3">'
-                elif ext in ["mp4", "mov", "avi", "webm"]:
-                    postagens_html += f'''<video controls class="max-w-full rounded-lg mb-3">
-                        <source src="/uploads/{arquivo}" type="video/mp4">
-                    </video>'''
-            postagens_html += f'''<div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-700">
-                <a href="/plataforma?curtir={pid}#post-{pid}" class="flex items-center gap-1 text-{curtida_classe}-400 hover:text-red-400">
-                    👍 {curtidas} Curtida{plural}
-                </a>
-            </div></div>'''
-    else:
-        postagens_html = '''<div class="text-center py-10 text-gray-500">
-            <p>Ainda não há postagens. Seja o primeiro! ✅ Tudo salvo para sempre!</p>
-        </div>'''
+    posts_html = ""
+    for p in posts:
+        posts_html += f'''<div id="post-{p[0]}" style="background:#1e293b;padding:15px;border-radius:8px;margin-bottom:15px;">
+        <strong style="color:#f59e0b;">{p[4]}</strong> <small style="color:#94a3b8;">{p[3]}</small>
+        <p style="margin:10px 0;">{p[1] or ''}</p>
+        {f'<img src="/uploads/{p[2]}" style="max-width:100%;border-radius:6px;">' if p[2] and p[2].lower().endswith(('jpg','jpeg','png','gif')) else ''}
+        {f'<video controls style="max-width:100%;border-radius:6px;"><source src="/uploads/{p[2]}"></video>' if p[2] and p[2].lower().endswith(('mp4','mov','avi','webm')) else ''}
+        <div style="margin-top:10px;"><a href="/plataforma?curtir={p[0]}#post-{p[0]}" style="color:#f59e0b;text-decoration:none;">👍 {p[5]} Curtidas</a></div></div>'''
     
-    return render_template_string(f'''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma — JNB TECNOLOGIA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>.hidden{{display:none !important;}}</style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6">
-        <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1>
-                <p class="text-gray-400">Bem-vindo, {nome_usuario}! ✅ Conta Permanente</p>
-            </div>
-            <div class="text-right">
-                <p class="text-sm text-gray-400">Total de Pontos</p>
-                <p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
-                <a href="/sair" class="text-red-400 hover:text-red-300 text-sm">Sair</a>
-            </div>
-        </div>
+    return f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Plataforma — JNB TECNOLOGIA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{{background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px;font-family:Arial,sans-serif;max-width:900px;margin:0 auto;}}
+.tabs{{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}}
+.tab{{padding:10px 16px;background:#1e293b;border:none;color:white;border-radius:6px;cursor:pointer;}}
+.tab.ativo{{background:#f59e0b;color:black;font-weight:bold;}}
+.aba{{display:none;}}
+.aba.visivel{{display:block;}}
+input,textarea{{width:100%;padding:12px;margin:6px 0;background:#1e293b;border:1px solid #475569;color:white;border-radius:6px;}}
+button{{padding:10px 20px;background:#f59e0b;color:black;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}}
+.cx-chave{{background:#1e293b;padding:10px;border-radius:6px;border-left:3px solid #f59e0b;word-break:break-all;font-family:monospace;color:#fcd34d;}}
+</style></head>
+<body>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+<h1 style="color:#f59e0b;">⚡ JNB TECNOLOGIA</h1>
+<div><span>Olá, {nome_usuario} | Pontos: {pontos_totais}</span> <a href="/sair" style="color:#f87171;margin-left:10px;">Sair</a></div>
+</div>
 
-        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
-            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
-        </div>
+<div class="tabs">
+<button class="tab ativo" onclick="mostrarAba('inicio')">Início</button>
+<button class="tab" onclick="mostrarAba('jogos')">🎮 Jogos</button>
+<button class="tab" onclick="mostrarAba('ia')">🤖 IA</button>
+<button class="tab" onclick="mostrarAba('dna')">🧬 DNA</button>
+</div>
 
-        <!-- REDE -->
-        <div id="tab-rede" class="tab-content">
-            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" enctype="multipart/form-data">
-                    <textarea name="texto_post" placeholder="Escreva algo... ✅ Salvo para sempre!" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                            📷 Foto/Vídeo
-                            <input type="file" name="arquivo" accept="image/*,video/*" class="hidden">
-                        </label>
-                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">
-                            📤 Publicar ✅ Permanente
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div class="space-y-4">{postagens_html}</div>
-        </div>
+<!-- ABA INÍCIO -->
+<div id="aba-inicio" class="aba visivel">
+<h2>📢 Postar</h2>
+<form method="POST" enctype="multipart/form-data">
+<textarea name="texto_post" placeholder="Escreva algo..." rows="3"></textarea>
+<input type="file" name="arquivo" accept="image/*,video/*">
+<button type="submit">📤 Publicar</button>
+</form>
+<h2 style="margin-top:30px;">📰 Publicações</h2>
+{posts_html}
+</div>
 
-        <!-- JOGOS -->
-        <div id="tab-jogo" class="tab-content hidden">
-            <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🎮 Jogo Bentinho</h2>
-                    <p class="text-gray-400 mb-6">4 fases · Até 1.000.000.000 de pontos!</p>
-                    <a href="/jogo_bentinho" class="inline-block bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">▶️ Jogar</a>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🃏 Jogo das Cartas</h2>
-                    <p class="text-gray-400 mb-6">4 fases · Até 1.000 pontos!</p>
-                    <a href="/jogo_cartas" class="inline-block bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">▶️ Jogar</a>
-                </div>
-            </div>
-        </div>
+<!-- ABA JOGOS -->
+<div id="aba-jogos" class="aba">
+<h2>🎮 Jogos Disponíveis</h2>
+<div style="display:grid;gap:15px;">
+<a href="/jogo_cartas" style="background:#1e293b;padding:20px;border-radius:8px;text-decoration:none;color:white;"><h3>🃏 Jogo das Cartas</h3><p>Descubra a carta correspondente</p></a>
+<a href="/jogo_numeros" style="background:#1e293b;padding:20px;border-radius:8px;text-decoration:none;color:white;"><h3>🎮 Jogo dos Números</h3><p>Decifre o número convertido</p></a>
+</div>
+</div>
 
-        <!-- IA -->
-        <div id="tab-ia" class="tab-content hidden">
-            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Pergunte!</h2>
-                <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-64 overflow-y-auto space-y-3">
-                    <p class="text-gray-500 text-center">👋 Olá! Pergunte-me algo!</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <input type="text" id="ia-pergunta" placeholder="Sua pergunta..." 
-                        class="flex-1 min-w-[200px] p-3 bg-gray-900 border border-gray-700 rounded-lg text-white">
-                    <button onclick="perguntarIA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-3 rounded-lg">▶️ Perguntar</button>
-                </div>
-            </div>
-        </div>
+<!-- ABA IA -->
+<div id="aba-ia" class="aba">
+<h2>🤖 Inteligência</h2>
+<div id="caixa-ia" style="background:#1e293b;padding:15px;border-radius:8px;height:300px;overflow-y:auto;margin-bottom:15px;"></div>
+<div style="display:flex;gap:8px;">
+<input type="text" id="pergunta-ia" placeholder="Pergunte algo..." style="flex:1;">
+<button onclick="perguntarIA()">Enviar</button>
+</div>
+</div>
 
-        <!-- DNA -->
-        <div id="tab-dna" class="tab-content hidden">
-            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA</h2>
-                <p class="text-gray-400 mb-2">Sua chave: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">{dna_chave}</code></p>
-                <textarea id="dna-input" placeholder="Texto ou DNA..." class="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-white mb-4"></textarea>
-                <div class="flex gap-3 flex-wrap mb-4">
-                    <button onclick="converterParaDNA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">➡️ Criptografar</button>
-                    <button onclick="decodificarDNA()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold px-5 py-2 rounded-lg">⬅️ Decodificar</button>
-                    <button onclick="baixarDNA()" id="btn-baixar" class="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg hidden">💾 Baixar</button>
-                </div>
-                <div id="dna-result" class="mt-6 p-4 bg-gray-900 rounded-lg hidden whitespace-pre-wrap"></div>
-            </div>
-        </div>
-    </div>
+<!-- ABA DNA -->
+<div id="aba-dna" class="aba">
+<h2>🧬 DNA — Criptografia Individual</h2>
+<p><strong>Sua chave (guarde bem!):</strong></p>
+<div class="cx-chave">{chave_usuario}</div>
+<p style="margin-top:15px;">Digite o texto para criptografar OU cole o código DNA para decodificar:</p>
+<textarea id="dna-entrada" placeholder="Texto ou DNA..." rows="5"></textarea>
+<div style="display:flex;gap:10px;margin:10px 0;">
+<button onclick="criptoDNA()">🔒 Criptografar</button>
+<button onclick="decriptoDNA()">🔓 Decodificar</button>
+<button onclick="limparDNA()">🧹 Limpar</button>
+</div>
+<div id="dna-saida" style="background:#1e293b;padding:15px;border-radius:8px;white-space:pre-wrap;word-break:break-all;display:none;"></div>
+</div>
 
-    <script>
-        let ultimoDNA = "";
-        const CHAVE_SECRETA = "{dna_chave}";
-        
-        function switchTab(nome) {{
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(btn => {{
-                btn.classList.remove('bg-yellow-600', 'text-black');
-                btn.classList.add('bg-gray-700');
-            }});
-            document.getElementById('tab-' + nome).classList.remove('hidden');
-            event.target.classList.add('bg-yellow-600', 'text-black');
+<script>
+function mostrarAba(nome){{
+    document.querySelectorAll('.aba').forEach(a=>a.classList.remove('visivel'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
+    document.getElementById('aba-'+nome).classList.add('visivel');
+    event.target.classList.add('ativo');
+}}
+
+async function perguntarIA(){{
+    const p = document.getElementById('pergunta-ia').value;
+    if(!p)return;
+    const caixa = document.getElementById('caixa-ia');
+    caixa.innerHTML += '<div style="text-align:right;margin:8px 0;"><span style="background:#f59e0b;color:black;padding:6px 10px;border-radius:12px;display:inline-block;max-width:80%;">'+p+'</span></div>';
+    document.getElementById('pergunta-ia').value='';
+    const r = await fetch('/resposta_ia', {{method:'POST',headers:{{'Content-Type':'application/x-www-form-urlencoded'}},body:'pergunta='+encodeURIComponent(p)}});
+    const resp = await r.text();
+    caixa.innerHTML += '<div style="text-align:left;margin:8px 0;"><span style="background:#3b82f6;color:white;padding:6px 10px;border-radius:12px;display:inline-block;max-width:80%;">'+resp+'</span></div>';
+    caixa.scrollTop = caixa.scrollHeight;
+}}
+
+const CHAVE_DNA = "{chave_usuario}";
+
+function textoParaDNA(texto, chave){{
+    let dna = '';
+    let bitsChave = Array.from(chave).map(c => c.charCodeAt(0) % 2);
+    let bitPos = 0;
+    for(let i=0;i<texto.length;i++){{
+        let bin = texto.charCodeAt(i).toString(2).padStart(8,'0');
+        for(let b of bin){{
+            let cBit = bitsChave[bitPos % bitsChave.length];
+            let bitFinal = (parseInt(b) ^ cBit) ? '1' : '0';
+            dna += bitFinal === '1' ? 'GC' : 'AT';
+            bitPos++;
         }}
+    }}
+    return dna;
+}}
 
-        function perguntarIA() {{
-            const pergunta = document.getElementById('ia-pergunta').value.trim();
-            if (!pergunta) return;
-            const caixa = document.getElementById('ia-conversa');
-            caixa.innerHTML += '<div class="text-right"><span class="bg-yellow-600/20 text-yellow-300 px-3 py-2 rounded-lg inline-block max-w-[85%]">' + pergunta + '</span></div>';
-            document.getElementById('ia-pergunta').value = '';
-            caixa.scrollTop = caixa.scrollHeight;
-            fetch('/responder_ia', {{
-                method: 'POST',
-                headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
-                body: 'pergunta=' + encodeURIComponent(pergunta)
-            }})
-            .then(r => r.text())
-            .then(resposta => {{
-                caixa.innerHTML += '<div class="text-left"><span class="bg-gray-700 text-gray-200 px-3 py-2 rounded-lg inline-block max-w-[85%]">' + resposta + '</span></div>';
-                caixa.scrollTop = caixa.scrollHeight;
-            }});
-        }}
+function DNASobreTexto(dna, chave){{
+    if(!dna.includes('AT') && !dna.includes('GC')) return null;
+    let bitsChave = Array.from(chave).map(c => c.charCodeAt(0) % 2);
+    let bits = '';
+    for(let i=0;i<dna.length;i+=2){{
+        let par = dna.substr(i,2);
+        if(par!=='AT' && par!=='GC') continue;
+        let bit = par === 'GC' ? '1' : '0';
+        let cBit = bitsChave[Math.floor(i/2) % bitsChave.length];
+        bits += (parseInt(bit) ^ cBit) ? '1' : '0';
+    }}
+    let texto = '';
+    for(let i=0;i+8<=bits.length;i+=8){{
+        texto += String.fromCharCode(parseInt(bits.substr(i,8),2));
+    }}
+    return texto;
+}}
 
-        document.addEventListener('DOMContentLoaded', () => {{
-            const input = document.getElementById('ia-pergunta');
-            if (input) input.addEventListener('keypress', e => e.key === 'Enter' && perguntarIA());
-        }});
+function criptoDNA(){{
+    const t = document.getElementById('dna-entrada').value;
+    if(!t)return;
+    const dna = textoParaDNA(t, CHAVE_DNA);
+    const saida = document.getElementById('dna-saida');
+    saida.style.display = 'block';
+    saida.textContent = '=== DNA GERADO ===\\n' + dna + '\\n\\nGuarde esse código! Só VOCÊ consegue decodificar.';
+}}
 
-        function textoParaDNA(texto, chave) {{
-            let dna = '';
-            const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
-            let bitPos = 0;
-            for (let i = 0; i < texto.length; i++) {{
-                let bin = texto.charCodeAt(i).toString(2).padStart(8, '0');
-                for (let b = 0; b < bin.length; b++) {{
-                    const chaveBit = chaveBits[bitPos % chaveBits.length];
-                    const bitFinal = bin[b] === chaveBit ? '0' : '1';
-                    dna += bitFinal === '1' ? 'GC' : 'AT';
-                    bitPos++;
-                }}
-            }}
-            return dna;
-        }}
+function decriptoDNA(){{
+    const dna = document.getElementById('dna-entrada').value.replace('JNB-DNA-ENCRYPTED','').trim();
+    if(!dna)return;
+    const t = DNASobreTexto(dna, CHAVE_DNA);
+    const saida = document.getElementById('dna-saida');
+    saida.style.display = 'block';
+    if(t){{ saida.textContent = '=== TEXTO ORIGINAL ===\\n' + t; }}
+    else{{ saida.textContent = '❌ Não foi possível decodificar. Verifique se é o DNA correto e sua conta.'; }}
+}}
 
-        function DNAParaTexto(dna, chave) {{
-            if (!dna.includes('AT') && !dna.includes('GC')) return null;
-            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\\s\\S]*?\\n/, '').trim();
-            const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
-            let bits = '';
-            for (let i = 0; i < limpo.length; i += 2) {{
-                const par = limpo.substr(i, 2);
-                if (par !== 'AT' && par !== 'GC') continue;
-                let bit = par === 'GC' ? '1' : '0';
-                const chaveBit = chaveBits[Math.floor(i/2) % chaveBits.length];
-                bits += bit === chaveBit ? '0' : '1';
-            }}
-            let texto = '';
-            for (let i = 0; i + 8 <= bits.length; i += 8) {{
-                texto += String.fromCharCode(parseInt(bits.substr(i, 8), 2));
-            }}
-            return texto;
-        }}
-
-        function converterParaDNA() {{
-            const texto = document.getElementById('dna-input').value;
-            if (!texto) return;
-            ultimoDNA = textoParaDNA(texto, CHAVE_SECRETA);
-            document.getElementById('dna-result').textContent = ultimoDNA;
-            document.getElementById('dna-result').classList.remove('hidden');
-            document.getElementById('btn-baixar').classList.remove('hidden');
-        }}
-
-        function decodificarDNA() {{
-            const dna = document.getElementById('dna-input').value;
-            if (!dna) return;
-            const texto = DNAParaTexto(dna, CHAVE_SECRETA);
-            if (texto) {{
-                document.getElementById('dna-result').textContent = texto;
-                document.getElementById('dna-result').classList.remove('hidden');
-                document.getElementById('btn-baixar').classList.add('hidden');
-            }} else {{
-                alert('Não foi possível decodificar. Verifique a chave!');
-            }}
-        }}
-
-        function baixarDNA() {{
-            if (!ultimoDNA) return;
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/baixar_dna';
-            form.innerHTML = '<textarea name="dna_texto">' + ultimoDNA + '</textarea>';
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        }}
-    </script>
-</body>
-</html>''')
+function limparDNA(){{
+    document.getElementById('dna-entrada').value='';
+    document.getElementById('dna-saida').style.display='none';
+}}
+</script>
+</body></html>'''
 
 # ==================================================
-# 🚀 AQUI ESTÁ A PORTA 5000 — NO FINAL ✅
+# 🚀 PORTA 5000 — NO FINAL ✅
 # ==================================================
 if __name__ == "__main__":
     app.run(
