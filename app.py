@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
@@ -415,275 +415,91 @@ def jogo_cartas():
 </body>
 </html>''')
 
-import random
-import sqlite3
-from flask import Flask, request, session, redirect, url_for, render_template_string, flash
-
-# ==============================================================================
-# ROTA DO JOGO BENTINHO (SEGREDO DOS NÚMEROS) - CORRIGIDA
-# ==============================================================================
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
-    # Verifica se o usuário está logado na sua plataforma
     if not usuario_logado():
         return redirect(url_for("inicio"))
-
-    # Inicializa as variáveis de jogo na sessão, se não existirem
-    if "bent_fase" not in session: 
-        session["bent_fase"] = 1
-    if "bent_pontos" not in session: 
-        session["bent_pontos"] = 0
-
-    # Tabela de inversão do desafio
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num): 
-        return "".join(TABELA[d] for d in num)
-
-    # GERAÇÃO DO NÚMERO: Só gera se não houver um número ativo na sessão
-    if "bent_num" not in session:
-        fase_atual = session["bent_fase"]
-        # Define a quantidade de dígitos por fase (Fase 1: 3 dígitos, Fase 4: 9 dígitos)
-        tam = {1: 3, 2: 6, 3: 8, 4: 9}.get(fase_atual, 3)
+    def inverter(num): return "".join(TABELA[d] for d in num)
+    if "bent_fase" not in session: session["bent_fase"] = 1
+    if "bent_pontos" not in session: session["bent_pontos"] = 0
+    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
+        tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
-
-    # Pontuação de cada fase
-    PTS = {1: 250000, 2: 2500000, 3: 25000000, 4: 1000000000}
-
+        session["bent_fase_atual"] = session["bent_fase"]
+    msg = ""
+    PTS = {1:250000,2:2500000,3:25000000,4:1000000000}
     if request.method == "POST":
-        # Ação do botão Reiniciar
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
             session.pop("bent_num", None)
-            session.pop("bent_alvo", None)
             return redirect(url_for("jogo_bentinho"))
-
-        # Captura a resposta enviada pelo usuário
         resp = request.form.get("resposta", "").strip()
-
-        # Validação da resposta
-        if resp == session.get("bent_alvo"):
+        if resp == session["bent_alvo"]:
             pts = PTS[session["bent_fase"]]
             session["bent_pontos"] += pts
-            
-            # Salva os pontos no Banco de Dados SQLite de forma segura
+            msg = f"✅ ACERTOU! +{pts} PONTOS!"
             try:
-                with sqlite3.connect(BANCO_DADOS) as conn:
-                    c = conn.cursor()
-                    c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
-                    conn.commit()
-            except Exception as e:
-                print(f"Erro ao salvar pontos no banco: {e}")
-
-            # Sistema de avanço de fases
+                conn = sqlite3.connect(BANCO_DADOS)
+                c = conn.cursor()
+                c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
+                conn.commit()
+                conn.close()
+            except: pass
             if session["bent_fase"] < 4:
-                flash(f"✅ ACERTOU! +{pts:,} PONTOS!".replace(",", "."), "sucesso")
                 session["bent_fase"] += 1
+                session.pop("bent_num", None)
             else:
-                flash("🏆 PARABÉNS! VOCÊ ZEROU O JOGO E GANHOU 1.000.000.000 DE PONTOS!", "sucesso")
+                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
                 session["bent_fase"] = 1
-            
-            # Limpa o número antigo para gerar um novo na próxima fase
-            session.pop("bent_num", None)
-            session.pop("bent_alvo", None)
-            
+                session.pop("bent_num", None)
         else:
-            # Se errar, zera os pontos acumulados e gera um novo número
-            flash("❌ Errou! O número foi alterado. Tente novamente!", "erro")
+            msg = "❌ Errou!"
             session["bent_pontos"] = 0
-            session.pop("bent_num", None)
-            session.pop("bent_alvo", None)
-
-        # Redireciona para evitar reenvio de formulário (Bug do F5)
-        return redirect(url_for("jogo_bentinho"))
-
-    # Renderização da interface HTML via String (Com correções de chaves para evitar Erro 500)
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎮 Segredo dos Números</title>
-    <script src="https://tailwindcss.com"></script>
-    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}</style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
 </head>
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
         <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Fase {{ session.get('bent_fase', 1) }}/4 · Pontos Obtidos: {{ session.get('bent_pontos', 0) }}</p>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {% if category == 'sucesso' %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
+        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
+        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
-            <p class="text-gray-400 mb-2">Número para decifrar:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{{ session.get('bent_num', '') }}</p>
+            <p class="text-gray-400 mb-2">Número:</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
         </div>
         <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required autofocus autocomplete="off">
+            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
             <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg hover:bg-yellow-500 transition">✅ Decifrar</button>
-                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-500 transition">🔄 Reiniciar</button>
+                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
+                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
             </div>
         </form>
-        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500 hover:underline">← Voltar para a Plataforma</a></p>
-    </div>
-</body>
-
-import sqlite3
-from datetime import datetime
-from flask import Flask, request, session, redirect, url_for, make_response, render_template_string, flash
-
-# ==============================================================================
-# ROTA DO PAINEL DE DNA (INTERFACE + CRIPTOGRAFIA + DOWNLOAD)
-# ==============================================================================
-@app.route("/dna_painel", methods=["GET", "POST"])
-def dna_painel():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-
-    resultado_texto = ""
-    texto_original = ""
-    acao_realizada = ""
-
-    # Dicionário de tradução para bases de DNA (A, T, C, G) baseado em bits
-    DNA_MAPA = {'00': 'A', '01': 'T', '10': 'C', '11': 'G'}
-    REV_DNA_MAPA = {v: k for k, v in DNA_MAPA.items()}
-
-    # FUNÇÃO 1: Transforma qualquer texto normal em Sequência de DNA
-    def texto_para_dna(texto):
-        try:
-            binario = "".join(f"{ord(c):08b}" for c in texto)
-            return "".join(DNA_MAPA[binario[i:i+2]] for i in range(0, len(binario), 2))
-        except Exception:
-            return "Erro ao processar a criptografia."
-
-    # FUNÇÃO 2: Transforma a Sequência de DNA de volta no texto original
-    def dna_para_texto(dna):
-        try:
-            # Filtra e deixa apenas as letras válidas de DNA (A, T, C, G)
-            dna = "".join(c for c in dna.upper() if c in REV_DNA_MAPA)
-            binario = "".join(REV_DNA_MAPA[c] for c in dna)
-            caracteres = [chr(int(binario[i:i+8], 2)) for i in range(0, len(binario), 8)]
-            return "".join(caracteres)
-        except Exception:
-            return "Erro: O conteúdo não possui uma sequência válida de DNA."
-
-    # Processamento dos botões (POST)
-    if request.method == "POST":
-        texto_original = request.form.get("dna_texto", "").strip()
-        botao_pressionado = request.form.get("acao", "")
-
-        if texto_original:
-            if botao_pressionado == "criptografar":
-                resultado_texto = texto_para_dna(texto_original)
-                acao_realizada = "Criptografado (DNA)"
-                flash("✅ Documento transformado em DNA com sucesso!", "sucesso")
-                
-            elif botao_pressionado == "descriptografar":
-                # Se o usuário colou o texto bruto do arquivo .bnj, remove o cabeçalho automaticamente
-                if "JNB-DNA-ENCRYPTED" in texto_original:
-                    linhas = texto_original.split("\n")
-                    texto_original = linhas[-1].strip() # Pega apenas a última linha (onde fica o DNA)
-                
-                resultado_texto = dna_para_texto(texto_original)
-                acao_realizada = "Descriptografado para Texto Original"
-                flash("🔓 Sequência de DNA decodificada com sucesso!", "sucesso")
-
-    # Interface Visual em HTML/TailwindCSS
-    return render_template_string('''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧬 Sistema de Arquivos DNA</title>
-    <script src="https://tailwindcss.com"></script>
-    <style>body{background:linear-gradient(180deg,#090d16,#111827);color:#e2e8f0;min-height:100vh;}</style>
-</head>
-<body class="flex items-center justify-center p-4">
-    <div class="bg-gray-900 p-8 rounded-xl border-2 border-emerald-500/50 max-w-2xl w-full shadow-2xl">
-        <h1 class="text-4xl font-bold text-emerald-400 text-center mb-2 tracking-wide">🧬 SISTEMA DE ARQUIVOS DNA</h1>
-        <p class="text-center text-gray-400 mb-6 text-sm">Criptografe documentos em sequências genéticas ou decodifique arquivos .bnj</p>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="text-center p-3 rounded-lg mb-6 text-sm font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- FORMULÁRIO PRINCIPAL -->
-        <form method="POST" class="space-y-4">
-            <div>
-                <label class="block text-gray-400 mb-2 font-medium text-sm">Insira o texto original ou cole o DNA criptografado:</label>
-                <textarea name="dna_texto" rows="6" placeholder="Digite o texto para criptografar OU cole a sequência de DNA (A, T, C, G) para ler..." class="w-full bg-gray-950 border-2 border-gray-800 rounded-lg p-3 text-emerald-400 font-mono focus:border-emerald-500 focus:outline-none placeholder-gray-600" required>{{ texto_original }}</textarea>
-            </div>
-
-            <!-- BOTÕES DE ENVIAR -->
-            <div class="grid grid-cols-2 gap-4">
-                <button type="submit" name="acao" value="criptografar" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
-                    🔒 Criptografar para DNA
-                </button>
-                <button type="submit" name="acao" value="descriptografar" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
-                    🔓 Descriptografar DNA
-                </button>
-            </div>
-        </form>
-
-        <!-- AREA QUE EXIBE O RESULTADO NA TELA E LIBERA O DOWNLOAD -->
-        {% if resultado_texto %}
-        <div class="mt-8 pt-6 border-t border-gray-800">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">📄 Resultado: [ {{ acao_realizada }} ]</h3>
-            <div class="bg-gray-950 border border-emerald-500/20 rounded-lg p-4 font-mono text-yellow-400 max-h-48 overflow-y-auto whitespace-pre-wrap break-all text-sm select-all">{{ resultado_texto }}</div>
-            
-            <!-- SEGUNDO FORMULÁRIO QUE CHAMA O DOWNLOAD REAL DO ARQUIVO -->
-            <form action="/baixar_dna_arquivo" method="POST" class="mt-4">
-                <input type="hidden" name="dna_texto" value="{{ resultado_texto }}">
-                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
-                    📥 Gerar e Baixar Arquivo .bnj
-                </button>
-            </form>
-        </div>
-        {% endif %}
-
-        <p class="text-center mt-6 text-sm"><a href="/plataforma" class="text-emerald-500 hover:underline">← Voltar para a Plataforma</a></p>
+        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500">← Voltar</a></p>
     </div>
 </body>
 </html>''')
 
-# ==============================================================================
-# ROTA ADICIONAL: FAZ APENAS O DOWNLOAD DO ARQUIVO PRONTO
-# ==============================================================================
-@app.route("/baixar_dna_arquivo", methods=["POST"])
-def baixar_dna_arquivo():
+@app.route("/baixar_dna", methods=["POST"])
+def baixar_dna():
     if not usuario_logado():
         return redirect(url_for("inicio"))
-        
     dna_texto = request.form.get("dna_texto", "").strip()
     if not dna_texto:
-        return "Nenhum dado fornecido", 400
-        
-    data_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    conteudo = f"JNB-DNA-ENCRYPTED\r\n{data_atual}\r\n{dna_texto}"
-    
+        return "Nenhum DNA para baixar", 400
+    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
     resp = make_response(conteudo)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{timestamp}.bnj"
+    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
     resp.headers["Content-Type"] = "application/octet-stream"
-    
     return resp
-
 
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
