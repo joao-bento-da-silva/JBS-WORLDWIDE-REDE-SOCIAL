@@ -415,78 +415,130 @@ def jogo_cartas():
 </body>
 </html>''')
 
+import random
+import sqlite3
+from flask import Flask, request, session, redirect, url_for, render_template_string, flash
+
+# ==============================================================================
+# ROTA DO JOGO BENTINHO (SEGREDO DOS NÚMEROS) - CORRIGIDA
+# ==============================================================================
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
+    # Verifica se o usuário está logado na sua plataforma
     if not usuario_logado():
         return redirect(url_for("inicio"))
+
+    # Inicializa as variáveis de jogo na sessão, se não existirem
+    if "bent_fase" not in session: 
+        session["bent_fase"] = 1
+    if "bent_pontos" not in session: 
+        session["bent_pontos"] = 0
+
+    # Tabela de inversão do desafio
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num): return "".join(TABELA[d] for d in num)
-    if "bent_fase" not in session: session["bent_fase"] = 1
-    if "bent_pontos" not in session: session["bent_pontos"] = 0
-    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
-        tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
+    def inverter(num): 
+        return "".join(TABELA[d] for d in num)
+
+    # GERAÇÃO DO NÚMERO: Só gera se não houver um número ativo na sessão
+    if "bent_num" not in session:
+        fase_atual = session["bent_fase"]
+        # Define a quantidade de dígitos por fase (Fase 1: 3 dígitos, Fase 4: 9 dígitos)
+        tam = {1: 3, 2: 6, 3: 8, 4: 9}.get(fase_atual, 3)
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
-        session["bent_fase_atual"] = session["bent_fase"]
-    msg = ""
-    PTS = {1:250000,2:2500000,3:25000000,4:1000000000}
+
+    # Pontuação de cada fase
+    PTS = {1: 250000, 2: 2500000, 3: 25000000, 4: 1000000000}
+
     if request.method == "POST":
+        # Ação do botão Reiniciar
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
             session.pop("bent_num", None)
+            session.pop("bent_alvo", None)
             return redirect(url_for("jogo_bentinho"))
+
+        # Captura a resposta enviada pelo usuário
         resp = request.form.get("resposta", "").strip()
-        if resp == session["bent_alvo"]:
+
+        # Validação da resposta
+        if resp == session.get("bent_alvo"):
             pts = PTS[session["bent_fase"]]
             session["bent_pontos"] += pts
-            msg = f"✅ ACERTOU! +{pts} PONTOS!"
+            
+            # Salva os pontos no Banco de Dados SQLite de forma segura
             try:
-                conn = sqlite3.connect(BANCO_DADOS)
-                c = conn.cursor()
-                c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
-                conn.commit()
-                conn.close()
-            except: pass
+                with sqlite3.connect(BANCO_DADOS) as conn:
+                    c = conn.cursor()
+                    c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
+                    conn.commit()
+            except Exception as e:
+                print(f"Erro ao salvar pontos no banco: {e}")
+
+            # Sistema de avanço de fases
             if session["bent_fase"] < 4:
+                flash(f"✅ ACERTOU! +{pts:,} PONTOS!".replace(",", "."), "sucesso")
                 session["bent_fase"] += 1
-                session.pop("bent_num", None)
             else:
-                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
+                flash("🏆 PARABÉNS! VOCÊ ZEROU O JOGO E GANHOU 1.000.000.000 DE PONTOS!", "sucesso")
                 session["bent_fase"] = 1
-                session.pop("bent_num", None)
+            
+            # Limpa o número antigo para gerar um novo na próxima fase
+            session.pop("bent_num", None)
+            session.pop("bent_alvo", None)
+            
         else:
-            msg = "❌ Errou!"
+            # Se errar, zera os pontos acumulados e gera um novo número
+            flash("❌ Errou! O número foi alterado. Tente novamente!", "erro")
             session["bent_pontos"] = 0
-    return render_template_string(f'''<!DOCTYPE html>
+            session.pop("bent_num", None)
+            session.pop("bent_alvo", None)
+
+        # Redireciona para evitar reenvio de formulário (Bug do F5)
+        return redirect(url_for("jogo_bentinho"))
+
+    # Renderização da interface HTML via String (Com correções de chaves para evitar Erro 500)
+    return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎮 Segredo dos Números</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
+    <script src="https://tailwindcss.com"></script>
+    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}</style>
 </head>
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
         <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
-        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
+        <p class="text-center text-gray-400 mb-6">Fase {{ session.get('bent_fase', 1) }}/4 · Pontos Obtidos: {{ session.get('bent_pontos', 0) }}</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {% if category == 'sucesso' %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
-            <p class="text-gray-400 mb-2">Número:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
+            <p class="text-gray-400 mb-2">Número para decifrar:</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{{ session.get('bent_num', '') }}</p>
         </div>
         <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
+            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required autofocus autocomplete="off">
             <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
-                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
+                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg hover:bg-yellow-500 transition">✅ Decifrar</button>
+                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-500 transition">🔄 Reiniciar</button>
             </div>
         </form>
-        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500">← Voltar</a></p>
+        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500 hover:underline">← Voltar para a Plataforma</a></p>
     </div>
 </body>
 </html>''')
+
 
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
