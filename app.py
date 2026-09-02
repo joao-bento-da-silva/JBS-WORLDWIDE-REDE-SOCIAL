@@ -275,87 +275,129 @@ a{{color:#f59e0b;text-decoration:none;}}h1{{color:#f59e0b;text-align:center;}}.b
 <form method="POST" class="box"><p style="text-align:center;color:#94a3b8;margin-bottom:10px;">🃏 Clique para selecionar:</p><div class="flex">{disp_html}</div></form>
 <div class="btns"><form method="POST"><button type="submit" name="verificar" class="btn btn-green">✅ Verificar</button></form><form method="POST"><button type="submit" name="nova" class="btn btn-yellow">🔄 Novas</button></form></div></body></html>''')
 
-# ==============================================
-# 🎮 JOGO BENTINHO — CORRIGIDO ✅ SEM ERRO!
+# ===# ==============================================
+# 🎮 JOGO BENTINHO — REGRA 100% OCULTA ✅
+# NÃO MOSTRA A TABELA DE CONVERSÃO PRA NINGUÉM!
+# FASES: 3 → 6 → 8 → 9 dígitos
+# REGRA: 0↔0, 1↔9, 2↔8, 3↔7, 4↔6, 5↔5, 6↔4, 7↔3, 8↔2, 9↔1
 # ==============================================
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     
-    TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num): return "".join(TABELA[d] for d in num)
+    # 🔒 TABELA SECRETA — FICA ESCONDIDA, NÃO APARECE PRO USUÁRIO!
+    TABELA_SECRETA = {
+        '0':'0', '1':'9', '2':'8', '3':'7', '4':'6',
+        '5':'5', '6':'4', '7':'3', '8':'2', '9':'1'
+    }
     
-    # ✅ Inicializa fases e pontos de forma segura
-    if "bent_fase" not in session or session["bent_fase"] not in [1,2,3,4]:
+    def converter_resposta(numero_str):
+        """Converte usando a regra secreta — cálculo feito só no servidor!"""
+        return "".join(TABELA_SECRETA[d] for d in numero_str if d in TABELA_SECRETA)
+    
+    # ✅ Inicializa variáveis de sessão com segurança
+    if "bent_fase" not in session or session.get("bent_fase") not in [1,2,3,4]:
         session["bent_fase"] = 1
     if "bent_pontos" not in session:
         session["bent_pontos"] = 0
     
     fase = session["bent_fase"]
-    tam = {1:3, 2:6, 3:8, 4:9}[fase]
-    PTS = {1:250000, 2:2500000, 3:25000000, 4:1000000000}
+    tamanho = {1:3, 2:6, 3:8, 4:9}[fase]
+    pontos_por_fase = {1:250000, 2:2500000, 3:25000000, 4:1000000000}
     
-    # ✅ Gera número se não existir ou se a fase mudou
-    if "bent_num" not in session or session.get("bent_fase_atual") != fase:
-        session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
-        session["bent_alvo"] = inverter(session["bent_num"])
-        session["bent_fase_atual"] = fase
+    # ✅ Gera novo número aleatório quando muda de fase ou inicia
+    if ("bent_numero" not in session) or (session.get("bent_ultima_fase") != fase):
+        session["bent_numero"] = "".join(random.choice("0123456789") for _ in range(tamanho))
+        session["bent_resposta_correta"] = converter_resposta(session["bent_numero"])
+        session["bent_ultima_fase"] = fase
     
-    msg = ""
+    numero_exibido = session["bent_numero"]
+    resposta_correta = session["bent_resposta_correta"]
+    mensagem = ""
     
+    # ✅ Processa envio do formulário
     if request.method == "POST":
+        # Reiniciar jogo
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
-            session.pop("bent_num", None)
+            session.pop("bent_numero", None)
+            session.pop("bent_resposta_correta", None)
             return redirect(url_for("jogo_bentinho"))
         
-        resp = request.form.get("resposta", "").strip()
-        alvo = session.get("bent_alvo", "")
+        resposta_usuario = request.form.get("resposta", "").strip()
         
-        if resp == alvo:
-            pts = PTS[fase]
+        # ✅ Comparação — só o servidor sabe a resposta certa!
+        if resposta_usuario == resposta_correta:
+            pts = pontos_por_fase[fase]
             session["bent_pontos"] += pts
-            msg = f"✅ ACERTOU! +{pts} PONTOS!"
+            mensagem = f"✅ ACERTOU! +{pts:,} PONTOS!"
             
-            # ✅ Atualiza pontos no banco de dados
+            # Salva pontos no banco
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
                 c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
                 conn.commit()
                 conn.close()
-            except Exception as e:
-                print(f"Erro ao atualizar pontos: {e}")
+            except: pass
             
-            # ✅ Avança de fase
+            # Avança de fase ou finaliza
             if fase < 4:
                 session["bent_fase"] = fase + 1
-                session.pop("bent_num", None)
+                session.pop("bent_numero", None)
             else:
-                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS — VOCÊ VENCEU!"
+                mensagem = "🏆 PARABÉNS! VOCÊ VENCEU! 1.000.000.000 DE PONTOS! 🎉"
                 session["bent_fase"] = 1
-                session.pop("bent_num", None)
+                session.pop("bent_numero", None)
         else:
-            msg = "❌ Errou! Tente novamente."
-            session["bent_pontos"] = 0
+            mensagem = "❌ Errou! Tente descobrir o segredo dos números!"
     
-    # ✅ Renderiza o template
-    return render_template_string(f'''<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>🎮 Segredo dos Números</title>
-<style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
-.box{{background:#1e293b;padding:30px;border-radius:15px;border:2px solid #f59e0b;max-width:450px;width:100%;}}
-h1{{color:#f59e0b;text-align:center;}}.num{{font-size:42px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:8px;}}
-input{{width:100%;padding:15px;font-size:24px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;margin:10px 0;}}
-.btn{{padding:14px 20px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;font-size:18px;flex:1;}}.btn-yellow{{background:#f59e0b;color:black;}}.btn-gray{{background:#475569;color:white;}}
-.flex{{display:flex;gap:12px;margin-top:15px;}}.msg{{padding:15px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}}.ok{{background:#166534;color:#bbf7d0;}}.erro{{background:#991b1b;color:#fecaca;}}
-a{{color:#f59e0b;text-decoration:none;display:block;text-align:center;margin-top:20px;}}</style></head><body><div class="box">
-<h1>🎮 SEGREDO DOS NÚMEROS</h1><p style="text-align:center;color:#94a3b8;">Fase {fase}/4 · Pontos: {session["bent_pontos"]}</p>
-{ f'<div class="msg {"ok" if "✅" in msg or "🏆" in msg else "erro"}">{msg}</div>' if msg else '' }
-<div class="num">{session["bent_num"]}</div>
-<form method="POST"><input type="text" name="resposta" placeholder="Digite o número convertido..." required><div class="flex"><button type="submit" class="btn btn-yellow">✅ Decifrar</button><button type="submit" name="acao" value="reiniciar" class="btn btn-gray">🔄 Reiniciar</button></div></form>
-<a href="/plataforma">← Voltar</a></div></body></html>''')
-
+    # ✅ TEMPLATE — NÃO MOSTRA NENHUMA REGRA! SÓ O NÚMERO E O CAMPO DE RESPOSTA!
+    return render_template_string(f'''<!DOCTYPE html><html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Segredo dos Números</title>
+    <style>
+        body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
+        .box{{background:#1e293b;padding:30px;border-radius:15px;border:2px solid #f59e0b;max-width:450px;width:100%;}}
+        h1{{color:#f59e0b;text-align:center;margin-bottom:5px;}}
+        .sub{{text-align:center;color:#94a3b8;margin-bottom:25px;}}
+        .num{{font-size:42px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:8px;}}
+        input{{width:100%;padding:15px;font-size:24px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;margin:10px 0;outline:none;}}
+        .btn{{padding:14px 20px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;font-size:18px;flex:1;}}
+        .btn-yellow{{background:#f59e0b;color:black;}}
+        .btn-gray{{background:#475569;color:white;}}
+        .flex{{display:flex;gap:12px;margin-top:15px;}}
+        .msg{{padding:15px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}}
+        .ok{{background:#166534;color:#bbf7d0;}}
+        .erro{{background:#991b1b;color:#fecaca;}}
+        a{{color:#f59e0b;text-decoration:none;display:block;text-align:center;margin-top:20px;}}
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>🎮 SEGREDO DOS NÚMEROS</h1>
+    <p class="sub">Fase {fase}/4 · Pontos: {session["bent_pontos"]:,}</p>
+    
+    {f'<div class="msg {"ok" if "✅" in mensagem or "🏆" in mensagem else "erro"}">{mensagem}</div>' if mensagem else ''}
+    
+    <div class="num">{numero_exibido}</div>
+    
+    <form method="POST">
+        <input type="text" name="resposta" placeholder="Digite o número correto" required autocomplete="off">
+        <div class="flex">
+            <button type="submit" class="btn btn-yellow">✅ Enviar</button>
+            <button type="submit" name="acao" value="reiniciar" class="btn btn-gray">🔄 Reiniciar</button>
+        </div>
+    </form>
+    
+    <a href="/jogos">← Voltar aos Jogos</a>
+</div>
+</body>
+</html>''', usuario_logado=usuario_logado())
 
 
 @app.route("/baixar_dna", methods=["POST"])
