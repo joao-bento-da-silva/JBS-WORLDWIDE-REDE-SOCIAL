@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
@@ -537,21 +537,154 @@ def jogo_bentinho():
         <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500 hover:underline">← Voltar para a Plataforma</a></p>
     </div>
 </body>
+
+import sqlite3
+from datetime import datetime
+from flask import Flask, request, session, redirect, url_for, make_response, render_template_string, flash
+
+# ==============================================================================
+# ROTA DO PAINEL DE DNA (INTERFACE + CRIPTOGRAFIA + DOWNLOAD)
+# ==============================================================================
+@app.route("/dna_painel", methods=["GET", "POST"])
+def dna_painel():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+
+    resultado_texto = ""
+    texto_original = ""
+    acao_realizada = ""
+
+    # Dicionário de tradução para bases de DNA (A, T, C, G) baseado em bits
+    DNA_MAPA = {'00': 'A', '01': 'T', '10': 'C', '11': 'G'}
+    REV_DNA_MAPA = {v: k for k, v in DNA_MAPA.items()}
+
+    # FUNÇÃO 1: Transforma qualquer texto normal em Sequência de DNA
+    def texto_para_dna(texto):
+        try:
+            binario = "".join(f"{ord(c):08b}" for c in texto)
+            return "".join(DNA_MAPA[binario[i:i+2]] for i in range(0, len(binario), 2))
+        except Exception:
+            return "Erro ao processar a criptografia."
+
+    # FUNÇÃO 2: Transforma a Sequência de DNA de volta no texto original
+    def dna_para_texto(dna):
+        try:
+            # Filtra e deixa apenas as letras válidas de DNA (A, T, C, G)
+            dna = "".join(c for c in dna.upper() if c in REV_DNA_MAPA)
+            binario = "".join(REV_DNA_MAPA[c] for c in dna)
+            caracteres = [chr(int(binario[i:i+8], 2)) for i in range(0, len(binario), 8)]
+            return "".join(caracteres)
+        except Exception:
+            return "Erro: O conteúdo não possui uma sequência válida de DNA."
+
+    # Processamento dos botões (POST)
+    if request.method == "POST":
+        texto_original = request.form.get("dna_texto", "").strip()
+        botao_pressionado = request.form.get("acao", "")
+
+        if texto_original:
+            if botao_pressionado == "criptografar":
+                resultado_texto = texto_para_dna(texto_original)
+                acao_realizada = "Criptografado (DNA)"
+                flash("✅ Documento transformado em DNA com sucesso!", "sucesso")
+                
+            elif botao_pressionado == "descriptografar":
+                # Se o usuário colou o texto bruto do arquivo .bnj, remove o cabeçalho automaticamente
+                if "JNB-DNA-ENCRYPTED" in texto_original:
+                    linhas = texto_original.split("\n")
+                    texto_original = linhas[-1].strip() # Pega apenas a última linha (onde fica o DNA)
+                
+                resultado_texto = dna_para_texto(texto_original)
+                acao_realizada = "Descriptografado para Texto Original"
+                flash("🔓 Sequência de DNA decodificada com sucesso!", "sucesso")
+
+    # Interface Visual em HTML/TailwindCSS
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 Sistema de Arquivos DNA</title>
+    <script src="https://tailwindcss.com"></script>
+    <style>body{background:linear-gradient(180deg,#090d16,#111827);color:#e2e8f0;min-height:100vh;}</style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="bg-gray-900 p-8 rounded-xl border-2 border-emerald-500/50 max-w-2xl w-full shadow-2xl">
+        <h1 class="text-4xl font-bold text-emerald-400 text-center mb-2 tracking-wide">🧬 SISTEMA DE ARQUIVOS DNA</h1>
+        <p class="text-center text-gray-400 mb-6 text-sm">Criptografe documentos em sequências genéticas ou decodifique arquivos .bnj</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="text-center p-3 rounded-lg mb-6 text-sm font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- FORMULÁRIO PRINCIPAL -->
+        <form method="POST" class="space-y-4">
+            <div>
+                <label class="block text-gray-400 mb-2 font-medium text-sm">Insira o texto original ou cole o DNA criptografado:</label>
+                <textarea name="dna_texto" rows="6" placeholder="Digite o texto para criptografar OU cole a sequência de DNA (A, T, C, G) para ler..." class="w-full bg-gray-950 border-2 border-gray-800 rounded-lg p-3 text-emerald-400 font-mono focus:border-emerald-500 focus:outline-none placeholder-gray-600" required>{{ texto_original }}</textarea>
+            </div>
+
+            <!-- BOTÕES DE ENVIAR -->
+            <div class="grid grid-cols-2 gap-4">
+                <button type="submit" name="acao" value="criptografar" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
+                    🔒 Criptografar para DNA
+                </button>
+                <button type="submit" name="acao" value="descriptografar" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
+                    🔓 Descriptografar DNA
+                </button>
+            </div>
+        </form>
+
+        <!-- AREA QUE EXIBE O RESULTADO NA TELA E LIBERA O DOWNLOAD -->
+        {% if resultado_texto %}
+        <div class="mt-8 pt-6 border-t border-gray-800">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">📄 Resultado: [ {{ acao_realizada }} ]</h3>
+            <div class="bg-gray-950 border border-emerald-500/20 rounded-lg p-4 font-mono text-yellow-400 max-h-48 overflow-y-auto whitespace-pre-wrap break-all text-sm select-all">{{ resultado_texto }}</div>
+            
+            <!-- SEGUNDO FORMULÁRIO QUE CHAMA O DOWNLOAD REAL DO ARQUIVO -->
+            <form action="/baixar_dna_arquivo" method="POST" class="mt-4">
+                <input type="hidden" name="dna_texto" value="{{ resultado_texto }}">
+                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg transition duration-200 uppercase tracking-wider text-sm">
+                    📥 Gerar e Baixar Arquivo .bnj
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <p class="text-center mt-6 text-sm"><a href="/plataforma" class="text-emerald-500 hover:underline">← Voltar para a Plataforma</a></p>
+    </div>
+</body>
 </html>''')
 
 
-@app.route("/baixar_dna", methods=["POST"])
-def baixar_dna():
+# ==============================================================================
+# ROTA ADICIONAL: FAZ APENAS O DOWNLOAD DO ARQUIVO PRONTO
+# ==============================================================================
+@app.route("/baixar_dna_arquivo", methods=["POST"])
+def baixar_dna_arquivo():
     if not usuario_logado():
         return redirect(url_for("inicio"))
+        
     dna_texto = request.form.get("dna_texto", "").strip()
     if not dna_texto:
-        return "Nenhum DNA para baixar", 400
-    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
+        return "Nenhum dado fornecido", 400
+        
+    data_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conteudo = f"JNB-DNA-ENCRYPTED\r\n{data_atual}\r\n{dna_texto}"
+    
     resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{timestamp}.bnj"
     resp.headers["Content-Type"] = "application/octet-stream"
+    
     return resp
+
 
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
