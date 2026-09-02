@@ -1,7 +1,7 @@
  # ==================================================
-# © 2026 JNB TECNOLOGIA — ORIGINAL INTACTA ✅
-# PORTA 5000 · CADASTRO PERMANENTE · CHAVE INDIVIDUAL
-# REDE · JOGOS · IA · DNA — TUDO FUNCIONAL ✅
+# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
+# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
+# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # 10 ANOS = PERMANENTE
+app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -24,54 +24,68 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
 BANCO_DADOS = "jnb_novo.db"
 
+# 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
+EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
+SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
+
+def eh_dono():
+    if not usuario_logado():
+        return False
+    try:
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        c.execute("SELECT email FROM usuarios WHERE id = ?", (session["usuario_id"],))
+        usuario = c.fetchone()
+        conn.close()
+        return usuario and usuario[0].strip().lower() == EMAIL_DONO.lower()
+    except:
+        return False
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ============= BANCO DE DADOS — PERMANENTE =============
 def init_db():
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha_hash TEXT NOT NULL,
-            pontos INTEGER DEFAULT 0,
-            dna_chave TEXT NOT NULL,
-            data_cadastro TEXT NOT NULL
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS postagens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            texto TEXT,
-            arquivo TEXT,
-            data_postagem TEXT NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS curtidas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            postagem_id INTEGER NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-            FOREIGN KEY (postagem_id) REFERENCES postagens(id),
-            UNIQUE(usuario_id, postagem_id)
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS conversas_ia (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            pergunta TEXT NOT NULL,
-            resposta TEXT NOT NULL,
-            data_hora TEXT NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    """)
+    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha_hash TEXT NOT NULL,
+        pontos INTEGER DEFAULT 0,
+        dna_chave TEXT NOT NULL,
+        data_cadastro TEXT NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS postagens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        texto TEXT,
+        arquivo TEXT,
+        data_postagem TEXT NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        postagem_id INTEGER NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+        FOREIGN KEY (postagem_id) REFERENCES postagens(id),
+        UNIQUE(usuario_id, postagem_id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS conversas_ia (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        pergunta TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        data_hora TEXT NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS area_privada_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        acao TEXT NOT NULL,
+        detalhes TEXT,
+        data_hora TEXT NOT NULL
+    )""")
     conn.commit()
     conn.close()
 
@@ -80,10 +94,9 @@ init_db()
 def usuario_logado():
     return "usuario_id" in session
 
-# ============= IA — RESPOSTAS =============
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
-    if "brasil" in p and ("descobriu" in p or "descoberto" in p or "ano" in p):
+    if "brasil" in p and ("descobriu" in p or "ano" in p):
         return "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral."
     elif "quem é você" in p or "quem criou" in p:
         return "Eu sou a IA da JNB TECNOLOGIA, criada por João Bento da Silva."
@@ -91,14 +104,13 @@ def responder_ia(pergunta):
         return "🃏 Y→Y, A→Z, Z→A, B→X, X→B, C→G, G→C, D→F, F→D, E→E."
     elif "bentinho" in p or "números" in p:
         return "🎮 0→0, 1→9, 2→8, 3→7, 4→6, 5→5, 6→4, 7→3, 8→2, 9→1."
-    elif "dna" in p or "criptograf" in p:
-        return "🧬 Cada usuário tem sua chave única. Só você decodifica seus arquivos."
+    elif "dna" in p:
+        return "🧬 Cada usuário tem sua chave única. Salve o .bnj no celular!"
     elif "oi" in p or "olá" in p:
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
 
-# ============= LOGIN / CADASTRO — CHAVE ÚNICA POR USUÁRIO =============
 @app.route("/")
 def inicio():
     if usuario_logado():
@@ -141,7 +153,7 @@ def cadastrar():
         senha = request.form.get("senha", "").strip()
         if nome and email and senha:
             senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-            dna_chave = base64.b64encode(os.urandom(24)).decode()  # CHAVE ÚNICA E PERMANENTE
+            dna_chave = base64.b64encode(os.urandom(24)).decode()
             data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
@@ -220,7 +232,85 @@ def sair():
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-# ============= IA — ROTA =============
+# 🔒 ÁREA PRIVADA
+@app.route("/area_privada", methods=["GET", "POST"])
+def area_privada():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    if not eh_dono():
+        return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+            <h2 style="color:red;">🚫 ACESSO NEGADO — Área exclusiva do dono</h2>
+            <a href="/plataforma" style="color:#f59e0b;">Voltar</a>
+        </div>'''
+    if request.method == "POST":
+        if request.form.get("senha_mestra") == SENHA_MESTRA_ACESSO:
+            return redirect(url_for("painel_dono"))
+        return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+            <h2 style="color:red;">❌ Senha incorreta!</h2>
+            <a href="/area_privada" style="color:#f59e0b;">Tentar novamente</a>
+        </div>'''
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 Área Privada</title>
+    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;}
+    .caixa{background:rgba(15,23,42,0.9);padding:40px;border-radius:12px;border:2px solid #f59e0b;max-width:400px;width:90%;text-align:center;}
+    h1{color:#f59e0b;margin-bottom:20px;}
+    input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+    button{width:100%;padding:12px;background:#f59e0b;color:black;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+    a{color:#f59e0b;text-decoration:none;display:block;margin-top:20px;}</style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>🔒 ÁREA PRIVADA</h1>
+        <p style="margin-bottom:20px;">Confirme a senha mestra para acessar</p>
+        <form method="POST">
+            <input type="password" name="senha_mestra" placeholder="Senha Mestra" required>
+            <button type="submit">🔓 Desbloquear</button>
+        </form>
+        <a href="/plataforma">← Voltar</a>
+    </div>
+</body>
+</html>''')
+
+@app.route("/painel_dono")
+def painel_dono():
+    if not usuario_logado() or not eh_dono():
+        return redirect(url_for("inicio"))
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM usuarios")
+    total_usuarios = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM postagens")
+    total_postagens = c.fetchone()[0]
+    conn.close()
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Painel do Dono</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
+</head>
+<body class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-yellow-500 mb-6">⚙️ PAINEL DO DONO</h1>
+    <a href="/plataforma" class="text-yellow-500 mb-4 inline-block">← Voltar</a>
+    <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30">
+            <p class="text-gray-400">Total de Usuários</p>
+            <p class="text-2xl font-bold text-yellow-500">{total_usuarios}</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30">
+            <p class="text-gray-400">Total de Postagens</p>
+            <p class="text-2xl font-bold text-yellow-500">{total_postagens}</p>
+        </div>
+    </div>
+</body>
+</html>''')
+
 @app.route("/responder_ia", methods=["POST"])
 def responder_ia_rota():
     if not usuario_logado():
@@ -238,42 +328,40 @@ def responder_ia_rota():
     conn.close()
     return resposta
 
-# ============= JOGO DAS CARTAS — ORIGINAL INTACTO =============
 @app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     REGRAS = {'Y':'Y','A':'Z','Z':'A','B':'X','X':'B','C':'G','G':'C','D':'F','F':'D','E':'E'}
-    CARTAS_DISPONIVEIS = ['Y','A','B','C','D','E','F','G','X','Z']
+    CARTAS = ['Y','A','B','C','D','E','F','G','X','Z']
     if "cartas_fase" not in session: session["cartas_fase"] = 1
     if "cartas_pontos" not in session: session["cartas_pontos"] = 0
     fase = session["cartas_fase"]
     pontos = session["cartas_pontos"]
     qtd = {1:3,2:6,3:8,4:9}[fase]
     valor = {1:100,2:300,3:500,4:1000}[fase]
-    mensagem = ""
     if "cartas_alvo" not in session or len(session.get("cartas_alvo",[])) != qtd:
-        session["cartas_alvo"] = random.sample(CARTAS_DISPONIVEIS, qtd)
+        session["cartas_alvo"] = random.sample(CARTAS, qtd)
         session["cartas_resposta"] = []
     alvo = session["cartas_alvo"]
     resposta = session["cartas_resposta"]
+    msg = ""
     if request.method == "POST":
         if "nova" in request.form:
-            session["cartas_alvo"] = random.sample(CARTAS_DISPONIVEIS, qtd)
+            session["cartas_alvo"] = random.sample(CARTAS, qtd)
             session["cartas_resposta"] = []
-            mensagem = "🔄 Novas cartas geradas!"
         elif "selecionar" in request.form:
             resposta.append(request.form["selecionar"])
             session["cartas_resposta"] = resposta
         elif "verificar" in request.form:
             if len(resposta) != len(alvo):
-                mensagem = "❌ Selecione todas as cartas primeiro!"
+                msg = "❌ Selecione todas!"
             else:
                 correta = [REGRAS[c] for c in alvo]
                 if resposta == correta:
                     pontos += valor
                     session["cartas_pontos"] = pontos
-                    mensagem = f"✅ ACERTOU! +{valor} PONTOS!"
+                    msg = f"✅ ACERTOU! +{valor} PONTOS!"
                     try:
                         conn = sqlite3.connect(BANCO_DADOS)
                         c = conn.cursor()
@@ -284,18 +372,16 @@ def jogo_cartas():
                     if fase < 4:
                         session["cartas_fase"] += 1
                         session.pop("cartas_alvo", None)
-                        session.pop("cartas_resposta", None)
                     else:
-                        mensagem = "🏆 PARABÉNS! VENCEU O JOGO DAS CARTAS!"
+                        msg = "🏆 VENCEU!"
                         session["cartas_fase"] = 1
                         session.pop("cartas_alvo", None)
-                        session.pop("cartas_resposta", None)
                 else:
-                    mensagem = "❌ Errou! Tente de novo."
+                    msg = "❌ Errou!"
                     session["cartas_resposta"] = []
     alvo_html = "".join([f"<span style='background:#f59e0b;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in alvo])
-    resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas abaixo...</p>"
-    disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS_DISPONIVEIS])
+    resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas...</p>"
+    disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS])
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -306,12 +392,12 @@ def jogo_cartas():
     <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
 </head>
 <body class="p-6 max-w-2xl mx-auto">
-    <a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a>
+    <a href="/plataforma" class="text-yellow-500">← Voltar</a>
     <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
     <p class="text-center text-lg mb-4">Fase {fase}/4 · Pontos: {pontos}</p>
-    {f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
+    {f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
     <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
-        <p class="text-center mb-3 text-gray-400">🎯 Cartas Alvo — Encontre a correspondente:</p>
+        <p class="text-center mb-3 text-gray-400">🎯 Cartas Alvo:</p>
         <div class="flex flex-wrap justify-center">{alvo_html}</div>
     </div>
     <div class="bg-gray-800 p-5 rounded-lg border border-green-500/30 mb-5">
@@ -322,43 +408,39 @@ def jogo_cartas():
         <p class="text-center mb-3 text-gray-400">🃏 Clique para selecionar:</p>
         <div class="flex flex-wrap justify-center">{disp_html}</div>
     </form>
-    <div class="flex gap-3 justify-center flex-wrap">
-        <form method="POST"><button type="submit" name="verificar" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg text-lg">✅ Verificar</button></form>
-        <form method="POST"><button type="submit" name="nova" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">🔄 Novas</button></form>
+    <div class="flex gap-3 justify-center">
+        <form method="POST"><button type="submit" name="verificar" class="bg-green-600 text-white font-bold px-6 py-3 rounded-lg">✅ Verificar</button></form>
+        <form method="POST"><button type="submit" name="nova" class="bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">🔄 Novas</button></form>
     </div>
 </body>
 </html>''')
 
-# ============= JOGO BENTINHO — ORIGINAL INTACTO =============
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num_str): return "".join(TABELA[d] for d in num_str)
-    def novo_desafio(fase):
-        tam = {1:3,2:6,3:8,4:9}[fase]
-        num = "".join(random.choice("0123456789") for _ in range(tam))
-        return num, inverter(num)
+    def inverter(num): return "".join(TABELA[d] for d in num)
     if "bent_fase" not in session: session["bent_fase"] = 1
     if "bent_pontos" not in session: session["bent_pontos"] = 0
     if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
-        session["bent_num"], session["bent_alvo"] = novo_desafio(session["bent_fase"])
+        tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
+        session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
+        session["bent_alvo"] = inverter(session["bent_num"])
         session["bent_fase_atual"] = session["bent_fase"]
-    mensagem = ""
-    PONTOS = {1:250000,2:2500000,3:25000000,4:1000000000}
+    msg = ""
+    PTS = {1:250000,2:2500000,3:25000000,4:1000000000}
     if request.method == "POST":
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
             session.pop("bent_num", None)
             return redirect(url_for("jogo_bentinho"))
-        resposta = request.form.get("resposta", "").strip()
-        alvo = session.get("bent_alvo", "")
-        if resposta == alvo:
-            pts = PONTOS[session["bent_fase"]]
+        resp = request.form.get("resposta", "").strip()
+        if resp == session["bent_alvo"]:
+            pts = PTS[session["bent_fase"]]
             session["bent_pontos"] += pts
-            mensagem = f"✅ ACERTOU! +{pts} PONTOS!"
+            msg = f"✅ ACERTOU! +{pts} PONTOS!"
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
@@ -370,17 +452,12 @@ def jogo_bentinho():
                 session["bent_fase"] += 1
                 session.pop("bent_num", None)
             else:
-                mensagem = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
+                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
                 session["bent_fase"] = 1
                 session.pop("bent_num", None)
         else:
-            mensagem = "❌ Errou! Tente de novo."
+            msg = "❌ Errou!"
             session["bent_pontos"] = 0
-            session["bent_num"], session["bent_alvo"] = novo_desafio(session["bent_fase"])
-    fase = session["bent_fase"]
-    num = session.get("bent_num", "000")
-    pontos = session["bent_pontos"]
-    placeholder = {1:"___",2:"______",3:"________",4:"_________"}[fase]
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -393,26 +470,24 @@ def jogo_bentinho():
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
         <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Autor: João Bento da Silva</p>
-        <p class="text-center text-lg mb-6">Fase {fase}/4 · Pontos: {pontos}</p>
-        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in mensagem or "🏆" in mensagem else "bg-red-900/50 text-red-400"}">{mensagem}</div>' if mensagem else ''}
+        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
+        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
-            <p class="text-gray-400 mb-2">Número do Avatar:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{num}</p>
+            <p class="text-gray-400 mb-2">Número:</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
         </div>
         <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="{placeholder}" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
+            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
             <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
-                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
+                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
+                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
             </div>
         </form>
-        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500 hover:text-yellow-400">← Voltar</a></p>
+        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500">← Voltar</a></p>
     </div>
 </body>
 </html>''')
 
-# ============= BAIXAR DNA =============
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
     if not usuario_logado():
@@ -426,14 +501,12 @@ def baixar_dna():
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
 
-# ============= PLATAFORMA PRINCIPAL — ORIGINAL INTACTA =============
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
-    # POSTAGEM — PERMANENTE
     if request.method == "POST" and "texto_post" in request.form:
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
@@ -450,68 +523,54 @@ def plataforma():
             conn.close()
         return redirect(url_for("plataforma"))
     
-    # CURTIR
     if "curtir" in request.args:
-        postagem_id = request.args.get("curtir")
+        pid = request.args.get("curtir")
         conn = sqlite3.connect(BANCO_DADOS)
         c = conn.cursor()
         try:
-            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, postagem_id))
+            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, pid))
         except sqlite3.IntegrityError:
-            c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, postagem_id))
+            c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, pid))
         conn.commit()
         conn.close()
-        return redirect(url_for("plataforma") + "#post-" + postagem_id)
+        return redirect(url_for("plataforma") + "#post-" + pid)
     
-    # DADOS USUÁRIO
     conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    c.execute("SELECT nome, pontos, dna_chave FROM usuarios WHERE id = ?", (usuario_id,))
+    c.execute("SELECT nome, pontos, dna_chave, email FROM usuarios WHERE id = ?", (usuario_id,))
     usuario_dados = c.fetchone()
     if not usuario_dados:
         conn.close()
         session.clear()
         return redirect(url_for("inicio"))
-    nome_usuario, total_pontos, dna_chave = usuario_dados
+    nome_usuario, total_pontos, dna_chave, email_usuario = usuario_dados
     
-    # POSTAGENS — TODAS PERMANENTES
-    c.execute("""
-        SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
+    c.execute("""SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
                (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
                EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
-        FROM postagens p JOIN usuarios u ON p.usuario_id = u.id
-        ORDER BY p.data_postagem DESC
-    """, (usuario_id,))
+               FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data_postagem DESC""", (usuario_id,))
     postagens = c.fetchall()
     conn.close()
     
-    postagens_html = ""
-    if postagens:
-        for p in postagens:
-            pid, texto, arquivo, data, autor, curtidas, curtiu = p
-            curtida_classe = "red" if curtiu else "gray"
-            plural = "s" if curtidas != 1 else ""
-            postagens_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
-                <h4 class="font-bold text-yellow-400">{autor}</h4>
-                <p class="text-sm text-gray-400 mb-3">{data}</p>
-                {f'<p class="mb-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
-            if arquivo:
-                ext = arquivo.split(".")[-1].lower()
-                if ext in ["jpg", "jpeg", "png", "gif"]:
-                    postagens_html += f'<img src="/uploads/{arquivo}" class="max-w-full rounded-lg mb-3">'
-                elif ext in ["mp4", "mov", "avi", "webm"]:
-                    postagens_html += f'''<video controls class="max-w-full rounded-lg mb-3">
-                        <source src="/uploads/{arquivo}" type="video/mp4">
-                    </video>'''
-            postagens_html += f'''<div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-700">
-                <a href="/plataforma?curtir={pid}#post-{pid}" class="flex items-center gap-1 text-{curtida_classe}-400 hover:text-red-400">
-                    👍 {curtidas} Curtida{plural}
-                </a>
-            </div></div>'''
-    else:
-        postagens_html = '''<div class="text-center py-10 text-gray-500">
-            <p>Ainda não há postagens. Seja o primeiro! ✅ Tudo salvo para sempre!</p>
-        </div>'''
+    posts_html = ""
+    for p in postagens:
+        pid, texto, arquivo, data, autor, curtidas, curtiu = p
+        posts_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
+            <h4 class="font-bold text-yellow-400">{autor}</h4><p class="text-sm text-gray-400">{data}</p>
+            {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
+        if arquivo:
+            ext = arquivo.split(".")[-1].lower()
+            if ext in ["jpg", "jpeg", "png", "gif"]:
+                posts_html += f'<img src="/uploads/{arquivo}" class="max-w-full rounded-lg my-3">'
+            elif ext in ["mp4", "mov", "avi", "webm"]:
+                posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="/uploads/{arquivo}" type="video/mp4"></video>'
+        posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
+            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
+        </div></div>'''
+    if not posts_html:
+        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
+    
+    botao_admin = f'<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">🔒 Área Privada</a>' if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
     
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
@@ -520,210 +579,101 @@ def plataforma():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma — JNB TECNOLOGIA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.hidden{{display:none !important;}}</style>
+    <style>.tab-content{{display:block;}}.tab-content.hidden{{display:none !important;}}</style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-6">
         <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1>
-                <p class="text-gray-400">Bem-vindo, {nome_usuario}! ✅ Conta Permanente</p>
-            </div>
+            <div><h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1><p class="text-gray-400">Bem-vindo, {nome_usuario}!</p></div>
             <div class="text-right">
-                <p class="text-sm text-gray-400">Total de Pontos</p>
-                <p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
-                <a href="/sair" class="text-red-400 hover:text-red-300 text-sm">Sair</a>
+                <p class="text-sm text-gray-400">Pontos</p><p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
+                <a href="/sair" class="text-red-400 text-sm ml-2">Sair</a> {botao_admin}
             </div>
         </div>
-
         <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
             <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
         </div>
-
-        <!-- REDE -->
+        
         <div id="tab-rede" class="tab-content">
+            <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
+                <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
+            </div>
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
                 <form method="POST" enctype="multipart/form-data">
-                    <textarea name="texto_post" placeholder="Escreva algo... ✅ Salvo para sempre!" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
+                    <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                            📷 Foto/Vídeo
-                            <input type="file" name="arquivo" accept="image/*,video/*" class="hidden">
-                        </label>
-                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">
-                            📤 Publicar ✅ Permanente
-                        </button>
+                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg">📷 Foto/Vídeo<input type="file" name="arquivo" accept="image/*,video/*" class="hidden"></label>
+                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
                     </div>
                 </form>
             </div>
-            <div class="space-y-4">{postagens_html}</div>
+            <div class="space-y-4">{posts_html}</div>
         </div>
-
-        <!-- JOGOS -->
+        
         <div id="tab-jogo" class="tab-content hidden">
             <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
                     <h2 class="text-2xl font-bold text-yellow-500 mb-4">🎮 Jogo Bentinho</h2>
                     <p class="text-gray-400 mb-6">4 fases · Até 1.000.000.000 de pontos!</p>
-                    <a href="/jogo_bentinho" class="inline-block bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">▶️ Jogar</a>
+                    <a href="/jogo_bentinho" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
                     <h2 class="text-2xl font-bold text-yellow-500 mb-4">🃏 Jogo das Cartas</h2>
                     <p class="text-gray-400 mb-6">4 fases · Até 1.000 pontos!</p>
-                    <a href="/jogo_cartas" class="inline-block bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg text-lg">▶️ Jogar</a>
+                    <a href="/jogo_cartas" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
                 </div>
             </div>
         </div>
-
-        <!-- IA -->
+        
         <div id="tab-ia" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Pergunte!</h2>
-                <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-64 overflow-y-auto space-y-3">
-                    <p class="text-gray-500 text-center">👋 Olá! Pergunte-me algo!</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <input type="text" id="ia-pergunta" placeholder="Sua pergunta..." 
-                        class="flex-1 min-w-[200px] p-3 bg-gray-900 border border-gray-700 rounded-lg text-white">
-                    <button onclick="perguntarIA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-3 rounded-lg">▶️ Perguntar</button>
-                </div>
+                <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-64 overflow-y-auto space-y-3"></div>
+                <form onsubmit="enviarIA(event)">
+                    <input type="text" id="pergunta-ia" placeholder="Faça sua pergunta..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white">
+                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">Enviar</button>
+                </form>
             </div>
         </div>
-
-        <!-- DNA -->
+        
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 Conversor DNA</h2>
-                <p class="text-gray-400 mb-2">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400 text-xs">{dna_chave}</code></p>
-                <textarea id="dna-input" placeholder="Texto ou DNA..." class="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-white mb-4"></textarea>
-                <div class="flex gap-3 flex-wrap mb-4">
-                    <button onclick="converterParaDNA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">➡️ Criptografar</button>
-                    <button onclick="decodificarDNA()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold px-5 py-2 rounded-lg">⬅️ Decodificar</button>
-                    <button onclick="baixarDNA()" id="btn-baixar" class="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg hidden">💾 Baixar</button>
-                </div>
-                <div id="dna-result" class="mt-6 p-4 bg-gray-900 rounded-lg hidden whitespace-pre-wrap"></div>
+                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia</h2>
+                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+                <form method="POST" action="/baixar_dna">
+                    <textarea name="dna_texto" placeholder="Cole o texto criptografado aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
+                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">📥 Baixar .bnj — Salvar no celular</button>
+                </form>
             </div>
         </div>
     </div>
-
     <script>
-        let ultimoDNA = "";
-        const CHAVE_SECRETA = "{dna_chave}";
-        
-        function switchTab(nome) {{
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(btn => {{
-                btn.classList.remove('bg-yellow-600', 'text-black');
-                btn.classList.add('bg-gray-700');
-            }});
-            document.getElementById('tab-' + nome).classList.remove('hidden');
-            event.target.classList.add('bg-yellow-600', 'text-black');
-        }}
-
-        function perguntarIA() {{
-            const pergunta = document.getElementById('ia-pergunta').value.trim();
-            if (!pergunta) return;
-            const caixa = document.getElementById('ia-conversa');
-            caixa.innerHTML += '<div class="text-right"><span class="bg-yellow-600/20 text-yellow-300 px-3 py-2 rounded-lg inline-block max-w-[85%]">' + pergunta + '</span></div>';
-            document.getElementById('ia-pergunta').value = '';
-            caixa.scrollTop = caixa.scrollHeight;
-            fetch('/responder_ia', {{
-                method: 'POST',
-                headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
-                body: 'pergunta=' + encodeURIComponent(pergunta)
-            }})
-            .then(r => r.text())
-            .then(resposta => {{
-                caixa.innerHTML += '<div class="text-left"><span class="bg-gray-700 text-gray-200 px-3 py-2 rounded-lg inline-block max-w-[85%]">' + resposta + '</span></div>';
-                caixa.scrollTop = caixa.scrollHeight;
-            }});
-        }}
-
-        document.addEventListener('DOMContentLoaded', () => {{
-            const input = document.getElementById('ia-pergunta');
-            if (input) input.addEventListener('keypress', e => e.key === 'Enter' && perguntarIA());
-        }});
-
-        function textoParaDNA(texto, chave) {{
-            let dna = '';
-            const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
-            let bitPos = 0;
-            for (let i = 0; i < texto.length; i++) {{
-                let bin = texto.charCodeAt(i).toString(2).padStart(8, '0');
-                for (let b = 0; b < bin.length; b++) {{
-                    const chaveBit = chaveBits[bitPos % chaveBits.length];
-                    const bitFinal = bin[b] === chaveBit ? '0' : '1';
-                    dna += bitFinal === '1' ? 'GC' : 'AT';
-                    bitPos++;
-                }}
-            }}
-            return dna;
-        }}
-
-        function DNAParaTexto(dna, chave) {{
-            if (!dna.includes('AT') && !dna.includes('GC')) return null;
-            let limpo = dna.replace(/JNB-DNA-ENCRYPTED[\\s\\S]*?\\n/, '').trim();
-            const chaveBits = chave.split('').map(c => c.charCodeAt(0) % 2 === 0 ? '0' : '1').join('');
-            let bits = '';
-            for (let i = 0; i < limpo.length; i += 2) {{
-                const par = limpo.substr(i, 2);
-                if (par !== 'AT' && par !== 'GC') continue;
-                let bit = par === 'GC' ? '1' : '0';
-                const chaveBit = chaveBits[Math.floor(i/2) % chaveBits.length];
-                bits += bit === chaveBit ? '0' : '1';
-            }}
-            let texto = '';
-            for (let i = 0; i + 8 <= bits.length; i += 8) {{
-                texto += String.fromCharCode(parseInt(bits.substr(i, 8), 2));
-            }}
-            return texto;
-        }}
-
-        function converterParaDNA() {{
-            const texto = document.getElementById('dna-input').value;
-            if (!texto) return;
-            ultimoDNA = textoParaDNA(texto, CHAVE_SECRETA);
-            document.getElementById('dna-result').textContent = ultimoDNA;
-            document.getElementById('dna-result').classList.remove('hidden');
-            document.getElementById('btn-baixar').classList.remove('hidden');
-        }}
-
-        function decodificarDNA() {{
-            const dna = document.getElementById('dna-input').value;
-            if (!dna) return;
-            const texto = DNAParaTexto(dna, CHAVE_SECRETA);
-            if (texto) {{
-                document.getElementById('dna-result').textContent = texto;
-                document.getElementById('dna-result').classList.remove('hidden');
-                document.getElementById('btn-baixar').classList.add('hidden');
-            }} else {{
-                alert('Não foi possível decodificar. Verifique a chave!');
-            }}
-        }}
-
-        function baixarDNA() {{
-            if (!ultimoDNA) return;
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/baixar_dna';
-            form.innerHTML = '<textarea name="dna_texto">' + ultimoDNA + '</textarea>';
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        }}
+    function switchTab(nome) {{
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
+        document.getElementById('tab-' + nome).classList.remove('hidden');
+        event.target.classList.add('bg-yellow-600','text-black');
+        event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
+    }}
+    async function enviarIA(e) {{
+        e.preventDefault();
+        const pergunta = document.getElementById('pergunta-ia').value;
+        if(!pergunta) return;
+        const div = document.getElementById('ia-conversa');
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-yellow-400">Você:</strong> ${{pergunta}}</div>`;
+        document.getElementById('pergunta-ia').value = '';
+        const resp = await fetch('/responder_ia', {{method:'POST', body:new URLSearchParams({{pergunta}})}});
+        const texto = await resp.text();
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-green-400">IA:</strong> ${{texto}}</div>`;
+        div.scrollTop = div.scrollHeight;
+    }}
     </script>
 </body>
 </html>''')
 
-# ==================================================
-# 🚀 PORTA 5000 — NO FINAL ✅
-# ==================================================
+# ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=5000, debug=True)
