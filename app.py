@@ -1,7 +1,7 @@
  # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
-# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
-# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
+# ERRO DO JOGO BENTINHO CORRIGIDO ✅
+# ÁREA PRIVADA · REDE · JOGOS · IA · DNA ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -415,7 +415,7 @@ def jogo_cartas():
 </body>
 </html>''')
 
-# ✅ ROTA CORRIGIDA — SEGREDO DOS NÚMEROS (JOGO BENTINHO)
+# ✅ ROTA CORRIGIDA — SEGREDO DOS NÚMEROS (JOGO BENTINHO) — ERRO KeyError CORRIGIDO!
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
     if not usuario_logado():
@@ -424,10 +424,13 @@ def jogo_bentinho():
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
     def inverter(num): return "".join(TABELA[d] for d in num)
     
+    # ✅ INICIALIZA TODAS AS VARIÁVEIS PRIMEIRO — EVITA KeyError
     if "bent_fase" not in session: session["bent_fase"] = 1
     if "bent_pontos" not in session: session["bent_pontos"] = 0
+    if "bent_fase_atual" not in session: session["bent_fase_atual"] = 0
     
-    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
+    # ✅ GERA O NÚMERO ANTES DE USAR — CORRIGE O ERRO!
+    if session.get("bent_fase_atual") != session["bent_fase"] or "bent_num" not in session:
         tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
@@ -445,7 +448,7 @@ def jogo_bentinho():
             return redirect(url_for("jogo_bentinho"))
         
         resp = request.form.get("resposta", "").strip()
-        if resp == session["bent_alvo"]:
+        if resp == session.get("bent_alvo", ""):
             pts = PTS[session["bent_fase"]]
             session["bent_pontos"] += pts
             msg = f"✅ ACERTOU! +{pts} PONTOS!"
@@ -469,6 +472,11 @@ def jogo_bentinho():
         else:
             msg = "❌ Errou! Tente descobrir o segredo!"
     
+    # ✅ GARANTE que bent_num existe antes de exibir
+    bent_num = session.get("bent_num", "000")
+    bent_fase = session.get("bent_fase", 1)
+    bent_pontos = session.get("bent_pontos", 0)
+    
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -481,11 +489,11 @@ def jogo_bentinho():
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
         <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
+        <p class="text-center text-gray-400 mb-6">Fase {bent_fase}/4 · Pontos: {bent_pontos}</p>
         {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
             <p class="text-gray-400 mb-2">Número:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{bent_num}</p>
         </div>
         <form method="POST" class="space-y-4">
             <input type="text" name="resposta" placeholder="Digite o número convertido..." class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
