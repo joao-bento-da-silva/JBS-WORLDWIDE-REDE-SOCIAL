@@ -408,8 +408,10 @@ def jogo_bentinho():
 ''')
 
 
-@approute("/baixar_dna", methods=["POST"])
+@app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
+    ...
+
     if not usuario_logado(): return redirect(url_for("inicio"))
     dna_texto = request.form.get("dna_texto", "").strip()
     if not dna_texto: return "Nenhum DNA para baixar", 400
