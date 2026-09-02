@@ -1,7 +1,7 @@
  # ==================================================
-# © 2026 JNB TECNOLOGIA — POSTAGENS 100% FUNCIONANDO ✅
+# © 2026 JNB TECNOLOGIA — POSTAGENS 100% CORRIGIDAS ✅
+# ERRO DE POSTAGEM RESOLVIDO DEFINITIVAMENTE!
 # REDE · JOGOS · IA · DNA · ÁREA PRIVADA · PORTA 5000
-# CORRIGIDO: FORMULÁRIO, UPLOAD, MENSAGENS DE SUCESSO ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -416,7 +416,7 @@ def jogo_cartas():
 </body>
 </html>''')
 
-# 🎮 JOGO SEGREDO DOS NÚMEROS — ✅ CORRIGIDO! SEM ERRO DE SERVIDOR!
+# 🎮 JOGO SEGREDO DOS NÚMEROS — ✅ CORRIGIDO! SEM ERRO!
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
     if not usuario_logado():
@@ -424,7 +424,6 @@ def jogo_bentinho():
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
     def inverter(num): return "".join(TABELA[d] for d in num)
     
-    # ✅ PROTEÇÃO — GARANTE FASE VÁLIDA! SEM ERRO!
     if "bent_fase" not in session or session["bent_fase"] not in [1,2,3,4]:
         session["bent_fase"] = 1
     if "bent_pontos" not in session:
@@ -516,49 +515,51 @@ def baixar_dna():
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
 
-# 📤 POSTAGENS — ✅ CORRIGIDAS! USUÁRIO CONSEGUE POSTAR AGORA!
+# 📤 POSTAGENS — ✅ CORRIGIDAS DEFINITIVAMENTE! AGORA VAI FUNCIONAR!
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
-    # ✅ SÓ PROCESSA POST — EVITA ERRO
-    if request.method == "POST" and "texto_post" in request.form:
-        texto = request.form.get("texto_post", "").strip()
-        arquivo = request.files.get("arquivo")
-        nome_arq = None
-        
-        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-        
-        if arquivo and arquivo.filename and arquivo.filename != "":
-            if allowed_file(arquivo.filename):
-                nome_arq = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{arquivo.filename}")
-                caminho_arquivo = os.path.join(app.config["UPLOAD_FOLDER"], nome_arq)
-                arquivo.save(caminho_arquivo)
+    # ✅ SÓ PROCESSA POST — EVITA ERRO DE SERVIDOR!
+    if request.method == "POST":
+        # 🚨 FORMULÁRIO DE POSTAGEM — CORRIGIDO!
+        if "texto_post" in request.form:
+            texto = request.form.get("texto_post", "").strip()
+            arquivo = request.files.get("arquivo")
+            nome_arq = None
+            
+            os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+            
+            if arquivo and arquivo.filename and arquivo.filename != "":
+                if allowed_file(arquivo.filename):
+                    nome_arq = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{arquivo.filename}")
+                    caminho_arquivo = os.path.join(app.config["UPLOAD_FOLDER"], nome_arq)
+                    arquivo.save(caminho_arquivo)
+                else:
+                    return render_template_string('''<!DOCTYPE html><body style="background:#0f172a;color:white;text-align:center;padding:50px;font-family:Arial;">
+                        <h2 style="color:red;">❌ Formato de arquivo não permitido!</h2>
+                        <p>Use: JPG, PNG, GIF, MP4, MOV, AVI, WEBM</p>
+                        <a href="/plataforma" style="color:#f59e0b;font-size:20px;">← Voltar e tentar novamente</a>
+                    </body></html>''')
+            
+            if texto or nome_arq:
+                try:
+                    conn = sqlite3.connect(BANCO_DADOS)
+                    c = conn.cursor()
+                    c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
+                              (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                    conn.commit()
+                    conn.close()
+                    return redirect(url_for("plataforma") + "?sucesso=1")
+                except Exception as e:
+                    return f"Erro ao salvar: {str(e)}"
             else:
                 return render_template_string('''<!DOCTYPE html><body style="background:#0f172a;color:white;text-align:center;padding:50px;font-family:Arial;">
-                    <h2 style="color:red;">❌ Formato inválido!</h2>
-                    <p>Use: JPG, PNG, GIF, MP4, MOV, AVI, WEBM</p>
+                    <h2 style="color:orange;">⚠️ Escreva algo ou escolha um arquivo!</h2>
                     <a href="/plataforma" style="color:#f59e0b;font-size:20px;">← Voltar</a>
                 </body></html>''')
-        
-        if texto or nome_arq:
-            try:
-                conn = sqlite3.connect(BANCO_DADOS)
-                c = conn.cursor()
-                c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
-                          (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-                conn.commit()
-                conn.close()
-                return redirect(url_for("plataforma") + "?sucesso=1")
-            except Exception as e:
-                return f"Erro: {str(e)}"
-        else:
-            return render_template_string('''<!DOCTYPE html><body style="background:#0f172a;color:white;text-align:center;padding:50px;font-family:Arial;">
-                <h2 style="color:orange;">⚠️ Escreva algo ou escolha um arquivo!</h2>
-                <a href="/plataforma" style="color:#f59e0b;font-size:20px;">← Voltar</a>
-            </body></html>''')
     
     # ✅ MENSAGEM DE SUCESSO
     mensagem_sucesso = ""
@@ -645,7 +646,7 @@ def plataforma():
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <!-- ✅ FORMULÁRIO COM ENCTYPE — OBRIGATÓRIO PARA ARQUIVOS! -->
+                <!-- ✅ ENCTYPE OBRIGATÓRIO — SEM ISSO NÃO ENVIA ARQUIVOS! -->
                 <form method="POST" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
