@@ -352,7 +352,7 @@ def jogo_bentinho():
     return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado, conteudo=conteudo_completo)
 
 
-@app.route("/baixar_dna", methods=["POST"]
+@app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
     ...
 
