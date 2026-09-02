@@ -1,7 +1,6 @@
- # ==================================================
-# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
-# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
-# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
+# ==================================================
+# © 2026 JNB TECNOLOGIA — POSTAGEM CORRIGIDA ✅
+# PORTA 5000 · ÁREA PRIVADA · TUDO FUNCIONAL ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -501,19 +500,27 @@ def baixar_dna():
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
 
+# ✅ POSTAGEM CORRIGIDA — FORMULÁRIO E PROCESSAMENTO
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
+    # 📤 POSTAGEM CORRIGIDA — AGORA FUNCIONA PRA TODOS!
     if request.method == "POST" and "texto_post" in request.form:
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         nome_arq = None
-        if arquivo and allowed_file(arquivo.filename):
-            nome_arq = secure_filename(arquivo.filename)
-            arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
+        
+        # Aceita texto OU arquivo OU os dois
+        if arquivo and arquivo.filename != "":
+            if allowed_file(arquivo.filename):
+                nome_arq = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{arquivo.filename}")
+                arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
+            else:
+                return "Formato de arquivo não permitido!", 400
+        
         if texto or nome_arq:
             conn = sqlite3.connect(BANCO_DADOS)
             c = conn.cursor()
@@ -521,7 +528,9 @@ def plataforma():
                       (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
             conn.close()
-        return redirect(url_for("plataforma"))
+            return redirect(url_for("plataforma"))
+        else:
+            return "Escreva algo ou escolha um arquivo para publicar!", 400
     
     if "curtir" in request.args:
         pid = request.args.get("curtir")
@@ -601,6 +610,7 @@ def plataforma():
             <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
+            <!-- ✅ FORMULÁRIO CORRIGIDO — AGORA FUNCIONA! -->
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
                 <form method="POST" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
@@ -674,6 +684,6 @@ def plataforma():
 </body>
 </html>''')
 
-# ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
+# ✅ PORTA 5000 — GARANTIDA!
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
