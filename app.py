@@ -280,29 +280,19 @@ def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     if not acesso_liberado():
-        return render_template_string(
-            LAYOUT,
-            usuario_logado=usuario_logado,
-            acesso_liberado=acesso_liberado,
-            conteudo=bloqueio_servico("Jogo Bentinho", 0.00, "Descubra o segredo dos números!")
-        )
+        return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado, conteudo=bloqueio_servico("Jogo Bentinho", 0.00, "Descubra o segredo dos números!"))
 
-    TABELA_SECRETA = {
-        '0': '0', '1': '9', '2': '8', '3': '7', '4': '6',
-        '5': '5', '6': '4', '7': '3', '8': '2', '9': '1'
-    }
+    TABELA_SECRETA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
+    def converter(n): return "".join(TABELA_SECRETA[d] for d in n if d in TABELA_SECRETA)
 
-    def converter(numero_str):
-        return "".join(TABELA_SECRETA[d] for d in numero_str if d in TABELA_SECRETA)
-
-    if "bent_fase" not in session or session.get("bent_fase") not in [1, 2, 3, 4]:
+    if "bent_fase" not in session or session.get("bent_fase") not in [1,2,3,4]:
         session["bent_fase"] = 1
     if "bent_pontos" not in session:
         session["bent_pontos"] = 0
 
     fase = session["bent_fase"]
-    tamanho = {1: 3, 2: 6, 3: 8, 4: 9}[fase]
-    pontos_por_fase = {1: 250000, 2: 2500000, 3: 25000000, 4: 1000000000}
+    tamanho = {1:3,2:6,3:8,4:9}[fase]
+    pontos_por_fase = {1:250000,2:2500000,3:25000000,4:1000000000}
 
     if "bent_numero" not in session or session.get("bent_ultima_fase") != fase:
         session["bent_numero"] = "".join(random.choice("0123456789") for _ in range(tamanho))
@@ -316,24 +306,20 @@ def jogo_bentinho():
 
     if request.method == "POST":
         if request.form.get("acao") == "sair":
-            for chave in ["bent_fase", "bent_pontos", "bent_numero", "bent_resposta", "bent_ultima_fase"]:
+            for chave in ["bent_fase","bent_pontos","bent_numero","bent_resposta","bent_ultima_fase"]:
                 session.pop(chave, None)
             return redirect(url_for("pagina_jogos"))
-
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
             session.pop("bent_numero", None)
             return redirect(url_for("jogo_bentinho"))
-
         resposta_usuario = request.form.get("resposta", "").strip()
-
         if resposta_usuario == resposta_correta:
             pts = pontos_por_fase[fase]
             session["bent_pontos"] += pts
             mensagem = "ACERTOU! +{:,} PONTOS!".format(pts)
             classe_msg = "ok"
-
             try:
                 if "usuario_id" in session:
                     conn = sqlite3.connect("banco.db")
@@ -341,9 +327,8 @@ def jogo_bentinho():
                     cur.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
                     conn.commit()
                     conn.close()
-            except Exception:
+            except:
                 pass
-
             if fase < 4:
                 session["bent_fase"] = fase + 1
                 session.pop("bent_numero", None)
@@ -356,53 +341,18 @@ def jogo_bentinho():
             mensagem = "ERROU! Descubra o segredo dos numeros!"
             classe_msg = "erro"
 
-    estilo = """
-<style>
-.bent-box{background:#1e293b;padding:25px;border-radius:15px;border:2px solid #f59e0b;max-width:420px;margin:30px auto;}
-.bent-h2{color:#f59e0b;text-align:center;margin-top:0;}
-.bent-sub{text-align:center;color:#94a3b8;margin-bottom:20px;}
-.bent-num{font-size:40px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:6px;}
-.bent-input{width:100%;padding:14px;font-size:22px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;box-sizing:border-box;}
-.bent-flex{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}
-.bent-btn{padding:12px 8px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;flex:1;min-width:100px;font-size:15px;}
-.bent-btn-y{background:#f59e0b;color:#000;}
-.bent-btn-g{background:#475569;color:#fff;}
-.bent-btn-r{background:#b91c1c;color:#fff;}
-.bent-msg{padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}
-.bent-msg-ok{background:#166534;color:#bbf7d0;}
-.bent-msg-erro{background:#991b1b;color:#fecaca;}
-</style>
-"""
+    estilo = "<style>.bent-box{background:#1e293b;padding:25px;border-radius:15px;border:2px solid #f59e0b;max-width:420px;margin:30px auto;}.bent-h2{color:#f59e0b;text-align:center;margin-top:0;}.bent-sub{text-align:center;color:#94a3b8;margin-bottom:20px;}.bent-num{font-size:40px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:6px;}.bent-input{width:100%;padding:14px;font-size:22px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;box-sizing:border-box;}.bent-flex{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}.bent-btn{padding:12px 8px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;flex:1;min-width:100px;font-size:15px;}.bent-btn-y{background:#f59e0b;color:#000;}.bent-btn-g{background:#475569;color:#fff;}.bent-btn-r{background:#b91c1c;color:#fff;}.bent-msg{padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}.bent-msg-ok{background:#166534;color:#bbf7d0;}.bent-msg-erro{background:#991b1b;color:#fecaca;}</style>"
 
     bloco_mensagem = ""
     if mensagem:
-        bloco_mensagem = '<div class="bent-msg bent-msg-' + classe_msg + '">' + mensagem + "</div>"
+        bloco_mensagem = '<div class="bent-msg bent-msg-' + classe_msg + '">' + mensagem + '</div>'
 
-    conteudo_completo = estilo + """
-<div class="bent-box">
-    <h2 class="bent-h2">SEGREDO DOS NUMEROS</h2>
-    <p class="bent-sub">Fase """ + str(fase) + """/4 · Pontos: """ + str(session["bent_pontos"]) + """</p>
-    """ + bloco_mensagem + """
-    <div class="bent-num">""" + numero_exibido + """</div>
-    <form method="POST">
-        <input type="text" name="resposta" class="bent-input" placeholder="Digite o numero correto" required autocomplete="off">
-        <div class="bent-flex">
-            <button type="submit" class="bent-btn bent-btn-y">Enviar</button>
-            <button type="submit" name="acao" value="reiniciar" class="bent-btn bent-btn-g">Reiniciar</button>
-            <button type="submit" name="acao" value="sair" class="bent-btn bent-btn-r">Sair</button>
-        </div>
-    </form>
-</div>
-"""
+    conteudo_completo = estilo + '<div class="bent-box"><h2 class="bent-h2">SEGREDO DOS NUMEROS</h2><p class="bent-sub">Fase ' + str(fase) + '/4 · Pontos: ' + str(session["bent_pontos"]) + '</p>' + bloco_mensagem + '<div class="bent-num">' + numero_exibido + '</div><form method="POST"><input type="text" name="resposta" class="bent-input" placeholder="Digite o numero correto" required autocomplete="off"><div class="bent-flex"><button type="submit" class="bent-btn bent-btn-y">Enviar</button><button type="submit" name="acao" value="reiniciar" class="bent-btn bent-btn-g">Reiniciar</button><button type="submit" name="acao" value="sair" class="bent-btn bent-btn-r">Sair</button></div></form></div>'
 
-    return render_template_string(
-        LAYOUT,
-        usuario_logado=usuario_logado,
-        acesso_liberado=acesso_liberado,
-        conteudo=conteudo_completo
-    )
+    return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado, conteudo=conteudo_completo)
 
-@app.route("/baixar_dna", methods=["POST"])
+
+@app.route("/baixar_dna", methods=["POST"]
 def baixar_dna():
     ...
 
