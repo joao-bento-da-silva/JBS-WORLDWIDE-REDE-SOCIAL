@@ -275,9 +275,9 @@ a{{color:#f59e0b;text-decoration:none;}}h1{{color:#f59e0b;text-align:center;}}.b
 <form method="POST" class="box"><p style="text-align:center;color:#94a3b8;margin-bottom:10px;">🃏 Clique para selecionar:</p><div class="flex">{disp_html}</div></form>
 <div class="btns"><form method="POST"><button type="submit" name="verificar" class="btn btn-green">✅ Verificar</button></form><form method="POST"><button type="submit" name="nova" class="btn btn-yellow">🔄 Novas</button></form></div></body></html>''')
 
-# ===# ==============================================
+# ==============================================
 # 🎮 JOGO BENTINHO — REGRA 100% OCULTA ✅
-# NÃO MOSTRA A TABELA DE CONVERSÃO PRA NINGUÉM!
+# CORRIGIDO: SAIR E VOLTAR SEM ERRO DE SERVIDOR ✅
 # FASES: 3 → 6 → 8 → 9 dígitos
 # REGRA: 0↔0, 1↔9, 2↔8, 3↔7, 4↔6, 5↔5, 6↔4, 7↔3, 8↔2, 9↔1
 # ==============================================
@@ -285,6 +285,9 @@ a{{color:#f59e0b;text-decoration:none;}}h1{{color:#f59e0b;text-align:center;}}.b
 def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
+    if not acesso_liberado():
+        return render_template_string(LAYOUT, usuario_logado=usuario_logado, acesso_liberado=acesso_liberado,
+            conteudo=bloqueio_servico("Jogo Bentinho", 0.00, "Descubra o segredo dos números e acerte o oposto!"))
     
     # 🔒 TABELA SECRETA — FICA ESCONDIDA, NÃO APARECE PRO USUÁRIO!
     TABELA_SECRETA = {
@@ -318,6 +321,15 @@ def jogo_bentinho():
     
     # ✅ Processa envio do formulário
     if request.method == "POST":
+        # Sair do jogo — limpa a sessão e volta sem erro
+        if request.form.get("acao") == "sair":
+            session.pop("bent_fase", None)
+            session.pop("bent_pontos", None)
+            session.pop("bent_numero", None)
+            session.pop("bent_resposta_correta", None)
+            session.pop("bent_ultima_fase", None)
+            return redirect(url_for("pagina_jogos"))
+        
         # Reiniciar jogo
         if request.form.get("acao") == "reiniciar":
             session["bent_fase"] = 1
@@ -341,7 +353,8 @@ def jogo_bentinho():
                 c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
                 conn.commit()
                 conn.close()
-            except: pass
+            except Exception as e:
+                print(f"Erro ao salvar pontos: {e}")
             
             # Avança de fase ou finaliza
             if fase < 4:
@@ -354,30 +367,27 @@ def jogo_bentinho():
         else:
             mensagem = "❌ Errou! Tente descobrir o segredo dos números!"
     
-    # ✅ TEMPLATE — NÃO MOSTRA NENHUMA REGRA! SÓ O NÚMERO E O CAMPO DE RESPOSTA!
-    return render_template_string(f'''<!DOCTYPE html><html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 Segredo dos Números</title>
-    <style>
-        body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
-        .box{{background:#1e293b;padding:30px;border-radius:15px;border:2px solid #f59e0b;max-width:450px;width:100%;}}
-        h1{{color:#f59e0b;text-align:center;margin-bottom:5px;}}
-        .sub{{text-align:center;color:#94a3b8;margin-bottom:25px;}}
-        .num{{font-size:42px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:8px;}}
-        input{{width:100%;padding:15px;font-size:24px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;margin:10px 0;outline:none;}}
-        .btn{{padding:14px 20px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;font-size:18px;flex:1;}}
-        .btn-yellow{{background:#f59e0b;color:black;}}
-        .btn-gray{{background:#475569;color:white;}}
-        .flex{{display:flex;gap:12px;margin-top:15px;}}
-        .msg{{padding:15px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}}
-        .ok{{background:#166534;color:#bbf7d0;}}
-        .erro{{background:#991b1b;color:#fecaca;}}
-        a{{color:#f59e0b;text-decoration:none;display:block;text-align:center;margin-top:20px;}}
-    </style>
-</head>
-<body>
+    # ✅ TEMPLATE — CORRIGIDO, FECHA TUDO CERTINHO!
+    return render_template_string(LAYOUT,
+        usuario_logado=usuario_logado,
+        acesso_liberado=acesso_liberado,
+        conteudo=f'''
+<style>
+    body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
+    .box{{background:#1e293b;padding:30px;border-radius:15px;border:2px solid #f59e0b;max-width:450px;width:100%;margin:0 auto;}}
+    h1{{color:#f59e0b;text-align:center;margin-bottom:5px;}}
+    .sub{{text-align:center;color:#94a3b8;margin-bottom:25px;}}
+    .num{{font-size:42px;font-family:monospace;color:#facc15;text-align:center;padding:20px;background:#0f172a;border-radius:10px;margin:20px 0;letter-spacing:8px;}}
+    input{{width:100%;padding:15px;font-size:24px;text-align:center;background:#0f172a;border:2px solid #f59e0b;border-radius:10px;color:#facc15;font-family:monospace;margin:10px 0;outline:none;}}
+    .btn{{padding:14px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;font-size:16px;flex:1;}}
+    .btn-yellow{{background:#f59e0b;color:black;}}
+    .btn-gray{{background:#475569;color:white;}}
+    .btn-red{{background:#b91c1c;color:white;}}
+    .flex{{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}}
+    .msg{{padding:15px;border-radius:10px;text-align:center;font-weight:bold;margin:15px 0;}}
+    .ok{{background:#166534;color:#bbf7d0;}}
+    .erro{{background:#991b1b;color:#fecaca;}}
+</style>
 <div class="box">
     <h1>🎮 SEGREDO DOS NÚMEROS</h1>
     <p class="sub">Fase {fase}/4 · Pontos: {session["bent_pontos"]:,}</p>
@@ -391,16 +401,14 @@ def jogo_bentinho():
         <div class="flex">
             <button type="submit" class="btn btn-yellow">✅ Enviar</button>
             <button type="submit" name="acao" value="reiniciar" class="btn btn-gray">🔄 Reiniciar</button>
+            <button type="submit" name="acao" value="sair" class="btn btn-red">🚪 Sair</button>
         </div>
     </form>
-    
-    <a href="/jogos">← Voltar aos Jogos</a>
 </div>
-</body>
-</html>''', usuario_logado=usuario_logado())
+''')
 
 
-@app.route("/baixar_dna", methods=["POST"])
+@approute("/baixar_dna", methods=["POST"])
 def baixar_dna():
     if not usuario_logado(): return redirect(url_for("inicio"))
     dna_texto = request.form.get("dna_texto", "").strip()
