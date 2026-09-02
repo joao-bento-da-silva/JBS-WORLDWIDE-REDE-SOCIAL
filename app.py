@@ -275,38 +275,73 @@ a{{color:#f59e0b;text-decoration:none;}}h1{{color:#f59e0b;text-align:center;}}.b
 <form method="POST" class="box"><p style="text-align:center;color:#94a3b8;margin-bottom:10px;">🃏 Clique para selecionar:</p><div class="flex">{disp_html}</div></form>
 <div class="btns"><form method="POST"><button type="submit" name="verificar" class="btn btn-green">✅ Verificar</button></form><form method="POST"><button type="submit" name="nova" class="btn btn-yellow">🔄 Novas</button></form></div></body></html>''')
 
+# ==============================================
+# 🎮 JOGO BENTINHO — CORRIGIDO ✅ SEM ERRO!
+# ==============================================
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
-    if not usuario_logado(): return redirect(url_for("inicio"))
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
     def inverter(num): return "".join(TABELA[d] for d in num)
-    if "bent_fase" not in session or session["bent_fase"] not in [1,2,3,4]: session["bent_fase"] = 1
-    if "bent_pontos" not in session: session["bent_pontos"] = 0
+    
+    # ✅ Inicializa fases e pontos de forma segura
+    if "bent_fase" not in session or session["bent_fase"] not in [1,2,3,4]:
+        session["bent_fase"] = 1
+    if "bent_pontos" not in session:
+        session["bent_pontos"] = 0
+    
     fase = session["bent_fase"]
     tam = {1:3, 2:6, 3:8, 4:9}[fase]
+    PTS = {1:250000, 2:2500000, 3:25000000, 4:1000000000}
+    
+    # ✅ Gera número se não existir ou se a fase mudou
     if "bent_num" not in session or session.get("bent_fase_atual") != fase:
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
         session["bent_fase_atual"] = fase
+    
     msg = ""
-    PTS = {1:250000, 2:2500000, 3:25000000, 4:1000000000}
+    
     if request.method == "POST":
         if request.form.get("acao") == "reiniciar":
-            session["bent_fase"] = 1; session["bent_pontos"] = 0; session.pop("bent_num", None)
+            session["bent_fase"] = 1
+            session["bent_pontos"] = 0
+            session.pop("bent_num", None)
             return redirect(url_for("jogo_bentinho"))
+        
         resp = request.form.get("resposta", "").strip()
-        if resp == session["bent_alvo"]:
-            pts = PTS[fase]; session["bent_pontos"] += pts
+        alvo = session.get("bent_alvo", "")
+        
+        if resp == alvo:
+            pts = PTS[fase]
+            session["bent_pontos"] += pts
             msg = f"✅ ACERTOU! +{pts} PONTOS!"
+            
+            # ✅ Atualiza pontos no banco de dados
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
                 c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
-                conn.commit(); conn.close()
-            except: pass
-            if fase < 4: session["bent_fase"] = fase + 1; session.pop("bent_num", None)
-            else: msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"; session["bent_fase"] = 1; session.pop("bent_num", None)
-        else: msg = "❌ Errou!"; session["bent_pontos"] = 0
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"Erro ao atualizar pontos: {e}")
+            
+            # ✅ Avança de fase
+            if fase < 4:
+                session["bent_fase"] = fase + 1
+                session.pop("bent_num", None)
+            else:
+                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS — VOCÊ VENCEU!"
+                session["bent_fase"] = 1
+                session.pop("bent_num", None)
+        else:
+            msg = "❌ Errou! Tente novamente."
+            session["bent_pontos"] = 0
+    
+    # ✅ Renderiza o template
     return render_template_string(f'''<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>🎮 Segredo dos Números</title>
 <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
 .box{{background:#1e293b;padding:30px;border-radius:15px;border:2px solid #f59e0b;max-width:450px;width:100%;}}
@@ -320,6 +355,8 @@ a{{color:#f59e0b;text-decoration:none;display:block;text-align:center;margin-top
 <div class="num">{session["bent_num"]}</div>
 <form method="POST"><input type="text" name="resposta" placeholder="Digite o número convertido..." required><div class="flex"><button type="submit" class="btn btn-yellow">✅ Decifrar</button><button type="submit" name="acao" value="reiniciar" class="btn btn-gray">🔄 Reiniciar</button></div></form>
 <a href="/plataforma">← Voltar</a></div></body></html>''')
+
+
 
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
