@@ -1,7 +1,7 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
-# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
-# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
+# ÁREA PRIVADA · CADASTRO PERMANENTE · POSTAGENS PERMANENTES ✅
+# REDE · JOGOS · IA · DNA — TUDO FUNCIONAL ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -677,3 +677,4 @@ def plataforma():
 # ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+ 
