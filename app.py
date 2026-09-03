@@ -8,7 +8,7 @@
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
 import sqlite3
 import os
-import random
+import random 
 import hashlib
 import base64
 from datetime import datetime
@@ -508,7 +508,7 @@ def plataforma():
                 posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="/uploads/{arquivo}" type="video/mp4"></video>'
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700"><a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a></div></div>'''
     if not posts_html:
-     posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
+    posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
     
     botao_admin = f'<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">🔒 Área Privada</a>' if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
     
