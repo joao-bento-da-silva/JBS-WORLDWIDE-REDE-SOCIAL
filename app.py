@@ -559,11 +559,13 @@ def rota_baixar_dna():
     if not dna_texto:
         return "Nenhum DNA para baixar", 400
     agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    nome_arquivo = f"documento_dna_{agora.replace(' ', '_').replace(':', '')}.bnj"
     conteudo = f"JNB-DNA-CRIPTOGRAFADO\n{agora}\n{dna_texto}"
     resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
+    resp.headers["Content-Disposition"] = f"attachment; filename={nome_arquivo}"
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
+
 
 
 @app.route("/plataforma", methods=["GET", "POST"])
