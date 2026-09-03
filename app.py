@@ -1,7 +1,8 @@
  # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
-# ÁREA PRIVADA · CADASTRO PERMANENTE · POSTAGENS PERMANENTES ✅
-# REDE · JOGOS · IA · DNA — TUDO FUNCIONAL ✅
+# CADASTRO PERMANENTE · POSTAGENS PERMANENTES ✅
+# ÁREA PRIVADA · REDE · JOGOS · IA · DNA ✅
+# TUDO FUNCIONAL · SEM ERROS ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -79,12 +80,6 @@ def init_db():
         resposta TEXT NOT NULL,
         data_hora TEXT NOT NULL,
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-    )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS area_privada_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        acao TEXT NOT NULL,
-        detalhes TEXT,
-        data_hora TEXT NOT NULL
     )""")
     conn.commit()
     conn.close()
@@ -232,7 +227,6 @@ def sair():
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-# 🔒 ÁREA PRIVADA
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
     if not usuario_logado():
