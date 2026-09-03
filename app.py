@@ -734,6 +734,82 @@ def plataforma():
                     </div>
                 </div>
                 
+                                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DOS BOTÕES DO DNA E ABAS -->
+    <script>
+    function switchTab(nome) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('bg-yellow-600', 'text-black');
+            b.classList.add('bg-gray-700', 'hover:bg-gray-600');
+        });
+        document.getElementById('tab-' + nome).classList.remove('hidden');
+        event.target.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+        event.target.classList.add('bg-yellow-600', 'text-black');
+    }
+
+    async function criptografarDNA(e) {
+        e.preventDefault();
+        const texto = document.getElementById('texto_original').value;
+        const chave = document.getElementById('chave_cripto').value;
+        if (!texto || !chave) { alert('Preencha tudo!'); return; }
+        const resp = await fetch('/dna_criptografar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'texto_original=' + encodeURIComponent(texto) + '&chave_usuario=' + encodeURIComponent(chave)
+        });
+        const dna = await resp.text();
+        document.getElementById('dna_resultado').value = dna;
+        document.getElementById('dna_baixar').value = dna;
+        alert('✅ Criptografado!');
+    }
+
+    async function descriptografarDNA(e) {
+        e.preventDefault();
+        const dna = document.getElementById('dna_entrada').value;
+        const chave = document.getElementById('chave_descripto').value;
+        if (!dna || !chave) { alert('Preencha tudo!'); return; }
+        const resp = await fetch('/dna_descriptografar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'dna_codificado=' + encodeURIComponent(dna) + '&chave_usuario=' + encodeURIComponent(chave)
+        });
+        const texto = await resp.text();
+        document.getElementById('texto_resultado').value = texto;
+        alert('✅ Descriptografado!');
+    }
+
+    async function enviarIA(e) {
+        e.preventDefault();
+        const pergunta = document.getElementById('pergunta-ia').value.trim();
+        if (!pergunta) return;
+        const div = document.getElementById('ia-conversa');
+        div.innerHTML += `<div class="bg-gray-800 p-3 rounded"><b>Você:</b> ${pergunta}</div>`;
+        document.getElementById('pergunta-ia').value = '';
+        const resp = await fetch('/responder_ia', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'pergunta=' + encodeURIComponent(pergunta)
+        });
+        const resposta = await resp.text();
+        div.innerHTML += `<div class="bg-yellow-900/30 p-3 rounded text-yellow-200"><b>IA:</b> ${resposta}</div>`;
+        div.scrollTop = div.scrollHeight;
+    }
+    </script>
+</body>
+</html>''')
+
+# ==================================================
+# ✅ PORTA 5000 — NO FINAL, INTACTA!
+# ==================================================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
                 <!-- 🔓 DESCRIPTOGRAFAR -->
                 <div class="bg-gray-900 p-4 rounded-lg border border-red-500/30">
                     <h3 class="text-xl font-bold text-red-400 mb-3">🔓 Descriptografar</h3>
