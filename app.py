@@ -1,4 +1,4 @@
- # ==================================================
+ # ================================================== 
 # © 2026 JNB TECNOLOGIA — VERSÃO DEFINITIVA
 # REDE · JOGOS BENTINHO + CARTAS · IA APRENDIZ · DNA CRIPTO
 # CADASTRO PERMANENTE · POSTAGENS PERMANENTES · PORTA 5000
