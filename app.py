@@ -734,6 +734,37 @@ def plataforma():
         div.scrollTop = div.scrollHeight;
     }}
     </script>
+    <script>
+async function criptografarDNA(e) {
+    e.preventDefault();
+    const texto = document.getElementById('texto_original').value;
+    const chave = document.getElementById('chave_cripto').value;
+    const resp = await fetch('/dna_criptografar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'texto_original=' + encodeURIComponent(texto) + '&chave_usuario=' + encodeURIComponent(chave)
+    });
+    const dna = await resp.text();
+    document.getElementById('dna_resultado').value = dna;
+    document.getElementById('dna_baixar').value = dna;
+    alert('✅ Criptografado!');
+}
+
+async function descriptografarDNA(e) {
+    e.preventDefault();
+    const dna = document.getElementById('dna_entrada').value;
+    const chave = document.getElementById('chave_descripto').value;
+    const resp = await fetch('/dna_descriptografar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'dna_codificado=' + encodeURIComponent(dna) + '&chave_usuario=' + encodeURIComponent(chave)
+    });
+    const texto = await resp.text();
+    document.getElementById('texto_resultado').value = texto;
+    alert('✅ Descriptografado!');
+}
+</script>
+
 </body>
 </html>''')
 
