@@ -444,7 +444,7 @@ def jogo_cartas():
     resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas...</p>"
     disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS])
 
-    return render_template_string(f'''<!DOCTYPE html>
+    return render_template_string(f"""<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -480,7 +480,7 @@ def jogo_cartas():
         <p class="text-center text-gray-400 text-sm"><strong>Regra:</strong> Y->Y, A<->Z, B<->X, C<->G, D<->F, E->E</p>
     </div>
 </body>
-</html>''')
+</html>""")
 
 
 # ==============================================
@@ -490,7 +490,7 @@ def jogo_cartas():
 def inicio():
     if usuario_logado():
         return redirect(url_for("plataforma"))
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string("""<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -518,7 +518,7 @@ def inicio():
         <div class="link">Nao tem conta? <a href="/cadastrar">Cadastre-se — PERMANENTE</a></div>
     </div>
 </body>
-</html>''')
+</html>""")
 
 
 @app.route("/cadastrar", methods=["GET", "POST"])
@@ -544,7 +544,7 @@ def cadastrar():
                 return redirect(url_for("plataforma"))
             except sqlite3.IntegrityError:
                 return '<div style="text-align:center;padding:50px;background:#0f172a;color:white;"><h2 style="color:red;">E-mail ja cadastrado!</h2><a href="/cadastrar" style="color:#f59e0b;">Voltar</a></div>'
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string("""<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -573,7 +573,7 @@ def cadastrar():
         <div class="link">Ja tem conta? <a href="/">Entrar</a></div>
     </div>
 </body>
-</html>''')
+</html>""")
 
 
 @app.route("/entrar", methods=["POST"])
@@ -645,7 +645,7 @@ def area_privada():
         <a href="/plataforma">Voltar</a>
     </div>
 </body>
-</html>''')
+</html>""")
 
 
 @app.route("/painel_dono")
@@ -690,7 +690,7 @@ def painel_dono():
         </div>
     </div>
 </body>
-</html>''')
+</html>""")
 
 
 # ==============================================
@@ -747,7 +747,7 @@ def plataforma():
     postagens = c.fetchall()
     conn.close()
 
-    posts_html = ""
+    posts_html = """
     for p in postagens:
         pid, texto, arquivo, data, autor, curtidas, curtiu = p
         posts_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
@@ -764,13 +764,13 @@ def plataforma():
             <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">
                 {curtidas} Curtida{'s' if curtidas != 1 else ''}
             </a>
-        </div></div>'''
+        </div></div>"""
     if not posts_html:
         posts_html = "<p class="text-center text-gray-500 py-10">Ainda nao ha postagens. Seja o primeiro!</p>"
 
-    botao_admin = f"<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">AREA PRIVADA</a>" if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
+    botao_admin = f"<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">AREA PRIVADA</a>" if email_usuario.strip().lower() == EMAIL_DONO.lower() else """
 
-    return render_template_string(f'''<!DOCTYPE html>
+    return render_template_string(f""<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
