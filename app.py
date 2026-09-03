@@ -122,7 +122,7 @@ def carregar_conhecimento():
 CONHECIMENTO_PADRAO = {
     "brasil": "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral.",
     "quem e voce": "Eu sou a IA da JNB TECNOLOGIA, criada por Joao Bento da Silva.",
-    "jogo de cartas": "Regra: Y->Y, A->Z, Z->A, B->X, X->B, C->G, G->C, D->F, F->D, E->E.",
+    "jogo de cartas": "Regra: Y->Y, A<->Z, B<->X, C<->G, D<->F, E->E.",
     "jogo bentinho": "Regra: 0<->0, 1<->9, 2<->8, 3<->7, 4<->6, 5<->5, 6<->4, 7<->3, 8<->2, 9<->1.",
     "dna": "Cada usuario tem sua chave unica. Use para criptografar e salvar como .bnj!",
     "oi": "Ola! Bem-vindo a JNB TECNOLOGIA! Como posso ajudar?",
@@ -804,16 +804,9 @@ def plataforma():
         </div>
 
         <div id="tab-rede" class="tab-content">
-            <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
-                <p class="text-red-300 font-bold">Proibido: nudez, conteudo sexual, violencia, odio, ilegal. Postagens inadequadas serao apagadas e usuario banido.</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" enctype="multipart/form-data">
-                    <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text
+            <div class="bg-red-900/30 border border-red-500/50 p-4
 
-                    # ← DEIXA UMA LINHA EM BRANCO AQUI
-
-# ✅ PORTA 5000 — DEFINITIVA
+            # ✅ PORTA 5000 — DEFINITIVA
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-                    
+
