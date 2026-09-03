@@ -488,8 +488,71 @@ def jogo_bentinho():
 </body>
 </html>''')
 
+# ==================================================
+# 🧬 ROTAS DO DNA — CORRIGIDAS ✅
+# ==================================================
+def texto_para_dna(texto, chave):
+    chave_bytes = hashlib.sha256(chave.encode()).digest()
+    chave_bits = []
+    for byte in chave_bytes:
+        for i in range(8):
+            chave_bits.append((byte >> i) & 1)
+    bit_pos = 0
+    dna = ""
+    for char in texto.encode("utf-8"):
+        for i in range(7, -1, -1):
+            bit = (char >> i) & 1
+            bit ^= chave_bits[bit_pos % len(chave_bits)]
+            dna += "AT" if bit == 0 else "CG"
+            bit_pos += 1
+    return dna
+
+def dna_para_texto(dna, chave):
+    chave_bytes = hashlib.sha256(chave.encode()).digest()
+    chave_bits = []
+    for byte in chave_bytes:
+        for i in range(8):
+            chave_bits.append((byte >> i) & 1)
+    bit_pos = 0
+    bytes_resultado = bytearray()
+    byte_atual = 0
+    for base in dna.upper():
+        if base not in "ATCG":
+            continue
+        bit = 0 if base in "AT" else 1
+        bit ^= chave_bits[bit_pos % len(chave_bits)]
+        byte_atual = (byte_atual << 1) | bit
+        bit_pos += 1
+        if bit_pos % 8 == 0:
+            bytes_resultado.append(byte_atual)
+            byte_atual = 0
+    try:
+        return bytes_resultado.decode("utf-8")
+    except:
+        return "❌ Erro: Chave incorreta ou DNA inválido!"
+
+@app.route("/dna_criptografar", methods=["POST"])
+def rota_dna_criptografar():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    texto = request.form.get("texto_original", "").strip()
+    chave = request.form.get("chave_usuario", "").strip()
+    if not texto or not chave:
+        return "Preencha o texto e a chave!", 400
+    return texto_para_dna(texto, chave)
+
+@app.route("/dna_descriptografar", methods=["POST"])
+def rota_dna_descriptografar():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    dna_texto = request.form.get("dna_codificado", "").strip()
+    chave = request.form.get("chave_usuario", "").strip()
+    if not dna_texto or not chave:
+        return "Preencha o DNA e a chave!", 400
+    return dna_para_texto(dna_texto, chave)
+
 @app.route("/baixar_dna", methods=["POST"])
-def baixar_dna():
+def rota_baixar_dna():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     dna_texto = request.form.get("dna_texto", "").strip()
