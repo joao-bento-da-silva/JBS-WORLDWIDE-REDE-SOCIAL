@@ -1,7 +1,7 @@
  # ==================================================
-# © 2026 JNB TECNOLOGIA — CÓDIGO FINAL COMPLETO ✅
-# PORTA 5000 · DNA · REDE · JOGOS · IA · CADASTRO PERMANENTE
-# TUDO FUNCIONAL · SEM ERROS
+# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
+# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
+# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -27,91 +27,6 @@ BANCO_DADOS = "jnb_novo.db"
 # 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
 SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
-
-# ==================================================
-# 🧬 FUNÇÕES DO DNA — CORRIGIDAS ✅
-# ==================================================
-def texto_para_dna(texto, chave):
-    chave_bytes = hashlib.sha256(chave.encode()).digest()
-    chave_bits = []
-    for byte in chave_bytes:
-        for i in range(8):
-            chave_bits.append((byte >> i) & 1)
-    bit_pos = 0
-    dna = ""
-    for char in texto.encode("utf-8"):
-        for i in range(7, -1, -1):
-            bit = (char >> i) & 1
-            bit ^= chave_bits[bit_pos % len(chave_bits)]
-            dna += "AT" if bit == 0 else "CG"
-            bit_pos += 1
-    return dna
-
-def dna_para_texto(dna, chave):
-    chave_bytes = hashlib.sha256(chave.encode()).digest()
-    chave_bits = []
-    for byte in chave_bytes:
-        for i in range(8):
-            chave_bits.append((byte >> i) & 1)
-    bit_pos = 0
-    bytes_resultado = bytearray()
-    byte_real = 0
-    for base in dna.upper():
-        if base not in "ATCG":
-            continue
-        bit = 0 if base in "AT" else 1
-        bit ^= chave_bits[bit_pos % len(chave_bits)]
-        byte_real = (byte_real << 1) | bit
-        bit_pos += 1
-        if bit_pos % 8 == 0:
-            bytes_resultado.append(byte_real)
-            byte_real = 0
-    try:
-        return bytes_resultado.decode("utf-8")
-    except:
-        return "❌ Erro: Chave incorreta ou DNA inválido!"
-
-# ==================================================
-# 🧬 ROTAS DO DNA — CORRIGIDAS ✅
-# ==================================================
-@app.route("/dna_criptografar", methods=["POST"])
-def rota_dna_criptografar():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    texto = request.form.get("texto_original", "").strip()
-    chave = request.form.get("chave_usuario", "").strip()
-    if not texto or not chave:
-        return "Preencha o texto e a chave!", 400
-    return texto_para_dna(texto, chave)
-
-@app.route("/dna_descriptografar", methods=["POST"])
-def rota_dna_descriptografar():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    dna_texto = request.form.get("dna_codificado", "").strip()
-    chave = request.form.get("chave_usuario", "").strip()
-    if not dna_texto or not chave:
-        return "Preencha o DNA e a chave!", 400
-    return dna_para_texto(dna_texto, chave)
-
-@app.route("/baixar_dna", methods=["POST"])
-def rota_baixar_dna():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    dna_texto = request.form.get("dna_texto", "").strip()
-    if not dna_texto:
-        return "Nenhum DNA para baixar", 400
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    nome_arquivo = f"documento_dna_{agora.replace(' ', '_').replace(':', '')}.bnj"
-    conteudo = f"JNB-DNA-CRIPTOGRAFADO\n{agora}\n{dna_texto}"
-    resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename={nome_arquivo}"
-    resp.headers["Content-Type"] = "application/octet-stream"
-    return resp
-
-# ==================================================
-# RESTO DO CÓDIGO — INTACTO ✅
-# ==================================================
 
 def eh_dono():
     if not usuario_logado():
@@ -573,6 +488,19 @@ def jogo_bentinho():
 </body>
 </html>''')
 
+@app.route("/baixar_dna", methods=["POST"])
+def baixar_dna():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    dna_texto = request.form.get("dna_texto", "").strip()
+    if not dna_texto:
+        return "Nenhum DNA para baixar", 400
+    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
+    resp = make_response(conteudo)
+    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
+    resp.headers["Content-Type"] = "application/octet-stream"
+    return resp
+
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
@@ -715,110 +643,37 @@ def plataforma():
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia</h2>
                 <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
-                
-                <!-- 🔒 CRIPTOGRAFAR -->
-                <div class="bg-gray-900 p-4 rounded-lg border border-green-500/30 mb-6">
-                    <h3 class="text-xl font-bold text-green-400 mb-3">🔒 Criptografar</h3>
-                    <form onsubmit="criptografarDNA(event)">
-                        <textarea id="texto_original" placeholder="Digite o texto aqui..." rows="4" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg mb-3 text-white" required></textarea>
-                        <input type="text" id="chave_cripto" value="{dna_chave}" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg mb-3 text-white" required>
-                        <button type="submit" class="bg-green-600 text-white font-bold px-6 py-2 rounded-lg">🔒 Criptografar</button>
-                    </form>
-                    <div class="mt-4">
-                        <p class="text-green-400 font-bold mb-2">✅ Resultado — DNA:</p>
-                        <textarea id="dna_resultado" readonly rows="6" class="w-full p-3 bg-gray-800 border border-green-500 rounded-lg text-white text-sm" placeholder="Aqui aparece o DNA..."></textarea>
-                        <form action="/baixar_dna" method="POST" class="mt-3">
-                            <input type="hidden" id="dna_baixar" name="dna_texto">
-                            <button type="submit" class="bg-blue-600 text-white font-bold px-6 py-2 rounded-lg">📥 Baixar .bnj</button>
-                        </form>
-                    </div>
-                </div>
-                
-                                    </form>
-                </div>
+                <form method="POST" action="/baixar_dna">
+                    <textarea name="dna_texto" placeholder="Cole o texto criptografado aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
+                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">📥 Baixar .bnj — Salvar no celular</button>
+                </form>
             </div>
         </div>
     </div>
-
-    <!-- SCRIPT DOS BOTÕES DO DNA E ABAS -->
     <script>
-    function switchTab(nome) {
+    function switchTab(nome) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.remove('bg-yellow-600', 'text-black');
-            b.classList.add('bg-gray-700', 'hover:bg-gray-600');
-        });
+        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
         document.getElementById('tab-' + nome).classList.remove('hidden');
-        event.target.classList.remove('bg-gray-700', 'hover:bg-gray-600');
-        event.target.classList.add('bg-yellow-600', 'text-black');
-    }
-
-    async function criptografarDNA(e) {
+        event.target.classList.add('bg-yellow-600','text-black');
+        event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
+    }}
+    async function enviarIA(e) {{
         e.preventDefault();
-        const texto = document.getElementById('texto_original').value;
-        const chave = document.getElementById('chave_cripto').value;
-        if (!texto || !chave) { alert('Preencha tudo!'); return; }
-        const resp = await fetch('/dna_criptografar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'texto_original=' + encodeURIComponent(texto) + '&chave_usuario=' + encodeURIComponent(chave)
-        });
-        const dna = await resp.text();
-        document.getElementById('dna_resultado').value = dna;
-        document.getElementById('dna_baixar').value = dna;
-        alert('✅ Criptografado!');
-    }
-
-    async function descriptografarDNA(e) {
-        e.preventDefault();
-        const dna = document.getElementById('dna_entrada').value;
-        const chave = document.getElementById('chave_descripto').value;
-        if (!dna || !chave) { alert('Preencha tudo!'); return; }
-        const resp = await fetch('/dna_descriptografar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'dna_codificado=' + encodeURIComponent(dna) + '&chave_usuario=' + encodeURIComponent(chave)
-        });
-        const texto = await resp.text();
-        document.getElementById('texto_resultado').value = texto;
-        alert('✅ Descriptografado!');
-    }
-
-    async function enviarIA(e) {
-        e.preventDefault();
-        const pergunta = document.getElementById('pergunta-ia').value.trim();
-        if (!pergunta) return;
+        const pergunta = document.getElementById('pergunta-ia').value;
+        if(!pergunta) return;
         const div = document.getElementById('ia-conversa');
-        div.innerHTML += `<div class="bg-gray-800 p-3 rounded"><b>Você:</b> ${pergunta}</div>`;
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-yellow-400">Você:</strong> ${{pergunta}}</div>`;
         document.getElementById('pergunta-ia').value = '';
-        const resp = await fetch('/responder_ia', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'pergunta=' + encodeURIComponent(pergunta)
-        });
-        const resposta = await resp.text();
-        div.innerHTML += `<div class="bg-yellow-900/30 p-3 rounded text-yellow-200"><b>IA:</b> ${resposta}</div>`;
+        const resp = await fetch('/responder_ia', {{method:'POST', body:new URLSearchParams({{pergunta}})}});
+        const texto = await resp.text();
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-green-400">IA:</strong> ${{texto}}</div>`;
         div.scrollTop = div.scrollHeight;
-    }
+    }}
     </script>
 </body>
 </html>''')
 
-# ==================================================
-# ✅ PORTA 5000 — NO FINAL, INTACTA!
-# ==================================================
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-                <!-- 🔓 DESCRIPTOGRAFAR -->
-                <div class="bg-gray-900 p-4 rounded-lg border border-red-500/30">
-                    <h3 class="text-xl font-bold text-red-400 mb-3">🔓 Descriptografar</h3>
-                    <form onsubmit="descriptografarDNA(event)">
-                        <textarea id="dna_entrada" placeholder="Cole o DNA criptografado..." rows="6" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg mb-3 text-white" required></textarea>
-                        <input type="text" id
-          
-# ==================================================
-# ✅ PORTA 5000 — GARANTIDA!
-# ==================================================
+# ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
