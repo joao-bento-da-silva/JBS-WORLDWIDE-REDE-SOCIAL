@@ -766,9 +766,9 @@ def plataforma():
             </a>
         </div></div>'''
     if not posts_html:
-        posts_html = '<p class="text-center text-gray-500 py-10">Ainda nao ha postagens. Seja o primeiro!</p>'
+        posts_html = "<p class="text-center text-gray-500 py-10">Ainda nao ha postagens. Seja o primeiro!</p>"
 
-    botao_admin = f'<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">AREA PRIVADA</a>' if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
+    botao_admin = f"<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">AREA PRIVADA</a>" if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
 
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
@@ -806,7 +806,7 @@ def plataforma():
         <div id="tab-rede" class="tab-content">
             <div class="bg-red-900/30 border border-red-500/50 p-4
 
-            # ✅ PORTA 5000 — DEFINITIVA
+            # PORTA 5000 — DEFINITIVA
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
 
