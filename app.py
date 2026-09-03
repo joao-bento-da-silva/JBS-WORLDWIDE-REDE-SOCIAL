@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # ÁREA PRIVADA · CADASTRO PERMANENTE · POSTAGENS PERMANENTES ✅
 # REDE · JOGOS · IA · DNA — TUDO FUNCIONAL ✅
@@ -677,4 +677,3 @@ def plataforma():
 # ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
- 
