@@ -104,7 +104,7 @@ def responder_ia(pergunta):
     elif "bentinho" in p or "números" in p:
         return "🎮 0→0, 1→9, 2→8, 3→7, 4→6, 5→5, 6→4, 7→3, 8→2, 9→1."
     elif "dna" in p:
-        return "🧬 Cada usuário tem sua chave única. Salve o .bnj no celular!"
+        return "🧬 Cada usuário tem sua chave única. Criptografe suas mensagens e salve o .bnj no celular!"
     elif "oi" in p or "olá" in p:
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
@@ -227,7 +227,6 @@ def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
-# 🔒 ÁREA PRIVADA
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
     if not usuario_logado():
@@ -418,13 +417,11 @@ def jogo_bentinho():
     TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
     def inverter(num): return "".join(TABELA[d] for d in num if d in TABELA)
     
-    # Garantia de inicialização segura das variáveis de sessão
     if "bent_fase" not in session or session["bent_fase"] not in [1, 2, 3, 4]: 
         session["bent_fase"] = 1
     if "bent_pontos" not in session: 
         session["bent_pontos"] = 0
         
-    # Garante que o número e o alvo existam antes de qualquer processamento
     if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"] or "bent_alvo" not in session:
         tam = {1:3, 2:6, 3:8, 4:9}[session["bent_fase"]]
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
@@ -451,7 +448,6 @@ def jogo_bentinho():
             session["bent_pontos"] += pts
             msg = f"✅ ACERTOU! +{pts:,} PONTOS!".replace(",", ".")
             
-            # Atualização protegida no banco de dados
             try:
                 conn = get_db_connection()
                 c = conn.cursor()
@@ -504,7 +500,6 @@ def jogo_bentinho():
 </body>
 </html>''')
 
-
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
     if not usuario_logado():
@@ -529,7 +524,7 @@ def plataforma():
         arquivo = request.files.get("arquivo")
         url_midia = None
         
-        # Faz o upload da foto/vídeo diretamente para o Cloudinary (Permanente)
+        # Upload corrigido do Cloudinary suportando imagens e vídeos
         if arquivo and arquivo.filename != "":
             try:
                 res = cloudinary.uploader.upload(arquivo, resource_type="auto")
@@ -558,7 +553,7 @@ def plataforma():
             c.execute("DELETE FROM curtidas WHERE usuario_id = %s AND postagem_id = %s", (usuario_id, pid))
             conn.commit()
         conn.close()
-        return redirect(url_for("plataforma") + "#post-" + pid)
+        return redirect(url_for("plataforma") + "#post-" + str(pid))
     
     conn = get_db_connection()
     c = conn.cursor()
@@ -584,7 +579,6 @@ def plataforma():
             <h4 class="font-bold text-yellow-400">{autor}</h4><p class="text-sm text-gray-400">{data}</p>
             {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
         if arquivo:
-            # Renderização com suporte a imagens e vídeos salvos na Nuvem (Cloudinary)
             if any(ext in arquivo.lower() for ext in [".mp4", ".mov", ".webm", "video"]):
                 posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="{arquivo}"></video>'
             else:
@@ -627,11 +621,12 @@ def plataforma():
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="/plataforma" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg">📷 Foto/Vídeo<input type="file" name="arquivo" accept="image/*,video/*" class="hidden"></label>
-                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
+                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm">📷 Foto/Vídeo <input type="file" name="arquivo" accept="image/*,video/*" class="hidden" onchange="mostrarNomeArquivo(this)"></label>
+                        <span id="nome-arquivo" class="text-xs text-yellow-400"></span>
+                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
                     </div>
                 </form>
             </div>
@@ -667,14 +662,21 @@ def plataforma():
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia</h2>
-                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+                <p class="text-gray-400 mb-4">Sua chave única: <code id="chave-dna" class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+                
                 <form method="POST" action="/baixar_dna">
-                    <textarea name="dna_texto" placeholder="Cole o texto criptografado aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
-                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">📥 Baixar .bnj — Salvar no celular</button>
+                    <textarea id="dna_texto" name="dna_texto" placeholder="Digite ou cole sua mensagem aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button type="button" onclick="criptografarDNA()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg">🔒 Criptografar</button>
+                        <button type="button" onclick="descriptografarDNA()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg">🔓 Descriptografar</button>
+                        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 py-2 rounded-lg ml-auto">📥 Baixar .bnj</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
+    
     <script>
     function switchTab(nome, evt) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
@@ -685,6 +687,12 @@ def plataforma():
             evt.target.classList.remove('bg-gray-700','hover:bg-gray-600');
         }}
     }}
+
+    function mostrarNomeArquivo(input) {{
+        const txt = input.files[0] ? input.files[0].name : '';
+        document.getElementById('nome-arquivo').innerText = txt;
+    }}
+
     async function enviarIA(e) {{
         e.preventDefault();
         const pergunta = document.getElementById('pergunta-ia').value;
@@ -696,6 +704,33 @@ def plataforma():
         const texto = await resp.text();
         div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-green-400">IA:</strong> ${{texto}}</div>`;
         div.scrollTop = div.scrollHeight;
+    }}
+
+    function criptografarDNA() {{
+        const campo = document.getElementById('dna_texto');
+        const txt = campo.value;
+        if(!txt) return alert("Digite um texto para criptografar!");
+        try {{
+            const encriptado = btoa(encodeURIComponent(txt));
+            campo.value = "DNA-ENC::" + encriptado;
+        }} catch(e) {{
+            alert("Erro ao criptografar!");
+        }}
+    }}
+
+    function descriptografarDNA() {{
+        const campo = document.getElementById('dna_texto');
+        let txt = campo.value.trim();
+        if(!txt) return alert("Cole o texto criptografado para descriptografar!");
+        if(txt.startsWith("DNA-ENC::")) {{
+            txt = txt.replace("DNA-ENC::", "");
+        }}
+        try {{
+            const decriptado = decodeURIComponent(atob(txt));
+            campo.value = decriptado;
+        }} catch(e) {{
+            alert("Texto inválido ou não criptografado com o formato DNA!");
+        }}
     }}
     </script>
 </body>
