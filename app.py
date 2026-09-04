@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — VERSÃO PERMANENTE 
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
@@ -12,6 +12,7 @@ import os
 import random
 import hashlib
 import base64
+import tempfile
 from datetime import datetime
 
 app = Flask(__name__)
@@ -237,53 +238,51 @@ def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
-@aplicativo.rotat("/postar", métodos=["PUBLICAR"])
-definição postar():
-    se não usuário_logado():
-        retornar redirecionar(uri_para("início"))
+@app.route("/postar", methods=["POST"])
+def postar():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
     
-    usuário_id = sessão["id_usuário"]
-    texto = solicitar.forma_pegar("texto_post", "").tirar()
-    arquivo = solicitar.arquivos.pegar("arquivo")
-    url_mídia = Nenhum
+    usuario_id = session["usuario_id"]
+    texto = request.form.get("texto_post", "").strip()
+    arquivo = request.files.get("arquivo")
+    url_midia = None
     
-    se arquivo e arquivo.nome_de_arquivo != "":
-        ext = os.caminho.dividir_extensao(arquivo.nome_de_arquivo)[1]
-        com tempfile.ArquivoTemporárioNomeado(excluir=Falso, sufixo=ext) como arquivo_temp:
-            arquivo.salvar(arquivo_temp.nome)
-            caminho_temp = arquivo_temp.nome
+    if arquivo and arquivo.filename != "":
+        ext = os.path.splitext(arquivo.filename)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_file:
+            arquivo.save(temp_file.name)
+            caminho_temp = temp_file.name
 
-        tentar:
-            res = Cloudindrio.carregador.upload_grande(
+        try:
+            res = cloudinary.uploader.upload_large(
                 caminho_temp,
-                tipo_de_recurso="auto",
-                tamanho_de_bloco=6000000
+                resource_type="auto",
+                chunk_size=6000000
             )
-            url_mídia = res.pegar("url_segura")
-        exceto Exceção como e:
-            imprimirf("Erro no Cloudinary: {e}")
-            retornar f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
+            url_midia = res.get("secure_url")
+        except Exception as e:
+            print(f"Erro no Cloudinary: {e}")
+            return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
                 <h2 style="color:red;">❌ Falha ao enviar a mídia!</h2>
                 <p>Erro ao processar o arquivo. Detalhes: {e}</p>
                 <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">Voltar para a plataforma</a>
             </div>'''
-        finalmente:
-            se os.caminho.existe(caminho_temp):
-                os.remover(caminho_temp)
+        finally:
+            if os.path.exists(caminho_temp):
+                os.remove(caminho_temp)
 
-    se texto ou url_mídia:
-        conectar = obter_conexão_do_banco_de_dados()
-        c = conectar.cursor()
-        c.executar(
+    if texto or url_midia:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute(
             "INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (%s, %s, %s, %s)",
-            (usuário_id, texto, url_mídia, data_e_hora.agora().strftime("%Y-%m-%d %H:%M:%S"))
+            (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
-        conectar.comprometer_se()
-        conectar.fechar()
+        conn.commit()
+        conn.close()
         
-    retornar redirecionar(uri_para("plataforma"))
-
-
+    return redirect(url_for("plataforma"))
 
 @app.route("/curtir/<int:post_id>")
 def curtir(post_id):
@@ -303,8 +302,6 @@ def curtir(post_id):
     conn.close()
     
     return redirect(url_for("plataforma") + f"#post-{post_id}")
-
-# ==================================================
 
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
