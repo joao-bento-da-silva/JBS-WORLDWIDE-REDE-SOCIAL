@@ -19,6 +19,9 @@ app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
+# ⚠️ AUMENTA O LIMITE DE UPLOAD DO FLASK PARA VÍDEOS (Ex: 100 MB)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+
 # 1. CONEXÃO COM BANCO DE DADOS PERMANENTE (PostgreSQL)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -84,7 +87,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Inicializa as tabelas no PostgreSQL
 try:
     init_db()
 except Exception as e:
@@ -519,15 +521,19 @@ def plataforma():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
+    # PROCESSAMENTO DE POSTAGENS E UPLOADS
     if request.method == "POST" and "texto_post" in request.form:
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
         
-        # Upload corrigido do Cloudinary suportando imagens e vídeos
         if arquivo and arquivo.filename != "":
             try:
-                res = cloudinary.uploader.upload(arquivo, resource_type="auto")
+                # upload automático que aceita fotos, GIFs e vídeos
+                res = cloudinary.uploader.upload(
+                    arquivo,
+                    resource_type="auto"
+                )
                 url_midia = res.get("secure_url")
             except Exception as e:
                 print(f"Erro ao enviar mídia para Cloudinary: {e}")
@@ -578,14 +584,19 @@ def plataforma():
         posts_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
             <h4 class="font-bold text-yellow-400">{autor}</h4><p class="text-sm text-gray-400">{data}</p>
             {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
+        
+        # EXIBIÇÃO DE MÍDIA (FOTO OU VÍDEO)
         if arquivo:
-            if any(ext in arquivo.lower() for ext in [".mp4", ".mov", ".webm", "video"]):
-                posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="{arquivo}"></video>'
+            arq_lower = arquivo.lower()
+            if any(ext in arq_lower for ext in [".mp4", ".mov", ".webm", ".m4v", ".avi", "/video/"]):
+                posts_html += f'<video controls class="max-w-full rounded-lg my-3 w-full max-h-96"><source src="{arquivo}"></video>'
             else:
-                posts_html += f'<img src="{arquivo}" class="max-w-full rounded-lg my-3">'
+                posts_html += f'<img src="{arquivo}" class="max-w-full rounded-lg my-3 max-h-96 object-cover">'
+                
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
-            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
+            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400 font-bold">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
         </div></div>'''
+        
     if not posts_html:
         posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
     
@@ -620,12 +631,17 @@ def plataforma():
             <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
+            
+            <!-- FORMULÁRIO COM ENCTYPE CONFIGURADO PARA ACEITAR ARQUIVOS -->
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
                 <form method="POST" action="/plataforma" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm">📷 Foto/Vídeo <input type="file" name="arquivo" accept="image/*,video/*" class="hidden" onchange="mostrarNomeArquivo(this)"></label>
-                        <span id="nome-arquivo" class="text-xs text-yellow-400"></span>
+                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm text-white font-bold">
+                            📷 Foto / Vídeo
+                            <input type="file" name="arquivo" accept="image/*,video/*" class="hidden" onchange="mostrarNomeArquivo(this)">
+                        </label>
+                        <span id="nome-arquivo" class="text-xs text-yellow-400 font-mono"></span>
                         <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
                     </div>
                 </form>
@@ -690,7 +706,7 @@ def plataforma():
 
     function mostrarNomeArquivo(input) {{
         const txt = input.files[0] ? input.files[0].name : '';
-        document.getElementById('nome-arquivo').innerText = txt;
+        document.getElementById('nome-arquivo').innerText = txt ? "📎 " + txt : "";
     }}
 
     async function enviarIA(e) {{
