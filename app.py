@@ -19,7 +19,7 @@ app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
-# ⚠️ AUMENTA O LIMITE DE UPLOAD DO FLASK PARA VÍDEOS (Ex: 100 MB)
+# LIMITE DE UPLOAD DO FLASK PARA VÍDEOS (100 MB)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
 # 1. CONEXÃO COM BANCO DE DADOS PERMANENTE (PostgreSQL)
@@ -35,7 +35,7 @@ cloudinary.config(
     api_secret = os.environ.get("CLOUDINARY_API_SECRET")
 )
 
-# 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
+# 🔒 ÁREA PRIVADA
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
 SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
 
@@ -228,6 +228,64 @@ def entrar():
 def sair():
     session.clear()
     return redirect(url_for("inicio"))
+
+# ==================================================
+# 🚀 NOVAS ROTAS EXCLUSIVAS DA REDE SOCIAL
+# ==================================================
+
+@app.route("/postar", methods=["POST"])
+def postar():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    
+    usuario_id = session["usuario_id"]
+    texto = request.form.get("texto_post", "").strip()
+    arquivo = request.files.get("arquivo")
+    url_midia = None
+    
+    if arquivo and arquivo.filename != "":
+        try:
+            # Envio para Cloudinary (Suporta imagens e vídeos)
+            res = cloudinary.uploader.upload(
+                arquivo,
+                resource_type="auto"
+            )
+            url_midia = res.get("secure_url")
+        except Exception as e:
+            print(f"Erro ao enviar mídia para Cloudinary: {e}")
+
+    if texto or url_midia:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (%s, %s, %s, %s)",
+            (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        conn.commit()
+        conn.close()
+        
+    return redirect(url_for("plataforma"))
+
+@app.route("/curtir/<int:post_id>")
+def curtir(post_id):
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    
+    usuario_id = session["usuario_id"]
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (%s, %s)", (usuario_id, post_id))
+        conn.commit()
+    except:
+        conn.rollback()
+        c.execute("DELETE FROM curtidas WHERE usuario_id = %s AND postagem_id = %s", (usuario_id, post_id))
+        conn.commit()
+    conn.close()
+    
+    return redirect(url_for("plataforma") + f"#post-{post_id}")
+
+# ==================================================
 
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
@@ -515,51 +573,12 @@ def baixar_dna():
     resp.headers["Content-Type"] = "application/octet-stream"
     return resp
 
-@app.route("/plataforma", methods=["GET", "POST"])
+@app.route("/plataforma")
 def plataforma():
     if not usuario_logado():
         return redirect(url_for("inicio"))
+    
     usuario_id = session["usuario_id"]
-    
-    # PROCESSAMENTO DE POSTAGENS E UPLOADS
-    if request.method == "POST" and "texto_post" in request.form:
-        texto = request.form.get("texto_post", "").strip()
-        arquivo = request.files.get("arquivo")
-        url_midia = None
-        
-        if arquivo and arquivo.filename != "":
-            try:
-                # upload automático que aceita fotos, GIFs e vídeos
-                res = cloudinary.uploader.upload(
-                    arquivo,
-                    resource_type="auto"
-                )
-                url_midia = res.get("secure_url")
-            except Exception as e:
-                print(f"Erro ao enviar mídia para Cloudinary: {e}")
-
-        if texto or url_midia:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (%s, %s, %s, %s)",
-                      (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            conn.commit()
-            conn.close()
-        return redirect(url_for("plataforma"))
-    
-    if "curtir" in request.args:
-        pid = request.args.get("curtir")
-        conn = get_db_connection()
-        c = conn.cursor()
-        try:
-            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (%s, %s)", (usuario_id, pid))
-            conn.commit()
-        except:
-            conn.rollback()
-            c.execute("DELETE FROM curtidas WHERE usuario_id = %s AND postagem_id = %s", (usuario_id, pid))
-            conn.commit()
-        conn.close()
-        return redirect(url_for("plataforma") + "#post-" + str(pid))
     
     conn = get_db_connection()
     c = conn.cursor()
@@ -594,7 +613,7 @@ def plataforma():
                 posts_html += f'<img src="{arquivo}" class="max-w-full rounded-lg my-3 max-h-96 object-cover">'
                 
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
-            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400 font-bold">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
+            <a href="/curtir/{pid}" class="text-{'red' if curtiu else 'gray'}-400 font-bold">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
         </div></div>'''
         
     if not posts_html:
@@ -632,9 +651,9 @@ def plataforma():
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
             
-            <!-- FORMULÁRIO COM ENCTYPE CONFIGURADO PARA ACEITAR ARQUIVOS -->
+            <!-- FORMULÁRIO APONTANDO PARA A ROTA /postar -->
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" action="/plataforma" enctype="multipart/form-data">
+                <form method="POST" action="/postar" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
                         <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm text-white font-bold">
