@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JNB TECNOLOGIA — VERSÃO PERMANENTE 
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
@@ -594,10 +594,10 @@ def plataforma():
             </div>
         </div>
         <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
-            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
+            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede', event)">Rede Social</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo', event)">🎮 Jogos</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia', event)">🤖 IA</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna', event)">🧬 DNA</button>
         </div>
         
         <div id="tab-rede" class="tab-content">
@@ -654,12 +654,14 @@ def plataforma():
         </div>
     </div>
     <script>
-    function switchTab(nome) {{
+    function switchTab(nome, evt) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
         document.getElementById('tab-' + nome).classList.remove('hidden');
-        event.target.classList.add('bg-yellow-600','text-black');
-        event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
+        if(evt) {{
+            evt.target.classList.add('bg-yellow-600','text-black');
+            evt.target.classList.remove('bg-gray-700','hover:bg-gray-600');
+        }}
     }}
     async function enviarIA(e) {{
         e.preventDefault();
