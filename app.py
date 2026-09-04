@@ -237,10 +237,6 @@ def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
-# ==================================================
-# 🚀 NOVAS ROTAS EXCLUSIVAS DA REDE SOCIAL
-# ==================================================
-
 @app.route("/postar", methods=["POST"])
 def postar():
     if not usuario_logado():
@@ -253,20 +249,29 @@ def postar():
     
     if arquivo and arquivo.filename != "":
         try:
-            # Envio otimizado (upload por partes para vídeos grandes)
+            # Passa arquivo.stream para o Cloudinary aceitar o fluxo sem erro de contexto
             res = cloudinary.uploader.upload_large(
-                arquivo,
+                arquivo.stream,
                 resource_type="auto",
                 chunk_size=6000000 # Blocos de 6MB
             )
             url_midia = res.get("secure_url")
         except Exception as e:
-            print(f"Erro ao enviar mídia para Cloudinary: {e}")
-            return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
-                <h2 style="color:red;">❌ Falha ao enviar a mídia!</h2>
-                <p>Verifique o tamanho do arquivo ou sua conexão. Erro: {e}</p>
-                <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">Voltar para a plataforma</a>
-            </div>'''
+            # Fallback para o upload padrão caso seja imagem ou vídeo menor
+            try:
+                arquivo.seek(0) # Libera o ponteiro do arquivo
+                res = cloudinary.uploader.upload(
+                    arquivo,
+                    resource_type="auto"
+                )
+                url_midia = res.get("secure_url")
+            except Exception as ex:
+                print(f"Erro ao enviar mídia para Cloudinary: {ex}")
+                return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
+                    <h2 style="color:red;">❌ Falha ao enviar a mídia!</h2>
+                    <p>Verifique o tamanho do arquivo ou sua conexão. Erro: {ex}</p>
+                    <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">Voltar para a plataforma</a>
+                </div>'''
 
     if texto or url_midia:
         conn = get_db_connection()
@@ -279,6 +284,7 @@ def postar():
         conn.close()
         
     return redirect(url_for("plataforma"))
+
 
 @app.route("/curtir/<int:post_id>")
 def curtir(post_id):
