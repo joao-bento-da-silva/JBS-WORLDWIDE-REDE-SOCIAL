@@ -19,8 +19,8 @@ app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000
 
-# LIMITE DE UPLOAD DO FLASK PARA VÍDEOS (100 MB)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+# LIMITE DE UPLOAD DO FLASK EXPANDIDO PARA 500 MB
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
 # 1. CONEXÃO COM BANCO DE DADOS PERMANENTE (PostgreSQL)
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -111,6 +111,14 @@ def responder_ia(pergunta):
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
+
+@app.errorhandler(413)
+def arquivo_muito_grande(e):
+    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
+        <h2 style="color:red;">❌ Arquivo muito grande!</h2>
+        <p>O tamanho máximo permitido para vídeos e fotos é de 500 MB.</p>
+        <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">Voltar para a plataforma</a>
+    </div>''', 413
 
 @app.route("/")
 def inicio():
@@ -245,14 +253,20 @@ def postar():
     
     if arquivo and arquivo.filename != "":
         try:
-            # Envio para Cloudinary (Suporta imagens e vídeos)
-            res = cloudinary.uploader.upload(
+            # Envio otimizado (upload por partes para vídeos grandes)
+            res = cloudinary.uploader.upload_large(
                 arquivo,
-                resource_type="auto"
+                resource_type="auto",
+                chunk_size=6000000 # Blocos de 6MB
             )
             url_midia = res.get("secure_url")
         except Exception as e:
             print(f"Erro ao enviar mídia para Cloudinary: {e}")
+            return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;font-family:Arial,sans-serif;">
+                <h2 style="color:red;">❌ Falha ao enviar a mídia!</h2>
+                <p>Verifique o tamanho do arquivo ou sua conexão. Erro: {e}</p>
+                <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">Voltar para a plataforma</a>
+            </div>'''
 
     if texto or url_midia:
         conn = get_db_connection()
