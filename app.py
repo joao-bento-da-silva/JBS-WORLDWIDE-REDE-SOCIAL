@@ -457,45 +457,76 @@ def jogo_cartas():
 def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
-    TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
-    def inverter(num): return "".join(TABELA[d] for d in num)
-    if "bent_fase" not in session: session["bent_fase"] = 1
-    if "bent_pontos" not in session: session["bent_pontos"] = 0
-    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
-        tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
+    
+    # Dicionário de conversão blindado com chaves do tipo string
+    TABELA = {'0':'0', '1':'9', '2':'8', '3':'7', '4':'6', '5':'5', '6':'4', '7':'3', '8':'2', '9':'1'}
+    def inverter(num): 
+        return "".join(TABELA.get(str(d), d) for d in str(num))
+    
+    # Inicialização segura da sessão
+    if "bent_fase" not in session: 
+        session["bent_fase"] = 1
+    if "bent_pontos" not in session: 
+        session["bent_pontos"] = 0
+        
+    fase_atual = int(session.get("bent_fase", 1))
+    
+    # Garante tamanho baseado estritamente na fase atual
+    tamanhos = {1: 3, 2: 6, 3: 8, 4: 9}
+    tam = tamanhos.get(fase_atual, 3)
+    
+    # Recria o número alvo se a fase mudou ou se ele não existe
+    if "bent_num" not in session or session.get("bent_fase_atual") != fase_atual:
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
-        session["bent_fase_atual"] = session["bent_fase"]
+        session["bent_fase_atual"] = fase_atual
+
     msg = ""
-    PTS = {1:250000,2:2500000,3:25000000,4:1000000000}
+    PTS = {1: 250000, 2: 2500000, 3: 25000000, 4: 1000000000}
+    
     if request.method == "POST":
-        if request.form.get("acao") == "reiniciar":
+        acao = request.form.get("acao", "")
+        if acao == "reiniciar":
             session["bent_fase"] = 1
             session["bent_pontos"] = 0
             session.pop("bent_num", None)
+            session.pop("bent_fase_atual", None)
             return redirect(url_for("jogo_bentinho"))
+            
         resp = request.form.get("resposta", "").strip()
-        if resp == session["bent_alvo"]:
-            pts = PTS[session["bent_fase"]]
+        alvo_salvo = session.get("bent_alvo", "")
+        
+        if resp and resp == alvo_salvo:
+            pts = PTS.get(fase_atual, 250000)
             session["bent_pontos"] += pts
-            msg = f"✅ ACERTOU! +{pts} PONTOS!"
+            msg = f"✅ ACERTOU! +{pts:,} PONTOS!"
+            
             try:
                 conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
                 c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
                 conn.commit()
                 conn.close()
-            except: pass
-            if session["bent_fase"] < 4:
-                session["bent_fase"] += 1
+            except Exception as e:
+                print(f"Erro ao salvar pontos no banco: {e}")
+                
+            if fase_atual < 4:
+                session["bent_fase"] = fase_atual + 1
                 session.pop("bent_num", None)
+                session.pop("bent_fase_atual", None)
             else:
                 msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
                 session["bent_fase"] = 1
+                session["bent_pontos"] = 0
                 session.pop("bent_num", None)
+                session.pop("bent_fase_atual", None)
         else:
-            msg = "❌ Errou!"
+            msg = "❌ Errou! Tente novamente."
             session["bent_pontos"] = 0
+
+    num_exibicao = session.get("bent_num", "000")
+    pontos_atuais = session.get("bent_pontos", 0)
+
     return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -507,15 +538,15 @@ def jogo_bentinho():
 </head>
 <body class="flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
-        <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
-        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
+        <h1 class="text-3xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
+        <p class="text-center text-gray-400 mb-6">Fase {fase_atual}/4 · Pontos: {pontos_atuais:,}</p>
         {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
         <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
             <p class="text-gray-400 mb-2">Número:</p>
-            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{num_exibicao}</p>
         </div>
         <form method="POST" class="space-y-4">
-            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
+            <input type="text" name="resposta" placeholder="Digite o inverso..." class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" autocomplete="off" required>
             <div class="flex gap-3">
                 <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
                 <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
@@ -525,6 +556,7 @@ def jogo_bentinho():
     </div>
 </body>
 </html>''')
+
 
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
