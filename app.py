@@ -18,11 +18,14 @@ app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # Mantém a sessão ativa por muito tempo
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+# Caminho absoluto para garantir persistência real no diretório do script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
-BANCO_DADOS = "jnb_novo.db"
+BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
 
 # 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
@@ -102,7 +105,6 @@ def usuario_logado():
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
     
-    # Verificar regras personalizadas criadas no painel de ensino da IA
     try:
         conn = sqlite3.connect(BANCO_DADOS)
         c = conn.cursor()
@@ -458,24 +460,19 @@ def jogo_bentinho():
     if not usuario_logado():
         return redirect(url_for("inicio"))
     
-    # Dicionário de conversão blindado com chaves do tipo string
     TABELA = {'0':'0', '1':'9', '2':'8', '3':'7', '4':'6', '5':'5', '6':'4', '7':'3', '8':'2', '9':'1'}
     def inverter(num): 
         return "".join(TABELA.get(str(d), d) for d in str(num))
     
-    # Inicialização segura da sessão
     if "bent_fase" not in session: 
         session["bent_fase"] = 1
     if "bent_pontos" not in session: 
         session["bent_pontos"] = 0
         
     fase_atual = int(session.get("bent_fase", 1))
-    
-    # Garante tamanho baseado estritamente na fase atual
     tamanhos = {1: 3, 2: 6, 3: 8, 4: 9}
     tam = tamanhos.get(fase_atual, 3)
     
-    # Recria o número alvo se a fase mudou ou se ele não existe
     if "bent_num" not in session or session.get("bent_fase_atual") != fase_atual:
         session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
         session["bent_alvo"] = inverter(session["bent_num"])
@@ -556,7 +553,6 @@ def jogo_bentinho():
     </div>
 </body>
 </html>''')
-
 
 @app.route("/baixar_dna", methods=["POST"])
 def baixar_dna():
@@ -721,20 +717,20 @@ def plataforma():
         </div>
         
         <div id="tab-dna" class="tab-content hidden">
-    <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-        <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética (A, T, G, C)</h2>
-        <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
-        <div class="flex gap-2 mb-3">
-            <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar DNA</button>
-            <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar DNA</button>
-        </div>
-        <div class="space-y-3">
-            <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui para converter em DNA..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
-            <button type="button" onclick="baixarDNA()" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no Celular</button>
+            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
+                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética (A, T, G, C)</h2>
+                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+                <div class="flex gap-2 mb-3">
+                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar DNA</button>
+                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar DNA</button>
+                </div>
+                <div class="space-y-3">
+                    <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui para converter em DNA..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
+                    <button type="button" onclick="baixarDNA()" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no Celular</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-
     <script>
     function switchTab(nome) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
