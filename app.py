@@ -1,4 +1,4 @@
- # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
