@@ -1,6 +1,6 @@
  # ==================================================
 # © 2026 JNB TECNOLOGIA — VERSÃO PERMANENTE 
-# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
+# REDE · JOGOS · IA DINÂMICA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, make_response
@@ -85,6 +85,13 @@ def init_db():
         resposta TEXT NOT NULL,
         data_hora TEXT NOT NULL
     );""")
+    # TABELA DE APRENDIZADO DA IA
+    c.execute("""CREATE TABLE IF NOT EXISTS conhecimento_ia (
+        id SERIAL PRIMARY KEY,
+        palavra_chave TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        criado_em TEXT NOT NULL
+    );""")
     conn.commit()
     conn.close()
 
@@ -98,6 +105,22 @@ def usuario_logado():
 
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
+    
+    # 1. Consulta aprendizados no Banco de Dados PostgreSQL
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT palavra_chave, resposta FROM conhecimento_ia")
+        aprendizados = c.fetchall()
+        conn.close()
+        
+        for kw, resp in aprendizados:
+            if kw.lower() in p:
+                return resp
+    except Exception as e:
+        print(f"Erro ao buscar conhecimento da IA no DB: {e}")
+
+    # 2. Respostas estáticas padrão
     if "brasil" in p and ("descobriu" in p or "ano" in p):
         return "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral."
     elif "quem é você" in p or "quem criou" in p:
@@ -111,7 +134,7 @@ def responder_ia(pergunta):
     elif "oi" in p or "olá" in p:
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
-        return f"Entendi! Você perguntou: \"{pergunta}\""
+        return f"Ainda não aprendi sobre \"{pergunta}\". Use a área 'Ensinar a IA' abaixo para me ensinar!"
 
 @app.errorhandler(413)
 def arquivo_muito_grande(e):
@@ -397,6 +420,29 @@ def responder_ia_rota():
     conn.commit()
     conn.close()
     return resposta
+
+@app.route("/ensinar_ia", methods=["POST"])
+def ensinar_ia():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    
+    kw = request.form.get("palavra_chave", "").strip().lower()
+    resp = request.form.get("resposta_ia", "").strip()
+    
+    if kw and resp:
+        try:
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO conhecimento_ia (palavra_chave, resposta, criado_em) VALUES (%s, %s, %s)",
+                (kw, resp, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao ensinar a IA: {e}")
+            
+    return redirect(url_for("plataforma") + "#tab-ia")
 
 @app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
@@ -699,14 +745,29 @@ def plataforma():
             </div>
         </div>
         
+        <!-- ABA IA ATUALIZADA COM FORMULÁRIO DE ENSINO -->
         <div id="tab-ia" class="tab-content hidden">
-            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Pergunte!</h2>
-                <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-64 overflow-y-auto space-y-3"></div>
-                <form onsubmit="enviarIA(event)">
-                    <input type="text" id="pergunta-ia" placeholder="Faça sua pergunta..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white">
-                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">Enviar</button>
-                </form>
+            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Conversar</h2>
+                    <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-64 overflow-y-auto space-y-3"></div>
+                    <form onsubmit="enviarIA(event)">
+                        <input type="text" id="pergunta-ia" placeholder="Faça sua pergunta..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white">
+                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2 rounded-lg w-full">Enviar Pergunta</button>
+                    </form>
+                </div>
+
+                <hr class="border-gray-700 my-4">
+
+                <div>
+                    <h3 class="text-xl font-bold text-yellow-400 mb-2">🎓 Ensinar a IA</h3>
+                    <p class="text-sm text-gray-400 mb-4">Cadastre termos ou perguntas e a resposta correspondente para a IA aprender:</p>
+                    <form method="POST" action="/ensinar_ia" class="space-y-3">
+                        <input type="text" name="palavra_chave" placeholder="Quando o usuário perguntar por (ex: render)..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" required>
+                        <textarea name="resposta_ia" placeholder="A IA deve responder..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="3" required></textarea>
+                        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-2 rounded-lg w-full">🧠 Ensinar IA</button>
+                    </form>
+                </div>
             </div>
         </div>
         
@@ -729,6 +790,16 @@ def plataforma():
     </div>
     
     <script>
+    // MANTER A ABA ATIVA SE HOUVER HASH NA URL (Ex: #tab-ia)
+    window.addEventListener('DOMContentLoaded', () => {{
+        if(window.location.hash) {{
+            const tabName = window.location.hash.replace('#tab-', '').replace('#', '');
+            if(document.getElementById('tab-' + tabName)) {{
+                switchTab(tabName);
+            }}
+        }}
+    }});
+
     function switchTab(nome, evt) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
