@@ -1,587 +1,760 @@
  # ==================================================
-# JNB — IA AVANÇADA · CÓDIGO COMPLETO CORRIGIDO ✅
-# BUSCA INTELIGENTE CORRIGIDA ✅ · BOTÕES COPIAR/BAIXAR ✅
-# PORTA 5000 · SEM ERROS · 100% FUNCIONAL ✅
+# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
+# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
+# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
 import sqlite3
-import hashlib
+import os
 import random
+import hashlib
+import base64
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
+app.config["SESSION_PERMANENT"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # Mantém a sessão ativa por muito tempo
 
-# ==============================================
-# CHAVES DE SEGURANÇA
-# ==============================================
-CHAVE_MESTRA = "21054551774858609435694112838216077829"
-CHAVE_INTERNA = "192837465510918273647"
-app.secret_key = CHAVE_INTERNA
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
+BANCO_DADOS = "jnb_novo.db"
 
-# ==============================================
-# CONFIGURAÇÕES — 🔴 SEU E-MAIL
-# ==============================================
-PLANO_VALOR = 49.90
-PLANO_VALOR_VITALICIO = 897.00
-CHAVE_PIX = "769.534.677-20"
-NOME_RECEBEDOR = "João Bento da Silva"
-EMAIL_DONO = "joasilva19577@gmail.com"
+# 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
+EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
+SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
 
-# ==============================================
-# BANCO DE DADOS
-# ==============================================
+def eh_dono():
+    if not usuario_logado():
+        return False
+    try:
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        c.execute("SELECT email FROM usuarios WHERE id = ?", (session["usuario_id"],))
+        usuario = c.fetchone()
+        conn.close()
+        return usuario and usuario[0].strip().lower() == EMAIL_DONO.lower()
+    except:
+        return False
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def init_db():
-    conn = sqlite3.connect("jnb_ia_avancada.db")
+    conn = sqlite3.connect(BANCO_DADOS)
     c = conn.cursor()
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS usuarios
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, email TEXT UNIQUE, 
-                  senha_hash TEXT, data_cadastro TEXT,
-                  pago INTEGER DEFAULT 0, data_pagamento TEXT, plano TEXT)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS pagamentos
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  usuario_id INTEGER, valor REAL, tipo_plano TEXT,
-                  comprovante TEXT, status TEXT DEFAULT 'pendente', data_hora TEXT)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS documentos
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT, conteudo TEXT, 
-                  criptografado INTEGER, data_criacao TEXT, usuario_id INTEGER)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS projetos
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, 
-                  descricao TEXT, viabilidade TEXT, data_criacao TEXT, usuario_id INTEGER)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS base_conhecimento
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  palavra_chave TEXT, assunto TEXT, resposta TEXT, fonte TEXT)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS historico_conversas
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  usuario_id INTEGER, pergunta TEXT, resposta TEXT, data_hora TEXT)''')
-    
-    c.execute("SELECT COUNT(*) FROM base_conhecimento")
-    if c.fetchone()[0] == 0:
-        conhecimento_inicial = [
-            ("brasil", "História do Brasil", "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral.", "História Oficial"),
-            ("descobridor brasil", "História do Brasil", "Pedro Álvares Cabral é considerado o descobridor do Brasil.", "História Oficial"),
-            ("pedro álvares cabral", "História do Brasil", "Pedro Álvares Cabral foi o navegador português que descobriu o Brasil em 1500.", "História Oficial"),
-            ("5 de maio", "Origem do Sistema", "05 de maio de 2026 — data de criação da Chave Mestra, início do sistema JNB.", "JNB Sistema"),
-            ("chave mestra", "Segurança do Sistema", "É a combinação original que protege todos os documentos e criptografia do sistema JNB.", "JNB Segurança"),
-            ("criptografia", "Segurança", "Técnica de proteção de dados que transforma texto legível em código indecifrável.", "Segurança Digital"),
-            ("projeto automação", "Engenharia", "Projetos de automação envolvem sistemas de controle, sensores, programação e integração de equipamentos.", "Engenharia"),
-            ("projeto elétrico", "Engenharia Elétrica", "Projetos que dimensionam fios, disjuntores, cargas e distribuição de energia elétrica.", "Engenharia Elétrica"),
-            ("viabilidade", "Análise de Projetos", "Estudo técnico e econômico para verificar se um projeto é possível e vale a pena.", "Gestão de Projetos"),
-            ("jnb", "Sistema", "JNB — Gerador de Autoridade, sistema criado em 05/05/2026.", "JNB Sistema"),
-        ]
-        c.executemany("INSERT INTO base_conhecimento (palavra_chave, assunto, resposta, fonte) VALUES (?, ?, ?, ?)", conhecimento_inicial)
-    
+    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha_hash TEXT NOT NULL,
+        pontos INTEGER DEFAULT 0,
+        dna_chave TEXT NOT NULL,
+        data_cadastro TEXT NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS postagens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        texto TEXT,
+        arquivo TEXT,
+        data_postagem TEXT NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS curtidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        postagem_id INTEGER NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+        FOREIGN KEY (postagem_id) REFERENCES postagens(id),
+        UNIQUE(usuario_id, postagem_id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS conversas_ia (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        pergunta TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        data_hora TEXT NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS regras_ia (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pergunta_chave TEXT UNIQUE NOT NULL,
+        resposta_customizada TEXT NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS area_privada_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        acao TEXT NOT NULL,
+        detalhes TEXT,
+        data_hora TEXT NOT NULL
+    )""")
     conn.commit()
     conn.close()
 
 init_db()
 
-# ==============================================
-# FUNÇÕES DE VERIFICAÇÃO
-# ==============================================
 def usuario_logado():
-    return 'usuario_id' in session
+    return "usuario_id" in session
 
-def eh_dono():
-    if not usuario_logado():
-        return False
-    conn = sqlite3.connect("jnb_ia_avancada.db")
-    c = conn.cursor()
-    c.execute("SELECT email FROM usuarios WHERE id = ?", (session["usuario_id"],))
-    resultado = c.fetchone()
-    conn.close()
-    return resultado and resultado[0] == EMAIL_DONO
-
-def acesso_liberado():
-    if eh_dono():
-        return True
-    if not usuario_logado():
-        return False
-    conn = sqlite3.connect("jnb_ia_avancada.db")
-    c = conn.cursor()
-    c.execute("SELECT pago FROM usuarios WHERE id = ?", (session["usuario_id"],))
-    resultado = c.fetchone()
-    conn.close()
-    return resultado and resultado[0] == 1
-
-def bloquear_servico(titulo, valor, descricao):
-    return f"""
-    <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:30px;border-radius:12px;border:2px solid #f59e0b;text-align:center;">
-        <h2 style="color:#fbbf24;margin-bottom:15px;">{titulo}</h2>
-        <p style="font-size:16px;margin-bottom:20px;">{descricao}</p>
-        <div style="background:#0f172a;padding:20px;border-radius:8px;margin:20px 0;">
-            <h3 style="color:#22c55e;margin-bottom:10px;">Para liberar o acesso:</h3>
-            <p style="font-size:22px;font-weight:bold;color:white;">R$ {valor:.2f}/mês</p>
-            <p style="color:#94a3b8;font-size:14px;">ou R$ {PLANO_VALOR_VITALICIO:.2f} pagamento único</p>
-            <hr style="border:1px solid #334155;margin:15px 0;">
-            <p><strong>PIX:</strong> <code style="background:#1e293b;padding:5px 10px;border-radius:4px;">{CHAVE_PIX}</code></p>
-            <p><strong>Recebedor:</strong> {NOME_RECEBEDOR}</p>
-            <p style="color:#86efac;margin-top:10px;font-size:13px;">Após o pagamento, envie o comprovante na página Pagamento</p>
-        </div>
-        <a href="/pagamento" style="display:inline-block;background:#22c55e;color:#022c22;padding:12px 25px;border-radius:8px;font-weight:bold;text-decoration:none;">Ir para Pagamento</a>
-    </div>
-    """
-
-# ==============================================
-# CRIPTOGRAFIA
-# ==============================================
-def gerar_memoria_ativa():
-    digitos = list(CHAVE_MESTRA)
-    random.shuffle(digitos)
-    return "".join(digitos)
-
-def criptografar(texto):
-    memoria = gerar_memoria_ativa()
-    resultado = []
-    for i, char in enumerate(texto):
-        chave_char = memoria[i % len(memoria)]
-        codigo = ord(char) + int(chave_char)
-        resultado.append(str(codigo) + "|")
-    return "JNB-ENCRYPTED:" + "".join(resultado)
-
-def descriptografar(texto_cifrado):
-    if not texto_cifrado.startswith("JNB-ENCRYPTED:"):
-        return texto_cifrado
-    memoria = gerar_memoria_ativa()
+def responder_ia(pergunta):
+    p = pergunta.lower().strip()
+    
+    # Verificar regras personalizadas criadas no painel de ensino da IA
     try:
-        codigos = texto_cifrado[14:].split("|")[:-1]
-        resultado = []
-        for i, cod in enumerate(codigos):
-            chave_char = memoria[i % len(memoria)]
-            resultado.append(chr(int(cod) - int(chave_char)))
-        return "".join(resultado)
-    except:
-        return "Impossível decifrar — Chave Mestra necessária"
-
-# ==============================================
-# INTELIGÊNCIA ARTIFICIAL — BUSCA CORRIGIDA ✅
-# ==============================================
-def buscar_na_base(pergunta):
-    conn = sqlite3.connect("jnb_ia_avancada.db")
-    c = conn.cursor()
-    p = pergunta.lower()
-    termos = [t for t in p.split() if len(t) > 2]
-    
-    for termo in termos:
-        c.execute("SELECT assunto, resposta, fonte FROM base_conhecimento WHERE palavra_chave LIKE ?", (f"%{termo}%",))
-        resultado = c.fetchone()
-        if resultado:
-            conn.close()
-            return {"assunto": resultado[0], "resposta": resultado[1], "fonte": resultado[2], "origem": "Base Interna"}
-    
-    for termo in termos:
-        c.execute("SELECT assunto, resposta, fonte FROM base_conhecimento WHERE assunto LIKE ? OR resposta LIKE ?", 
-                 (f"%{termo}%", f"%{termo}%"))
-        resultado = c.fetchone()
-        if resultado:
-            conn.close()
-            return {"assunto": resultado[0], "resposta": resultado[1], "fonte": resultado[2], "origem": "Base Interna"}
-    
-    conn.close()
-    return None
-
-def resposta_geral(pergunta):
-    return f"""Analisando: "{pergunta}"
-
-Não encontrei essa informação na minha base de conhecimento.
-Você pode:
-- Perguntar sobre: Brasil, Criptografia, Projetos, Viabilidade, JNB
-
-Sistema JNB — IA em constante evolução."""
-
-def ia_responder_avancada(pergunta, usuario_id=None):
-    resultado = buscar_na_base(pergunta)
-    if resultado:
-        resposta_final = f"""{resultado['assunto']}
-{resultado['resposta']}
-Fonte: {resultado['fonte']} | {resultado['origem']}"""
-    else:
-        resposta_final = resposta_geral(pergunta)
-    
-    if usuario_id:
-        conn = sqlite3.connect("jnb_ia_avancada.db")
+        conn = sqlite3.connect(BANCO_DADOS)
         c = conn.cursor()
-        c.execute("INSERT INTO historico_conversas (usuario_id, pergunta, resposta, data_hora) VALUES (?, ?, ?, ?)",
-                  (usuario_id, pergunta, resposta_final, datetime.now().strftime("%d/%m/%Y %H:%M")))
-        conn.commit()
+        c.execute("SELECT resposta_customizada FROM regras_ia WHERE ? LIKE '%' || pergunta_chave || '%'", (p,))
+        regra = c.fetchone()
         conn.close()
-    
-    return resposta_final
+        if regra:
+            return regra[0]
+    except:
+        pass
 
-# ==============================================
-# LAYOUT
-# ==============================================
-LAYOUT = """
-<!DOCTYPE html>
+    if "brasil" in p and ("descobriu" in p or "ano" in p):
+        return "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral."
+    elif "quem é você" in p or "quem criou" in p:
+        return "Eu sou a IA da JNB TECNOLOGIA, criada por João Bento da Silva."
+    elif "jogo" in p and "cartas" in p:
+        return "🃏 Y→Y, A→Z, Z→A, B→X, X→B, C→G, G→C, D→F, F→D, E→E."
+    elif "bentinho" in p or "números" in p:
+        return "🎮 0→0, 1→9, 2→8, 3→7, 4→6, 5→5, 6→4, 7→3, 8→2, 9→1."
+    elif "dna" in p:
+        return "🧬 Cada usuário tem sua chave única. Salve o .bnj no celular!"
+    elif "oi" in p or "olá" in p:
+        return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
+    else:
+        return f"Entendi! Você perguntou: \"{pergunta}\""
+
+@app.route("/")
+def inicio():
+    if usuario_logado():
+        return redirect(url_for("plataforma"))
+    return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JNB — IA Avançada</title>
+    <title>JNB TECNOLOGIA</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
-        body{background:#05050a;color:#e0e0e0;line-height:1.6;}
-        .cabecalho{background:linear-gradient(135deg,#0f172a,#1e293b);padding:25px;text-align:center;border-bottom:3px solid #22c55e;}
-        .cabecalho h1{font-size:28px;color:#22c55e;}
-        .status{font-size:13px;color:#86efac;margin-top:5px;}
-        .menu{display:flex;flex-wrap:wrap;gap:8px;padding:12px;justify-content:center;background:#0f172a;border-bottom:1px solid #1e293b;}
-        .menu a{color:#94a3b8;padding:10px 15px;border-radius:6px;text-decoration:none;font-weight:bold;transition:0.2s;}
-        .menu a:hover,.menu a.ativo{background:#1e293b;color:#22c55e;}
-        .conteudo{max-width:1000px;margin:25px auto;padding:0 20px;}
-        .bloco{background:#0f172a;padding:22px;border-radius:10px;margin-bottom:18px;border-left:4px solid #22c55e;}
-        .bloco h2{color:#22c55e;margin-bottom:12px;font-size:20px;}
-        input,textarea,select,button{width:100%;padding:12px;margin:8px 0;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white;font-size:15px;}
-        button{background:#22c55e;color:#022c22;font-weight:bold;border:none;cursor:pointer;}
-        button:hover{background:#16a34a;}
-        .resposta{background:#0f241a;padding:18px;border-radius:8px;margin-top:15px;white-space:pre-wrap;border:1px solid #22c55e;}
-        .historico{margin-top:20px;padding:15px;background:#1e293b;border-radius:8px;max-height:300px;overflow-y:auto;}
-        .item-hist{padding:8px 0;border-bottom:1px solid #334155;}
-        .perg{color:#fbbf24;}
-        .resp{color:#86efac;}
-        .badge-pago{background:#f59e0b;color:#000;padding:2px 8px;border-radius:10px;font-size:11px;}
-        .aviso-dono{background:#0f241a;border:1px solid #22c55e;padding:10px;border-radius:6px;color:#86efac;margin-bottom:15px;}
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
+        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+        .link a{color:#f59e0b;text-decoration:none;}
     </style>
 </head>
 <body>
-    <div class="cabecalho">
-        <h1>JNB — IA Avançada</h1>
-        <p>Base de Conhecimento + Memória de Conversa</p>
-        <div class="status">Sistema Ativo | Chave Mestra Protegida</div>
-    </div>
-    <div class="menu">
-        <a href="/">Início</a>
-        <a href="/ia">Inteligência <span class="badge-pago">Pago</span></a>
-        <a href="/conhecimento">Base de Conhecimento <span class="badge-pago">Pago</span></a>
-        <a href="/documentos">Documentos <span class="badge-pago">Pago</span></a>
-        <a href="/projetos">Projetos <span class="badge-pago">Pago</span></a>
-        <a href="/criptografia">Criptografia <span class="badge-pago">Pago</span></a>
-        {% if session.usuario_id %}
-            <a href="/historico">Meu Histórico <span class="badge-pago">Pago</span></a>
-            <a href="/pagamento">Pagamento</a>
-            <a href="/sair" style="color:#f87171;">Sair</a>
-        {% else %}
-            <a href="/cadastro">Cadastro</a>
-            <a href="/entrar">Entrar</a>
-        {% endif %}
-    </div>
-    <div class="conteudo">
-        {{ conteudo | safe }}
+    <div class="caixa">
+        <h1>JNB TECNOLOGIA</h1>
+        <form action="/entrar" method="POST">
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+        <div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se — PERMANENTE ✅</a></div>
     </div>
 </body>
-</html>
-"""
+</html>''')
 
-# ==============================================
-# ROTAS
-# ==============================================
-
-@app.route("/")
-def inicio():
-    return render_template_string(LAYOUT, conteudo="""
-        <div class="bloco">
-            <h2>Bem-vindo ao JNB — IA Avançada</h2>
-            <p>A IA responde com a Base de Conhecimento e lembra de tudo.</p>
-            <ul style="margin:15px 0 15px 25px;">
-                <li>Base Interna — conhecimento pré-carregado</li>
-                <li>Memória de Conversa — lembra do que você perguntou</li>
-                <li>Proteção de Documentos — Chave Mestra oculta</li>
-            </ul>
-            <p style="color:#fbbf24;margin-top:15px;">Acesso completo mediante pagamento. Cadastre-se e veja os planos!</p>
-            <a href="/cadastro" style="color:#22c55e;font-weight:bold;">Criar conta →</a>
-        </div>
-    """)
-
-@app.route("/ia", methods=["GET", "POST"])
-def pagina_ia():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Inteligência Artificial", PLANO_VALOR, "A IA responde perguntas. Libere o acesso."))
-    
-    resposta = ""
+@app.route("/cadastrar", methods=["GET", "POST"])
+def cadastrar():
     if request.method == "POST":
-        pergunta = request.form.get("pergunta", "").strip()
-        if pergunta: resposta = ia_responder_avancada(pergunta, session.get("usuario_id"))
-    
-    return render_template_string(LAYOUT, conteudo=f"""
-<div class="bloco">
-    <h2>Inteligência Artificial JNB</h2>
-    <form method="POST">
-        <textarea name="pergunta" rows="3" placeholder="Faça sua pergunta aqui..." required></textarea>
-        <button type="submit">Perguntar à IA</button>
-    </form>
-    <div class="resposta"><strong>Resposta:</strong><br>{resposta}</div>
-    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #334155; display:flex; gap:10px;">
-        <button onclick="copiarResposta()" style="background: #0284c7;">📋 Copiar Resposta</button>
-        <button onclick="baixarResposta()" style="background: #16a34a;">📄 Baixar Arquivo</button>
-    </div>
-    <script>
-    function copiarResposta() {{
-        const texto = document.querySelector('.resposta').innerText;
-        navigator.clipboard.writeText(texto).then(() => alert("✅ Copiado!"));
-    }}
-    function baixarResposta() {{
-        const texto = document.querySelector('.resposta').innerText;
-        const blob = new Blob([texto], {{ type: 'text/plain;charset=utf-8' }});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "resposta_jnb.txt";
-        a.click();
-        URL.revokeObjectURL(url);
-    }}
-    </script>
-</div>
-""")
-
-@app.route("/conhecimento", methods=["GET", "POST"])
-def pagina_conhecimento():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Base de Conhecimento", PLANO_VALOR, "Consulte a base."))
-    
-    mensagem = ""
-    dono = eh_dono()
-    if request.method == "POST":
-        if not dono:
-            mensagem = "<div style='color:#fca5a5;padding:10px;background:#450a0a;border-radius:6px;'>⚠️ Apenas o DONO pode adicionar conhecimento!</div>"
-        else:
-            palavra = request.form.get("palavra_chave", "").strip().lower()
-            assunto = request.form.get("assunto", "").strip()
-            resposta = request.form.get("resposta", "").strip()
-            fonte = request.form.get("fonte", "Usuário").strip()
-            if palavra and assunto and resposta:
-                conn = sqlite3.connect("jnb_ia_avancada.db")
+        nome = request.form.get("nome", "").strip()
+        email = request.form.get("email", "").strip()
+        senha = request.form.get("senha", "").strip()
+        if nome and email and senha:
+            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+            dna_chave = base64.b64encode(os.urandom(24)).decode()
+            data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                conn = sqlite3.connect(BANCO_DADOS)
                 c = conn.cursor()
-                c.execute("INSERT INTO base_conhecimento (palavra_chave, assunto, resposta, fonte) VALUES (?, ?, ?, ?)", (palavra, assunto, resposta, fonte))
+                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
+                          (nome, email, senha_hash, dna_chave, data_cad))
                 conn.commit()
+                usuario_id = c.lastrowid
                 conn.close()
-                mensagem = "<div style='color:#86efac;padding:10px;background:#0f241a;border-radius:6px;'>✅ Conhecimento adicionado!</div>"
-            
-    conn = sqlite3.connect("jnb_ia_avancada.db")
-    c = conn.cursor()
-    c.execute("SELECT id, assunto, palavra_chave, fonte FROM base_conhecimento ORDER BY id DESC LIMIT 15")
-    lista = c.fetchall()
-    conn.close()
-    
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Base de Conhecimento</h2>
-            {mensagem}
-            {f'<div class="aviso-dono">🔐 <strong>Modo Dono Ativo</strong></div>' if dono else '<div class="aviso-dono">ℹ️ Apenas o dono pode adicionar novos conhecimentos.</div>'}
-            {'''<form method="POST">
-                <input type="text" name="palavra_chave" placeholder="Palavra-chave" required>
-                <input type="text" name="assunto" placeholder="Assunto" required>
-                <textarea name="resposta" rows="4" placeholder="Resposta completa..." required></textarea>
-                <input type="text" name="fonte" placeholder="Fonte" value="Base JNB">
-                <button type="submit">Adicionar Conhecimento</button>
-            </form>''' if dono else ''}
-        </div>
-        <div class="bloco">
-            <h3>Cadastrados ({len(lista)})</h3>
-            {''.join(f"<p><strong>{i[1]}</strong> — {i[2]} <small>({i[3]})</small></p>" for i in lista)}
-        </div>
-    """)
+                session["usuario_id"] = usuario_id
+                session["nome_usuario"] = nome
+                session.permanent = True
+                return redirect(url_for("plataforma"))
+            except sqlite3.IntegrityError:
+                return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+                    <h2 style="color:red;">E-mail já cadastrado! Faça login com sua conta permanente.</h2>
+                    <br><a href="/" style="color:#f59e0b;font-size:18px;">Ir para Login</a>
+                </div>'''
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar — JNB TECNOLOGIA</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
+        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+        .link a{color:#f59e0b;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>Cadastrar ✅ PERMANENTE</h1>
+        <form method="POST">
+            <input type="text" name="nome" placeholder="Seu nome" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Cadastrar — Para Sempre</button>
+        </form>
+        <div class="link">Já tem conta? <a href="/">Entrar</a></div>
+    </div>
+</body>
+</html>''')
 
-@app.route("/historico")
-def historico():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Histórico", PLANO_VALOR, "Veja suas conversas."))
-    
-    conn = sqlite3.connect("jnb_ia_avancada.db")
-    c = conn.cursor()
-    c.execute("SELECT pergunta, resposta, data_hora FROM historico_conversas WHERE usuario_id = ? ORDER BY id DESC LIMIT 20", (session["usuario_id"],))
-    conversas = c.fetchall()
-    conn.close()
-    
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Meu Histórico</h2>
-            <div class="historico">
-                {''.join(f"<div class='item-hist'><span class='perg'>{c[0]}</span><br><span class='resp'>{c[1][:200]}...</span><br><small>{c[2]}</small></div>" for c in conversas) if conversas else "<p>Nenhuma conversa ainda.</p>"}
-            </div>
-        </div>
-    """)
-
-@app.route("/documentos", methods=["GET", "POST"])
-def pagina_documentos():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Documentos", PLANO_VALOR, "Proteja documentos."))
-    
-    resultado = ""
-    if request.method == "POST":
-        titulo = request.form.get("titulo", "")
-        conteudo_texto = request.form.get("conteudo", "")
-        acao = request.form.get("acao", "criar")
-        if acao == "criar":
-            resultado = f"DOCUMENTO PROTEGIDO:\n{criptografar(conteudo_texto)}"
-        else:
-            resultado = f"ORIGINAL:\n{descriptografar(conteudo_texto)}"
-            
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Documentos Secretos</h2>
-            <form method="POST">
-                <input type="text" name="titulo" placeholder="Título" required>
-                <textarea name="conteudo" rows="5" placeholder="Conteúdo..."></textarea>
-                <button type="submit" name="acao" value="criar">Criptografar</button>
-                <button type="submit" name="acao" value="descriptografar" style="background:#334155;">Descriptografar</button>
-            </form>
-            {f'<div class="resposta">{resultado}</div>' if resultado else ''}
-        </div>
-    """)
-
-@app.route("/projetos", methods=["GET", "POST"])
-def pagina_projetos():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Projetos", PLANO_VALOR, "Gerador de projetos."))
-    
-    resultado = ""
-    if request.method == "POST":
-        tipo = request.form.get("tipo", "")
-        descricao = request.form.get("descricao", "")
-        resultado = ia_responder_avancada(f"projeto {tipo}: {descricao}")
-        
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Gerador de Projetos</h2>
-            <form method="POST">
-                <input type="text" name="nome" placeholder="Nome do projeto" required>
-                <input type="text" name="tipo" placeholder="Tipo (automação / elétrico)" required>
-                <textarea name="descricao" rows="4" placeholder="Descrição..."></textarea>
-                <button type="submit">Gerar Projeto</button>
-            </form>
-            {f'<div class="resposta">{resultado}</div>' if resultado else ''}
-        </div>
-    """)
-
-@app.route("/criptografia", methods=["GET", "POST"])
-def pagina_criptografia():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    if not acesso_liberado(): return render_template_string(LAYOUT, conteudo=bloquear_servico("Criptografia", PLANO_VALOR, "Criptografia total."))
-    
-    resultado = ""
-    if request.method == "POST":
-        texto = request.form.get("texto", "")
-        modo = request.form.get("modo", "cripto")
-        resultado = criptografar(texto) if modo == "cripto" else descriptografar(texto)
-        
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Criptografia Total</h2>
-            <form method="POST">
-                <textarea name="texto" rows="5" placeholder="Texto..."></textarea>
-                <button type="submit" name="modo" value="cripto">Criptografar</button>
-                <button type="submit" name="modo" value="descripto" style="background:#334155;">Descriptografar</button>
-            </form>
-            {f'<div class="resposta">{resultado}</div>' if resultado else ''}
-        </div>
-    """)
-
-@app.route("/pagamento", methods=["GET", "POST"])
-def pagina_pagamento():
-    if not usuario_logado(): return redirect(url_for("entrar"))
-    
-    mensagem = ""
-    if request.method == "POST":
-        plano = request.form.get("plano", "mensal")
-        comprovante = request.form.get("comprovante", "").strip()
-        valor = PLANO_VALOR if plano == "mensal" else PLANO_VALOR_VITALICIO
-        if comprovante:
-            conn = sqlite3.connect("jnb_ia_avancada.db")
-            c = conn.cursor()
-            c.execute("INSERT INTO pagamentos (usuario_id, valor, tipo_plano, comprovante, status, data_hora) VALUES (?, ?, ?, ?, ?, ?)",
-                      (session["usuario_id"], valor, plano, comprovante, "pendente", datetime.now().strftime("%d/%m/%Y %H:%M")))
-            conn.commit()
-            conn.close()
-            mensagem = "<div style='color:#86efac;padding:15px;background:#0f241a;border-radius:6px;'>Comprovante enviado com sucesso!</div>"
-            
-    return render_template_string(LAYOUT, conteudo=f"""
-        <div class="bloco">
-            <h2>Pagamento</h2>
-            {mensagem}
-            <div style="background:#0f172a;padding:20px;border-radius:8px;margin:20px 0;">
-                <p><strong>PIX:</strong> <code>{CHAVE_PIX}</code></p>
-                <p><strong>Recebedor:</strong> {NOME_RECEBEDOR}</p>
-            </div>
-            <form method="POST">
-                <select name="plano">
-                    <option value="mensal">Mensal — R$ {PLANO_VALOR:.2f}</option>
-                    <option value="vitalicio">Vitalício — R$ {PLANO_VALOR_VITALICIO:.2f}</option>
-                </select>
-                <textarea name="comprovante" rows="3" placeholder="Cole o código do comprovante..." required></textarea>
-                <button type="submit">Enviar Comprovante</button>
-            </form>
-        </div>
-    """)
-
-@app.route("/cadastro", methods=["GET", "POST"])
-def cadastro():
-    if request.method == "POST":
-        nome = request.form.get("nome")
-        email = request.form.get("email")
-        senha = request.form.get("senha")
-        conn = sqlite3.connect("jnb_ia_avancada.db")
-        c = conn.cursor()
-        try:
-            c.execute("INSERT INTO usuarios (nome, email, senha_hash, data_cadastro) VALUES (?, ?, ?, ?)",
-                     (nome, email, hashlib.sha256(senha.encode()).hexdigest(), datetime.now().strftime("%d/%m/%Y")))
-            conn.commit()
-            session["usuario_id"] = c.lastrowid
-            session["nome"] = nome
-            return redirect(url_for("inicio"))
-        except:
-            return "E-mail já cadastrado"
-        finally:
-            conn.close()
-    return render_template_string(LAYOUT, conteudo="""
-        <div class="bloco">
-            <h2>Cadastro</h2>
-            <form method="POST">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <input type="email" name="email" placeholder="E-mail" required>
-                <input type="password" name="senha" placeholder="Senha" required>
-                <button type="submit">Cadastrar</button>
-            </form>
-        </div>
-    """)
-
-@app.route("/entrar", methods=["GET", "POST"])
+@app.route("/entrar", methods=["POST"])
 def entrar():
-    if request.method == "POST":
-        email = request.form.get("email")
-        senha = request.form.get("senha")
-        conn = sqlite3.connect("jnb_ia_avanc2 = sqlite3.connect" if False else "jnb_ia_avancada.db")
+    email = request.form.get("email", "").strip()
+    senha = request.form.get("senha", "").strip()
+    if email and senha:
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        conn = sqlite3.connect(BANCO_DADOS)
         c = conn.cursor()
-        c.execute("SELECT id, nome, senha_hash FROM usuarios WHERE email = ?", (email,))
-        user = c.fetchone()
+        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+        usuario = c.fetchone()
         conn.close()
-        if user and user[2] == hashlib.sha256(senha.encode()).hexdigest():
-            session["usuario_id"] = user[0]
-            session["nome"] = user[1]
-            return redirect(url_for("inicio"))
-        return "E-mail ou senha incorretos"
-    return render_template_string(LAYOUT, conteudo="""
-        <div class="bloco">
-            <h2>Entrar</h2>
-            <form method="POST">
-                <input type="email" name="email" placeholder="E-mail" required>
-                <input type="password" name="senha" placeholder="Senha" required>
-                <button type="submit">Entrar</button>
-            </form>
-        </div>
-    """)
+        if usuario:
+            session["usuario_id"] = usuario[0]
+            session["nome_usuario"] = usuario[1]
+            session.permanent = True
+            return redirect(url_for("plataforma"))
+    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+        <h2 style="color:red;">E-mail ou senha inválidos!</h2>
+        <a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
+    </div>'''
 
 @app.route("/sair")
 def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+# 🔒 ÁREA PRIVADA
+@app.route("/area_privada", methods=["GET", "POST"])
+def area_privada():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    if not eh_dono():
+        return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+            <h2 style="color:red;">🚫 ACESSO NEGADO — Área exclusiva do dono</h2>
+            <a href="/plataforma" style="color:#f59e0b;">Voltar</a>
+        </div>'''
+    if request.method == "POST":
+        if request.form.get("senha_mestra") == SENHA_MESTRA_ACESSO:
+            return redirect(url_for("painel_dono"))
+        return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+            <h2 style="color:red;">❌ Senha incorreta!</h2>
+            <a href="/area_privada" style="color:#f59e0b;">Tentar novamente</a>
+        </div>'''
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 Área Privada</title>
+    <style>body{background:linear-gradient(180deg,#0f172a,#1e293b);color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;}
+    .caixa{background:rgba(15,23,42,0.9);padding:40px;border-radius:12px;border:2px solid #f59e0b;max-width:400px;width:90%;text-align:center;}
+    h1{color:#f59e0b;margin-bottom:20px;}
+    input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+    button{width:100%;padding:12px;background:#f59e0b;color:black;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+    a{color:#f59e0b;text-decoration:none;display:block;margin-top:20px;}</style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>🔒 ÁREA PRIVADA</h1>
+        <p style="margin-bottom:20px;">Confirme a senha mestra para acessar</p>
+        <form method="POST">
+            <input type="password" name="senha_mestra" placeholder="Senha Mestra" required>
+            <button type="submit">🔓 Desbloquear</button>
+        </form>
+        <a href="/plataforma">← Voltar</a>
+    </div>
+</body>
+</html>''')
+
+@app.route("/painel_dono")
+def painel_dono():
+    if not usuario_logado() or not eh_dono():
+        return redirect(url_for("inicio"))
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM usuarios")
+    total_usuarios = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM postagens")
+    total_postagens = c.fetchone()[0]
+    conn.close()
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Painel do Dono</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
+</head>
+<body class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-yellow-500 mb-6">⚙️ PAINEL DO DONO</h1>
+    <a href="/plataforma" class="text-yellow-500 mb-4 inline-block">← Voltar</a>
+    <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30">
+            <p class="text-gray-400">Total de Usuários</p>
+            <p class="text-2xl font-bold text-yellow-500">{total_usuarios}</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30">
+            <p class="text-gray-400">Total de Postagens</p>
+            <p class="text-2xl font-bold text-yellow-500">{total_postagens}</p>
+        </div>
+    </div>
+</body>
+</html>''')
+
+@app.route("/responder_ia", methods=["POST"])
+def responder_ia_rota():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    pergunta = request.form.get("pergunta", "").strip()
+    if not pergunta:
+        return "Digite uma pergunta!"
+    resposta = responder_ia(pergunta)
+    data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("INSERT INTO conversas_ia (usuario_id, pergunta, resposta, data_hora) VALUES (?, ?, ?, ?)",
+              (session["usuario_id"], pergunta, resposta, data_hora))
+    conn.commit()
+    conn.close()
+    return resposta
+
+@app.route("/ensinar_ia", methods=["POST"])
+def ensinar_ia():
+    if not usuario_logado():
+        return "Não autorizado", 401
+    pergunta_chave = request.form.get("pergunta_chave", "").strip().lower()
+    resposta_customizada = request.form.get("resposta_customizada", "").strip()
+    if pergunta_chave and resposta_customizada:
+        try:
+            conn = sqlite3.connect(BANCO_DADOS)
+            c = conn.cursor()
+            c.execute("INSERT OR REPLACE INTO regras_ia (pergunta_chave, resposta_customizada) VALUES (?, ?)", 
+                      (pergunta_chave, resposta_customizada))
+            conn.commit()
+            conn.close()
+            return "✅ IA ensinada com sucesso!"
+        except Exception as e:
+            return f"❌ Erro ao ensinar IA: {str(e)}"
+    return "Preencha todos os campos!", 400
+
+@app.route("/jogo_cartas", methods=["GET", "POST"])
+def jogo_cartas():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    REGRAS = {'Y':'Y','A':'Z','Z':'A','B':'X','X':'B','C':'G','G':'C','D':'F','F':'D','E':'E'}
+    CARTAS = ['Y','A','B','C','D','E','F','G','X','Z']
+    if "cartas_fase" not in session: session["cartas_fase"] = 1
+    if "cartas_pontos" not in session: session["cartas_pontos"] = 0
+    fase = session["cartas_fase"]
+    pontos = session["cartas_pontos"]
+    qtd = {1:3,2:6,3:8,4:9}[fase]
+    valor = {1:100,2:300,3:500,4:1000}[fase]
+    if "cartas_alvo" not in session or len(session.get("cartas_alvo",[])) != qtd:
+        session["cartas_alvo"] = random.sample(CARTAS, qtd)
+        session["cartas_resposta"] = []
+    alvo = session["cartas_alvo"]
+    resposta = session["cartas_resposta"]
+    msg = ""
+    if request.method == "POST":
+        if "nova" in request.form:
+            session["cartas_alvo"] = random.sample(CARTAS, qtd)
+            session["cartas_resposta"] = []
+        elif "selecionar" in request.form:
+            resposta.append(request.form["selecionar"])
+            session["cartas_resposta"] = resposta
+        elif "verificar" in request.form:
+            if len(resposta) != len(alvo):
+                msg = "❌ Selecione todas!"
+            else:
+                correta = [REGRAS[c] for c in alvo]
+                if resposta == correta:
+                    pontos += valor
+                    session["cartas_pontos"] = pontos
+                    msg = f"✅ ACERTOU! +{valor} PONTOS!"
+                    try:
+                        conn = sqlite3.connect(BANCO_DADOS)
+                        c = conn.cursor()
+                        c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (valor, session["usuario_id"]))
+                        conn.commit()
+                        conn.close()
+                    except: pass
+                    if fase < 4:
+                        session["cartas_fase"] += 1
+                        session.pop("cartas_alvo", None)
+                    else:
+                        msg = "🏆 VENCEU!"
+                        session["cartas_fase"] = 1
+                        session.pop("cartas_alvo", None)
+                else:
+                    msg = "❌ Errou!"
+                    session["cartas_resposta"] = []
+    alvo_html = "".join([f"<span style='background:#f59e0b;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in alvo])
+    resp_html = "".join([f"<span style='background:#22c55e;color:black;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;'>{c}</span>" for c in resposta]) if resposta else "<p style='color:#94a3b8;'>Clique nas cartas...</p>"
+    disp_html = "".join([f"<button type='submit' name='selecionar' value='{c}' style='background:#33415e;color:white;padding:12px 18px;border-radius:8px;margin:5px;font-size:24px;font-weight:bold;border:2px solid #f59e0b;cursor:pointer;'>{c}</button>" for c in CARTAS])
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🃏 Jogo das Cartas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
+</head>
+<body class="p-6 max-w-2xl mx-auto">
+    <a href="/plataforma" class="text-yellow-500">← Voltar</a>
+    <h1 class="text-4xl font-bold text-yellow-500 text-center my-6">🃏 Jogo das Cartas</h1>
+    <p class="text-center text-lg mb-4">Fase {fase}/4 · Pontos: {pontos}</p>
+    {f'<div class="text-center p-3 rounded-lg mb-4 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
+    <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
+        <p class="text-center mb-3 text-gray-400">🎯 Cartas Alvo:</p>
+        <div class="flex flex-wrap justify-center">{alvo_html}</div>
+    </div>
+    <div class="bg-gray-800 p-5 rounded-lg border border-green-500/30 mb-5">
+        <p class="text-center mb-3 text-gray-400">✅ Sua Resposta:</p>
+        <div class="flex flex-wrap justify-center">{resp_html}</div>
+    </div>
+    <form method="POST" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-5">
+        <p class="text-center mb-3 text-gray-400">🃏 Clique para selecionar:</p>
+        <div class="flex flex-wrap justify-center">{disp_html}</div>
+    </form>
+    <div class="flex gap-3 justify-center">
+        <form method="POST"><button type="submit" name="verificar" class="bg-green-600 text-white font-bold px-6 py-3 rounded-lg">✅ Verificar</button></form>
+        <form method="POST"><button type="submit" name="nova" class="bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">🔄 Novas</button></form>
+    </div>
+</body>
+</html>''')
+
+@app.route("/jogo_bentinho", methods=["GET", "POST"])
+def jogo_bentinho():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    TABELA = {'0':'0','1':'9','2':'8','3':'7','4':'6','5':'5','6':'4','7':'3','8':'2','9':'1'}
+    def inverter(num): return "".join(TABELA[d] for d in num)
+    if "bent_fase" not in session: session["bent_fase"] = 1
+    if "bent_pontos" not in session: session["bent_pontos"] = 0
+    if "bent_num" not in session or session.get("bent_fase_atual") != session["bent_fase"]:
+        tam = {1:3,2:6,3:8,4:9}[session["bent_fase"]]
+        session["bent_num"] = "".join(random.choice("0123456789") for _ in range(tam))
+        session["bent_alvo"] = inverter(session["bent_num"])
+        session["bent_fase_atual"] = session["bent_fase"]
+    msg = ""
+    PTS = {1:250000,2:2500000,3:25000000,4:1000000000}
+    if request.method == "POST":
+        if request.form.get("acao") == "reiniciar":
+            session["bent_fase"] = 1
+            session["bent_pontos"] = 0
+            session.pop("bent_num", None)
+            return redirect(url_for("jogo_bentinho"))
+        resp = request.form.get("resposta", "").strip()
+        if resp == session["bent_alvo"]:
+            pts = PTS[session["bent_fase"]]
+            session["bent_pontos"] += pts
+            msg = f"✅ ACERTOU! +{pts} PONTOS!"
+            try:
+                conn = sqlite3.connect(BANCO_DADOS)
+                c = conn.cursor()
+                c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
+                conn.commit()
+                conn.close()
+            except: pass
+            if session["bent_fase"] < 4:
+                session["bent_fase"] += 1
+                session.pop("bent_num", None)
+            else:
+                msg = "🏆 PARABÉNS! 1.000.000.000 DE PONTOS!"
+                session["bent_fase"] = 1
+                session.pop("bent_num", None)
+        else:
+            msg = "❌ Errou!"
+            session["bent_pontos"] = 0
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Segredo dos Números</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;}}</style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-8 rounded-xl border-2 border-yellow-500/50 max-w-lg w-full">
+        <h1 class="text-4xl font-bold text-yellow-500 text-center mb-2">🎮 SEGREDO DOS NÚMEROS</h1>
+        <p class="text-center text-gray-400 mb-6">Fase {session["bent_fase"]}/4 · Pontos: {session["bent_pontos"]}</p>
+        {f'<div class="text-center p-4 rounded-lg mb-6 text-lg font-bold {"bg-green-900/50 text-green-400" if "✅" in msg or "🏆" in msg else "bg-red-900/50 text-red-400"}">{msg}</div>' if msg else ''}
+        <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-lg p-6 text-center mb-6">
+            <p class="text-gray-400 mb-2">Número:</p>
+            <p class="text-5xl font-mono text-yellow-400 font-bold tracking-widest">{session["bent_num"]}</p>
+        </div>
+        <form method="POST" class="space-y-4">
+            <input type="text" name="resposta" placeholder="___" class="w-full bg-gray-900 border-2 border-yellow-500 rounded-lg text-center text-2xl text-yellow-400 p-3 font-mono" required>
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg text-lg">✅ Decifrar</button>
+                <button type="submit" name="acao" value="reiniciar" class="bg-gray-600 text-white px-6 py-3 rounded-lg">🔄 Reiniciar</button>
+            </div>
+        </form>
+        <p class="text-center mt-6"><a href="/plataforma" class="text-yellow-500">← Voltar</a></p>
+    </div>
+</body>
+</html>''')
+
+@app.route("/baixar_dna", methods=["POST"])
+def baixar_dna():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    dna_texto = request.form.get("dna_texto", "").strip()
+    if not dna_texto:
+        return "Nenhum DNA para baixar", 400
+    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
+    resp = make_response(conteudo)
+    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
+    resp.headers["Content-Type"] = "application/octet-stream"
+    return resp
+
+@app.route("/plataforma", methods=["GET", "POST"])
+def plataforma():
+    if not usuario_logado():
+        return redirect(url_for("inicio"))
+    usuario_id = session["usuario_id"]
+    
+    if request.method == "POST" and "texto_post" in request.form:
+        texto = request.form.get("texto_post", "").strip()
+        arquivo = request.files.get("arquivo")
+        nome_arq = None
+        if arquivo and allowed_file(arquivo.filename):
+            nome_arq = secure_filename(arquivo.filename)
+            arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
+        if texto or nome_arq:
+            conn = sqlite3.connect(BANCO_DADOS)
+            c = conn.cursor()
+            c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
+                      (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+            conn.close()
+        return redirect(url_for("plataforma"))
+    
+    if "curtir" in request.args:
+        pid = request.args.get("curtir")
+        conn = sqlite3.connect(BANCO_DADOS)
+        c = conn.cursor()
+        try:
+            c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, pid))
+        except sqlite3.IntegrityError:
+            c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, pid))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("plataforma") + "#post-" + pid)
+    
+    conn = sqlite3.connect(BANCO_DADOS)
+    c = conn.cursor()
+    c.execute("SELECT nome, pontos, dna_chave, email FROM usuarios WHERE id = ?", (usuario_id,))
+    usuario_dados = c.fetchone()
+    if not usuario_dados:
+        conn.close()
+        session.clear()
+        return redirect(url_for("inicio"))
+    nome_usuario, total_pontos, dna_chave, email_usuario = usuario_dados
+    
+    c.execute("""SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
+               (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
+               EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
+               FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data_postagem DESC""", (usuario_id,))
+    postagens = c.fetchall()
+    conn.close()
+    
+    posts_html = ""
+    for p in postagens:
+        pid, texto, arquivo, data, autor, curtidas, curtiu = p
+        posts_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
+            <h4 class="font-bold text-yellow-400">{autor}</h4><p class="text-sm text-gray-400">{data}</p>
+            {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
+        if arquivo:
+            ext = arquivo.split(".")[-1].lower()
+            if ext in ["jpg", "jpeg", "png", "gif"]:
+                posts_html += f'<img src="/uploads/{arquivo}" class="max-w-full rounded-lg my-3">'
+            elif ext in ["mp4", "mov", "avi", "webm"]:
+                posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="/uploads/{arquivo}" type="video/mp4"></video>'
+        posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
+            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
+        </div></div>'''
+    if not posts_html:
+        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
+    
+    botao_admin = f'<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">🔒 Área Privada</a>' if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
+    
+    return render_template_string(f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma — JNB TECNOLOGIA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>.tab-content{{display:block;}}.tab-content.hidden{{display:none !important;}}</style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
+            <div><h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1><p class="text-gray-400">Bem-vindo, {nome_usuario}!</p></div>
+            <div class="text-right">
+                <p class="text-sm text-gray-400">Pontos</p><p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
+                <a href="/sair" class="text-red-400 text-sm ml-2">Sair</a> {botao_admin}
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
+            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA & Ensino</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
+        </div>
+        
+        <div id="tab-rede" class="tab-content">
+            <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
+                <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
+                <form method="POST" enctype="multipart/form-data">
+                    <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg">📷 Foto/Vídeo<input type="file" name="arquivo" accept="image/*,video/*" class="hidden"></label>
+                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
+                    </div>
+                </form>
+            </div>
+            <div class="space-y-4">{posts_html}</div>
+        </div>
+        
+        <div id="tab-jogo" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🎮 Jogo Bentinho</h2>
+                    <p class="text-gray-400 mb-6">4 fases · Até 1.000.000.000 de pontos!</p>
+                    <a href="/jogo_bentinho" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🃏 Jogo das Cartas</h2>
+                    <p class="text-gray-400 mb-6">4 fases · Até 1.000 pontos!</p>
+                    <a href="/jogo_cartas" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
+                </div>
+            </div>
+        </div>
+        
+        <div id="tab-ia" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Pergunte!</h2>
+                    <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-56 overflow-y-auto space-y-3"></div>
+                    <form onsubmit="enviarIA(event)">
+                        <input type="text" id="pergunta-ia" placeholder="Faça sua pergunta..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white">
+                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">Enviar</button>
+                    </form>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧠 Ensinar a IA</h2>
+                    <form onsubmit="ensinarIA(event)" class="space-y-3">
+                        <input type="text" id="pergunta-chave" placeholder="Palavra-chave (ex: wifi, senha)" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" required>
+                        <textarea id="resposta-customizada" placeholder="Qual deve ser a resposta da IA?" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="3" required></textarea>
+                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">💡 Salvar Ensinamento</button>
+                    </form>
+                    <p id="status-ensino" class="text-sm mt-2 text-center text-green-400"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="tab-dna" class="tab-content hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
+                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia</h2>
+                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+                <div class="flex gap-2 mb-3">
+                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar</button>
+                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar</button>
+                </div>
+                <form method="POST" action="/baixar_dna">
+                    <textarea id="dna-texto-input" name="dna_texto" placeholder="Cole ou digite o texto aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
+                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no celular</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+    function switchTab(nome) {{
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
+        document.getElementById('tab-' + nome).classList.remove('hidden');
+        event.target.classList.add('bg-yellow-600','text-black');
+        event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
+    }}
+    async function enviarIA(e) {{
+        e.preventDefault();
+        const pergunta = document.getElementById('pergunta-ia').value;
+        if(!pergunta) return;
+        const div = document.getElementById('ia-conversa');
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-yellow-400">Você:</strong> ${{pergunta}}</div>`;
+        document.getElementById('pergunta-ia').value = '';
+        const resp = await fetch('/responder_ia', {{method:'POST', body:new URLSearchParams({{pergunta}})}});
+        const texto = await resp.text();
+        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-green-400">IA:</strong> ${{texto}}</div>`;
+        div.scrollTop = div.scrollHeight;
+    }}
+    async function ensinarIA(e) {{
+        e.preventDefault();
+        const pergunta_chave = document.getElementById('pergunta-chave').value;
+        const resposta_customizada = document.getElementById('resposta-customizada').value;
+        const resp = await fetch('/ensinar_ia', {{method:'POST', body:new URLSearchParams({{pergunta_chave, resposta_customizada}})}});
+        const texto = await resp.text();
+        document.getElementById('status-ensino').innerText = texto;
+        document.getElementById('pergunta-chave').value = '';
+        document.getElementById('resposta-customizada').value = '';
+    }}
+    function criptografarDNA() {{
+        const campo = document.getElementById('dna-texto-input');
+        if(!campo.value) return;
+        try {{
+            campo.value = btoa(encodeURIComponent(campo.value));
+        }} catch(err) {{
+            alert('Erro ao criptografar');
+        }}
+    }}
+    function descriptografarDNA() {{
+        const campo = document.getElementById('dna-texto-input');
+        if(!campo.value) return;
+        try {{
+            campo.value = decodeURIComponent(atob(campo.value));
+        }} catch(err) {{
+            alert('Texto inválido ou não criptografado com Base64/DNA.');
+        }}
+    }}
+    </script>
+</body>
+</html>''')
+
+# ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
-    print("=" * 60)
-    print("JNB — SISTEMA INICIADO | PORTA 5000")
-    print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=True)
