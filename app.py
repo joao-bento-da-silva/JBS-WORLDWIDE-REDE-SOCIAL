@@ -721,20 +721,20 @@ def plataforma():
         </div>
         
         <div id="tab-dna" class="tab-content hidden">
-            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia</h2>
-                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
-                <div class="flex gap-2 mb-3">
-                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar</button>
-                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar</button>
-                </div>
-                <form method="POST" action="/baixar_dna">
-                    <textarea id="dna-texto-input" name="dna_texto" placeholder="Cole ou digite o texto aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="5"></textarea>
-                    <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no celular</button>
-                </form>
-            </div>
+    <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
+        <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética (A, T, G, C)</h2>
+        <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
+        <div class="flex gap-2 mb-3">
+            <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar DNA</button>
+            <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar DNA</button>
+        </div>
+        <div class="space-y-3">
+            <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui para converter em DNA..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
+            <button type="button" onclick="baixarDNA()" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no Celular</button>
         </div>
     </div>
+</div>
+
     <script>
     function switchTab(nome) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
