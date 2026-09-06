@@ -1,4 +1,4 @@
-# ==================================================
+  # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
 # REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
@@ -169,29 +169,51 @@ def inicio():
 def cadastrar():
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
-        email = request.form.get("email", "").strip()
+        email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "").strip()
         if nome and email and senha:
             senha_hash = hashlib.sha256(senha.encode()).hexdigest()
             dna_chave = base64.b64encode(os.urandom(24)).decode()
             data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            conn, db_type = get_db()
+            c = conn.cursor()
+            param = "%s" if db_type == "postgres" else "?"
+            
             try:
-                conn = sqlite3.connect(BANCO_DADOS)
-                c = conn.cursor()
-                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
+                c.execute(f"SELECT id FROM usuarios WHERE email = {param}", (email,))
+                if c.fetchone():
+                    conn.close()
+                    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+                        <h2 style="color:red;">E-mail já cadastrado! Faça login com sua conta permanente.</h2>
+                        <br><a href="/" style="color:#f59e0b;font-size:18px;">Ir para Login</a>
+                    </div>'''
+
+                c.execute(f"INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES ({param}, {param}, {param}, {param}, {param})",
                           (nome, email, senha_hash, dna_chave, data_cad))
                 conn.commit()
-                usuario_id = c.lastrowid
+                
+                if db_type == "postgres":
+                    c.execute(f"SELECT id FROM usuarios WHERE email = {param}", (email,))
+                    res = c.fetchone()
+                    usuario_id = res["id"] if isinstance(res, dict) else res[0]
+                else:
+                    usuario_id = c.lastrowid
+                    
                 conn.close()
+                
                 session["usuario_id"] = usuario_id
                 session["nome_usuario"] = nome
                 session.permanent = True
                 return redirect(url_for("plataforma"))
-            except sqlite3.IntegrityError:
-                return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
-                    <h2 style="color:red;">E-mail já cadastrado! Faça login com sua conta permanente.</h2>
-                    <br><a href="/" style="color:#f59e0b;font-size:18px;">Ir para Login</a>
+            except Exception as e:
+                conn.rollback()
+                conn.close()
+                return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+                    <h2 style="color:red;">Erro ao cadastrar: {str(e)}</h2>
+                    <br><a href="/cadastrar" style="color:#f59e0b;font-size:18px;">Tentar novamente</a>
                 </div>'''
+
     return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -225,24 +247,35 @@ def cadastrar():
 
 @app.route("/entrar", methods=["POST"])
 def entrar():
-    email = request.form.get("email", "").strip()
+    email = request.form.get("email", "").strip().lower()
     senha = request.form.get("senha", "").strip()
     if email and senha:
         senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-        conn = sqlite3.connect(BANCO_DADOS)
+        
+        conn, db_type = get_db()
         c = conn.cursor()
-        c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+        param = "%s" if db_type == "postgres" else "?"
+        
+        c.execute(f"SELECT id, nome FROM usuarios WHERE email = {param} AND senha_hash = {param}", (email, senha_hash))
         usuario = c.fetchone()
         conn.close()
+        
         if usuario:
-            session["usuario_id"] = usuario[0]
-            session["nome_usuario"] = usuario[1]
+            if isinstance(usuario, tuple):
+                session["usuario_id"] = usuario[0]
+                session["nome_usuario"] = usuario[1]
+            else:
+                session["usuario_id"] = usuario["id"]
+                session["nome_usuario"] = usuario["nome"]
+                
             session.permanent = True
             return redirect(url_for("plataforma"))
+            
     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
         <h2 style="color:red;">E-mail ou senha inválidos!</h2>
         <a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
     </div>'''
+
 
 @app.route("/sair")
 def sair():
