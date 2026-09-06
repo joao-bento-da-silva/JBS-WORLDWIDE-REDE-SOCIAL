@@ -1,7 +1,6 @@
   # ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
-# ÁREA PRIVADA ADICIONADA · TUDO FUNCIONAL ✅
-# REDE · JOGOS · IA · DNA · CADASTRO PERMANENTE ✅
+# VERSÃO CORRIGIDA E SIMPLIFICADA PARA SQLITE LOCAL
 # ==================================================
 
 from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
@@ -16,7 +15,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # Mantém a sessão ativa por muito tempo
+app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # 10 anos de sessão
 
 # Caminho absoluto para garantir persistência real no diretório do script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,24 +30,13 @@ BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
 SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
 
-def eh_dono():
-    if not usuario_logado():
-        return False
-    try:
-        conn = sqlite3.connect(BANCO_DADOS)
-        c = conn.cursor()
-        c.execute("SELECT email FROM usuarios WHERE id = ?", (session["usuario_id"],))
-        usuario = c.fetchone()
-        conn.close()
-        return usuario and usuario[0].strip().lower() == EMAIL_DONO.lower()
-    except:
-        return False
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+def get_db():
+    conn = sqlite3.connect(BANCO_DADOS)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
-    conn = sqlite3.connect(BANCO_DADOS)
+    conn = get_db()
     c = conn.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,12 +76,6 @@ def init_db():
         pergunta_chave TEXT UNIQUE NOT NULL,
         resposta_customizada TEXT NOT NULL
     )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS area_privada_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        acao TEXT NOT NULL,
-        detalhes TEXT,
-        data_hora TEXT NOT NULL
-    )""")
     conn.commit()
     conn.close()
 
@@ -102,17 +84,32 @@ init_db()
 def usuario_logado():
     return "usuario_id" in session
 
+def eh_dono():
+    if not usuario_logado():
+        return False
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT email FROM usuarios WHERE id = ?", (session["usuario_id"],))
+        usuario = c.fetchone()
+        conn.close()
+        return usuario and usuario["email"].strip().lower() == EMAIL_DONO.lower()
+    except:
+        return False
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
-    
     try:
-        conn = sqlite3.connect(BANCO_DADOS)
+        conn = get_db()
         c = conn.cursor()
         c.execute("SELECT resposta_customizada FROM regras_ia WHERE ? LIKE '%' || pergunta_chave || '%'", (p,))
         regra = c.fetchone()
         conn.close()
         if regra:
-            return regra[0]
+            return regra["resposta_customizada"]
     except:
         pass
 
@@ -176,30 +173,21 @@ def cadastrar():
             dna_chave = base64.b64encode(os.urandom(24)).decode()
             data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            conn, db_type = get_db()
-            c = conn.cursor()
-            param = "%s" if db_type == "postgres" else "?"
-            
             try:
-                c.execute(f"SELECT id FROM usuarios WHERE email = {param}", (email,))
+                conn = get_db()
+                c = conn.cursor()
+                c.execute("SELECT id FROM usuarios WHERE email = ?", (email,))
                 if c.fetchone():
                     conn.close()
                     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
-                        <h2 style="color:red;">E-mail já cadastrado! Faça login com sua conta permanente.</h2>
+                        <h2 style="color:red;">E-mail já cadastrado! Faça login.</h2>
                         <br><a href="/" style="color:#f59e0b;font-size:18px;">Ir para Login</a>
                     </div>'''
 
-                c.execute(f"INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES ({param}, {param}, {param}, {param}, {param})",
+                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
                           (nome, email, senha_hash, dna_chave, data_cad))
                 conn.commit()
-                
-                if db_type == "postgres":
-                    c.execute(f"SELECT id FROM usuarios WHERE email = {param}", (email,))
-                    res = c.fetchone()
-                    usuario_id = res["id"] if isinstance(res, dict) else res[0]
-                else:
-                    usuario_id = c.lastrowid
-                    
+                usuario_id = c.lastrowid
                 conn.close()
                 
                 session["usuario_id"] = usuario_id
@@ -207,8 +195,6 @@ def cadastrar():
                 session.permanent = True
                 return redirect(url_for("plataforma"))
             except Exception as e:
-                conn.rollback()
-                conn.close()
                 return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
                     <h2 style="color:red;">Erro ao cadastrar: {str(e)}</h2>
                     <br><a href="/cadastrar" style="color:#f59e0b;font-size:18px;">Tentar novamente</a>
@@ -251,31 +237,25 @@ def entrar():
     senha = request.form.get("senha", "").strip()
     if email and senha:
         senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-        
-        conn, db_type = get_db()
-        c = conn.cursor()
-        param = "%s" if db_type == "postgres" else "?"
-        
-        c.execute(f"SELECT id, nome FROM usuarios WHERE email = {param} AND senha_hash = {param}", (email, senha_hash))
-        usuario = c.fetchone()
-        conn.close()
-        
-        if usuario:
-            if isinstance(usuario, tuple):
-                session["usuario_id"] = usuario[0]
-                session["nome_usuario"] = usuario[1]
-            else:
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+            usuario = c.fetchone()
+            conn.close()
+            
+            if usuario:
                 session["usuario_id"] = usuario["id"]
                 session["nome_usuario"] = usuario["nome"]
-                
-            session.permanent = True
-            return redirect(url_for("plataforma"))
+                session.permanent = True
+                return redirect(url_for("plataforma"))
+        except:
+            pass
             
     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
         <h2 style="color:red;">E-mail ou senha inválidos!</h2>
-        <a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
+        <br><a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
     </div>'''
-
 
 @app.route("/sair")
 def sair():
@@ -286,22 +266,19 @@ def sair():
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-# 🔒 ÁREA PRIVADA
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    if not eh_dono():
+    if not usuario_logado() or not eh_dono():
         return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
             <h2 style="color:red;">🚫 ACESSO NEGADO — Área exclusiva do dono</h2>
-            <a href="/plataforma" style="color:#f59e0b;">Voltar</a>
+            <br><a href="/plataforma" style="color:#f59e0b;">Voltar</a>
         </div>'''
     if request.method == "POST":
         if request.form.get("senha_mestra") == SENHA_MESTRA_ACESSO:
             return redirect(url_for("painel_dono"))
         return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
             <h2 style="color:red;">❌ Senha incorreta!</h2>
-            <a href="/area_privada" style="color:#f59e0b;">Tentar novamente</a>
+            <br><a href="/area_privada" style="color:#f59e0b;">Tentar novamente</a>
         </div>'''
     return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
@@ -333,7 +310,7 @@ def area_privada():
 def painel_dono():
     if not usuario_logado() or not eh_dono():
         return redirect(url_for("inicio"))
-    conn = sqlite3.connect(BANCO_DADOS)
+    conn = get_db()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM usuarios")
     total_usuarios = c.fetchone()[0]
@@ -368,13 +345,13 @@ def painel_dono():
 @app.route("/responder_ia", methods=["POST"])
 def responder_ia_rota():
     if not usuario_logado():
-        return redirect(url_for("inicio"))
+        return "Não autorizado", 401
     pergunta = request.form.get("pergunta", "").strip()
     if not pergunta:
         return "Digite uma pergunta!"
     resposta = responder_ia(pergunta)
     data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn = sqlite3.connect(BANCO_DADOS)
+    conn = get_db()
     c = conn.cursor()
     c.execute("INSERT INTO conversas_ia (usuario_id, pergunta, resposta, data_hora) VALUES (?, ?, ?, ?)",
               (session["usuario_id"], pergunta, resposta, data_hora))
@@ -390,7 +367,7 @@ def ensinar_ia():
     resposta_customizada = request.form.get("resposta_customizada", "").strip()
     if pergunta_chave and resposta_customizada:
         try:
-            conn = sqlite3.connect(BANCO_DADOS)
+            conn = get_db()
             c = conn.cursor()
             c.execute("INSERT OR REPLACE INTO regras_ia (pergunta_chave, resposta_customizada) VALUES (?, ?)", 
                       (pergunta_chave, resposta_customizada))
@@ -436,7 +413,7 @@ def jogo_cartas():
                     session["cartas_pontos"] = pontos
                     msg = f"✅ ACERTOU! +{valor} PONTOS!"
                     try:
-                        conn = sqlite3.connect(BANCO_DADOS)
+                        conn = get_db()
                         c = conn.cursor()
                         c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (valor, session["usuario_id"]))
                         conn.commit()
@@ -497,10 +474,8 @@ def jogo_bentinho():
     def inverter(num): 
         return "".join(TABELA.get(str(d), d) for d in str(num))
     
-    if "bent_fase" not in session: 
-        session["bent_fase"] = 1
-    if "bent_pontos" not in session: 
-        session["bent_pontos"] = 0
+    if "bent_fase" not in session: session["bent_fase"] = 1
+    if "bent_pontos" not in session: session["bent_pontos"] = 0
         
     fase_atual = int(session.get("bent_fase", 1))
     tamanhos = {1: 3, 2: 6, 3: 8, 4: 9}
@@ -530,15 +505,13 @@ def jogo_bentinho():
             pts = PTS.get(fase_atual, 250000)
             session["bent_pontos"] += pts
             msg = f"✅ ACERTOU! +{pts:,} PONTOS!"
-            
             try:
-                conn = sqlite3.connect(BANCO_DADOS)
+                conn = get_db()
                 c = conn.cursor()
                 c.execute("UPDATE usuarios SET pontos = pontos + ? WHERE id = ?", (pts, session["usuario_id"]))
                 conn.commit()
                 conn.close()
-            except Exception as e:
-                print(f"Erro ao salvar pontos no banco: {e}")
+            except: pass
                 
             if fase_atual < 4:
                 session["bent_fase"] = fase_atual + 1
@@ -552,7 +525,6 @@ def jogo_bentinho():
                 session.pop("bent_fase_atual", None)
         else:
             msg = "❌ Errou! Tente novamente."
-            session["bent_pontos"] = 0
 
     num_exibicao = session.get("bent_num", "000")
     pontos_atuais = session.get("bent_pontos", 0)
@@ -587,19 +559,6 @@ def jogo_bentinho():
 </body>
 </html>''')
 
-@app.route("/baixar_dna", methods=["POST"])
-def baixar_dna():
-    if not usuario_logado():
-        return redirect(url_for("inicio"))
-    dna_texto = request.form.get("dna_texto", "").strip()
-    if not dna_texto:
-        return "Nenhum DNA para baixar", 400
-    conteudo = f"JNB-DNA-ENCRYPTED\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{dna_texto}"
-    resp = make_response(conteudo)
-    resp.headers["Content-Disposition"] = f"attachment; filename=documento_dna_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bnj"
-    resp.headers["Content-Type"] = "application/octet-stream"
-    return resp
-
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
@@ -614,7 +573,7 @@ def plataforma():
             nome_arq = secure_filename(arquivo.filename)
             arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
         if texto or nome_arq:
-            conn = sqlite3.connect(BANCO_DADOS)
+            conn = get_db()
             c = conn.cursor()
             c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
                       (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -624,7 +583,7 @@ def plataforma():
     
     if "curtir" in request.args:
         pid = request.args.get("curtir")
-        conn = sqlite3.connect(BANCO_DADOS)
+        conn = get_db()
         c = conn.cursor()
         try:
             c.execute("INSERT INTO curtidas (usuario_id, postagem_id) VALUES (?, ?)", (usuario_id, pid))
@@ -634,7 +593,7 @@ def plataforma():
         conn.close()
         return redirect(url_for("plataforma") + "#post-" + pid)
     
-    conn = sqlite3.connect(BANCO_DADOS)
+    conn = get_db()
     c = conn.cursor()
     c.execute("SELECT nome, pontos, dna_chave, email FROM usuarios WHERE id = ?", (usuario_id,))
     usuario_dados = c.fetchone()
@@ -690,7 +649,7 @@ def plataforma():
             </div>
         </div>
         <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
-            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg" onclick="switchTab('rede')">Rede Social</button>
+            <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg font-bold" onclick="switchTab('rede')">Rede Social</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA & Ensino</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
@@ -751,15 +710,14 @@ def plataforma():
         
         <div id="tab-dna" class="tab-content hidden">
             <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética (A, T, G, C)</h2>
+                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética</h2>
                 <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
                 <div class="flex gap-2 mb-3">
-                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar DNA</button>
-                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar DNA</button>
+                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar</button>
+                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar</button>
                 </div>
                 <div class="space-y-3">
-                    <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui para converter em DNA..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
-                    <button type="button" onclick="baixarDNA()" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">📥 Baixar .bnj — Salvar no Celular</button>
+                    <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
                 </div>
             </div>
         </div>
@@ -767,9 +725,9 @@ def plataforma():
     <script>
     function switchTab(nome) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
+        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black','font-bold');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
         document.getElementById('tab-' + nome).classList.remove('hidden');
-        event.target.classList.add('bg-yellow-600','text-black');
+        event.target.classList.add('bg-yellow-600','text-black','font-bold');
         event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
     }}
     async function enviarIA(e) {{
@@ -797,25 +755,16 @@ def plataforma():
     function criptografarDNA() {{
         const campo = document.getElementById('dna-texto-input');
         if(!campo.value) return;
-        try {{
-            campo.value = btoa(encodeURIComponent(campo.value));
-        }} catch(err) {{
-            alert('Erro ao criptografar');
-        }}
+        try {{ campo.value = btoa(encodeURIComponent(campo.value)); }} catch(err) {{ alert('Erro ao criptografar'); }}
     }}
     function descriptografarDNA() {{
         const campo = document.getElementById('dna-texto-input');
         if(!campo.value) return;
-        try {{
-            campo.value = decodeURIComponent(atob(campo.value));
-        }} catch(err) {{
-            alert('Texto inválido ou não criptografado com Base64/DNA.');
-        }}
+        try {{ campo.value = decodeURIComponent(atob(campo.value)); }} catch(err) {{ alert('Texto inválido.'); }}
     }}
     </script>
 </body>
 </html>''')
 
-# ✅ ✅ ✅ PORTA 5000 — GARANTIDA NO FINAL! ✅ ✅ ✅
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
