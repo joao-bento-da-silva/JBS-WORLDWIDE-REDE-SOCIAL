@@ -1,16 +1,14 @@
-  # ==================================================
+# ==================================================
 # © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
 # VERSÃO CORRIGIDA E SIMPLIFICADA PARA SQLITE LOCAL
 # ==================================================
 
-from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory, make_response
-import sqlite3
 import os
-import random
+from datetime import timedelta
+from flask import Flask, request, session, redirect, url_for, render_template_string
 import hashlib
 import base64
 from datetime import datetime
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
@@ -162,43 +160,54 @@ def inicio():
 </body>
 </html>''')
 
+# Garanta que a sessão do Flask seja configurada para durar bastante tempo
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365) # Duração de 1 ano
+
 @app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "").strip()
+        
         if nome and email and senha:
             senha_hash = hashlib.sha256(senha.encode()).hexdigest()
             dna_chave = base64.b64encode(os.urandom(24)).decode()
             data_cad = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
+            conn = None
             try:
                 conn = get_db()
                 c = conn.cursor()
+                
                 c.execute("SELECT id FROM usuarios WHERE email = ?", (email,))
                 if c.fetchone():
-                    conn.close()
                     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
                         <h2 style="color:red;">E-mail já cadastrado! Faça login.</h2>
                         <br><a href="/" style="color:#f59e0b;font-size:18px;">Ir para Login</a>
                     </div>'''
 
-                c.execute("INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
-                          (nome, email, senha_hash, dna_chave, data_cad))
+                c.execute(
+                    "INSERT INTO usuarios (nome, email, senha_hash, dna_chave, data_cadastro) VALUES (?, ?, ?, ?, ?)",
+                    (nome, email, senha_hash, dna_chave, data_cad)
+                )
                 conn.commit()
                 usuario_id = c.lastrowid
-                conn.close()
                 
+                # Define a sessão permanente no login/cadastro
+                session.permanent = True
                 session["usuario_id"] = usuario_id
                 session["nome_usuario"] = nome
-                session.permanent = True
+                
                 return redirect(url_for("plataforma"))
             except Exception as e:
                 return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
                     <h2 style="color:red;">Erro ao cadastrar: {str(e)}</h2>
                     <br><a href="/cadastrar" style="color:#f59e0b;font-size:18px;">Tentar novamente</a>
                 </div>'''
+            finally:
+                if conn:
+                    conn.close()
 
     return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
@@ -230,6 +239,7 @@ def cadastrar():
     </div>
 </body>
 </html>''')
+
 
 @app.route("/entrar", methods=["POST"])
 def entrar():
