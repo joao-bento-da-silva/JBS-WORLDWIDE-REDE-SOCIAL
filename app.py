@@ -241,31 +241,73 @@ def cadastrar():
 </html>''')
 
 
-@app.route("/entrar", methods=["POST"])
+@app.route("/entrar", methods=["GET", "POST"])
 def entrar():
-    email = request.form.get("email", "").strip().lower()
-    senha = request.form.get("senha", "").strip()
-    if email and senha:
-        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-        try:
-            conn = get_db()
-            c = conn.cursor()
-            c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
-            usuario = c.fetchone()
-            conn.close()
-            
-            if usuario:
-                session["usuario_id"] = usuario["id"]
-                session["nome_usuario"] = usuario["nome"]
-                session.permanent = True
-                return redirect(url_for("plataforma"))
-        except:
-            pass
-            
-    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
-        <h2 style="color:red;">E-mail ou senha inválidos!</h2>
-        <br><a href="/" style="color:#f59e0b;font-size:18px;">Voltar</a>
-    </div>'''
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        senha = request.form.get("senha", "").strip()
+        
+        if email and senha:
+            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+            conn = None
+            try:
+                conn = get_db()
+                c = conn.cursor()
+                c.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha_hash = ?", (email, senha_hash))
+                usuario = c.fetchone()
+                
+                if usuario:
+                    # Configura a sessão permanente ANTES de gravar as variáveis
+                    session.permanent = True
+                    # Funciona tanto com sqlite3.Row quanto com tupla tradicional
+                    session["usuario_id"] = usuario[0] if isinstance(usuario, tuple) else usuario["id"]
+                    session["nome_usuario"] = usuario[1] if isinstance(usuario, tuple) else usuario["nome"]
+                    
+                    return redirect(url_for("plataforma"))
+                else:
+                    return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+                        <h2 style="color:red;">E-mail ou senha inválidos!</h2>
+                        <br><a href="/entrar" style="color:#f59e0b;font-size:18px;">Tentar novamente</a>
+                    </div>'''
+            except Exception as e:
+                return f'''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
+                    <h2 style="color:red;">Erro ao entrar: {str(e)}</h2>
+                    <br><a href="/entrar" style="color:#f59e0b;font-size:18px;">Voltar</a>
+                </div>'''
+            finally:
+                if conn:
+                    conn.close()
+
+    # Se for requisição GET (abrir a página)
+    return render_template_string('''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar — JNB TECNOLOGIA</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
+        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
+        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
+        .link a{color:#f59e0b;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="caixa">
+        <h1>Entrar 🔑</h1>
+        <form method="POST">
+            <input type="email" name="email" placeholder="Seu E-mail" required>
+            <input type="password" name="senha" placeholder="Sua Senha" required>
+            <button type="submit">Entrar na Conta</button>
+        </form>
+        <div class="link">Não tem conta? <a href="/cadastrar">Cadastre-se</a></div>
+    </div>
+</body>
+</html>''')
 
 @app.route("/sair")
 def sair():
