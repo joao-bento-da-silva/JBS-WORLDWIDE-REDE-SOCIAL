@@ -128,7 +128,12 @@ def responder_ia(pergunta):
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
-
+        cloudinary.config(
+    cloud_name="ahwrdxaw",
+    api_key="945329764752813",
+    api_secret="R3D3C",
+    secure=True
+)
 @app.route("/")
 def inicio():
     if usuario_logado():
