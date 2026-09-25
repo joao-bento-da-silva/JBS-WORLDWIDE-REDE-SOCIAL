@@ -1,6 +1,6 @@
  # ==================================================
 # © 2026 JOBOSAN REDE SOCIAL — PORTA 5000 ✅ GARANTIDA
-# VERSÃO CORRIGIDA COM CLOUDINARY PARA FOTOS E VÍDEOS
+# VERSÃO CORRIGIDA: POSTAGEM DE TEXTO, FOTO E VÍDEO
 # ==================================================
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -611,21 +611,20 @@ def plataforma():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
-    if request.method == "POST" and "texto_post" in request.form:
+    if request.method == "POST":
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
 
-        if arquivo and allowed_file(arquivo.filename):
+        if arquivo and arquivo.filename and allowed_file(arquivo.filename):
             try:
-                # Faz o upload diretamente para o Cloudinary
                 upload_result = cloudinary.uploader.upload(
                     arquivo,
                     resource_type="auto"
                 )
                 url_midia = upload_result.get("secure_url")
             except Exception as e:
-                print("Erro ao enviar para o Cloudinary:", e)
+                print("Erro no Cloudinary:", e)
 
         if texto or url_midia:
             conn = get_db()
@@ -673,7 +672,6 @@ def plataforma():
             {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
         
         if arquivo_url:
-            # Identifica imagens vs vídeos por extensão/URL
             if any(ext in arquivo_url.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", "image"]):
                 posts_html += f'<img src="{arquivo_url}" class="max-w-full rounded-lg my-3">'
             else:
@@ -717,10 +715,14 @@ def plataforma():
                 <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="/plataforma" enctype="multipart/form-data">
                     <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg">📷 Foto/Vídeo<input type="file" name="arquivo" accept="image/*,video/*" class="hidden"></label>
+                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg text-sm font-bold">
+                            📷 Foto/Vídeo
+                            <input type="file" name="arquivo" id="arquivo_input" accept="image/*,video/*" class="hidden" onchange="atualizarNomeArquivo(this)">
+                        </label>
+                        <span id="nome_arquivo_selecionado" class="text-xs text-yellow-400"></span>
                         <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
                     </div>
                 </form>
@@ -780,6 +782,14 @@ def plataforma():
         </div>
     </div>
     <script>
+    function atualizarNomeArquivo(input) {{
+        const span = document.getElementById('nome_arquivo_selecionado');
+        if(input.files && input.files[0]) {{
+            span.innerText = "Selecionado: " + input.files[0].name;
+        }} else {{
+            span.innerText = "";
+        }}
+    }}
     function switchTab(nome) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black','font-bold');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
