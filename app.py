@@ -15,7 +15,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
+app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JOBOSAN_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # 10 anos de sessão
 
@@ -30,7 +30,7 @@ BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
 
 # 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
-SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
+SENHA_MESTRA_ACESSO = "JOBOSAN@2026#DONO"
 
 def get_db():
     conn = sqlite3.connect(BANCO_DADOS)
@@ -144,7 +144,7 @@ def inicio():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JNB TECNOLOGIA</title>
+    <title>JOBOSAN REDE SOCIAL</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -158,7 +158,7 @@ def inicio():
 </head>
 <body>
     <div class="caixa">
-        <h1>JNB TECNOLOGIA</h1>
+        <h1>JOBOSAN REDE SOCIAL</h1>
         <form action="/entrar" method="POST">
             <input type="email" name="email" placeholder="E-mail" required>
             <input type="password" name="senha" placeholder="Senha" required>
@@ -223,7 +223,7 @@ def cadastrar():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar — JNB TECNOLOGIA</title>
+    <title>Cadastrar — JOBOSAN REDESOCIAL</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -293,7 +293,7 @@ def entrar():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar — JNB TECNOLOGIA</title>
+    <title>Entrar — JOBOSAN REDESOCIAL</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -696,7 +696,7 @@ def plataforma():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma — JNB TECNOLOGIA</title>
+    <title>Plataforma — JOBOSAN TECNOLOGIA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>.tab-content{{display:block;}}.tab-content.hidden{{display:none !important;}}</style>
 </head>
