@@ -1,6 +1,6 @@
 # ==================================================
 # © 2026 JOBOSAN REDE SOCIAL — PORTA 5000 ✅ GARANTIDA
-# VERSÃO CORRIGIDA: POSTAGEM DE TEXTO, FOTO E VÍDEO
+# VERSÃO CORRIGIDA: POSTAGEM DE TEXTO, FOTO E VÍDEO + PAGINAÇÃO (20 POSTS)
 # ==================================================
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -611,6 +611,17 @@ def plataforma():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
+    # Sistema de Paginação (20 postagens por página)
+    try:
+        pagina = int(request.args.get("pagina", 1))
+        if pagina < 1:
+            pagina = 1
+    except ValueError:
+        pagina = 1
+
+    itens_por_pagina = 20
+    offset = (pagina - 1) * itens_por_pagina
+
     if request.method == "POST":
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
@@ -645,7 +656,7 @@ def plataforma():
             c.execute("DELETE FROM curtidas WHERE usuario_id = ? AND postagem_id = ?", (usuario_id, pid))
         conn.commit()
         conn.close()
-        return redirect(url_for("plataforma") + "#post-" + pid)
+        return redirect(url_for("plataforma", pagina=pagina) + "#post-" + pid)
     
     conn = get_db()
     c = conn.cursor()
@@ -657,10 +668,19 @@ def plataforma():
         return redirect(url_for("inicio"))
     nome_usuario, total_pontos, dna_chave, email_usuario = usuario_dados
     
+    # Contagem total de postagens para calcular o total de páginas
+    c.execute("SELECT COUNT(*) FROM postagens")
+    total_posts_banco = c.fetchone()[0]
+    total_paginas = (total_posts_banco + itens_por_pagina - 1) // itens_por_pagina
+    if total_paginas < 1:
+        total_paginas = 1
+
+    # Busca apenas 20 postagens da página atual
     c.execute("""SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
                (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
                EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
-               FROM postagens p JOIN usuarios u ON p.usuario_id = u.id ORDER BY p.data_postagem DESC""", (usuario_id,))
+               FROM postagens p JOIN usuarios u ON p.usuario_id = u.id 
+               ORDER BY p.data_postagem DESC LIMIT ? OFFSET ?""", (usuario_id, itens_por_pagina, offset))
     postagens = c.fetchall()
     conn.close()
     
@@ -678,11 +698,21 @@ def plataforma():
                 posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="{arquivo_url}"></video>'
 
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
-            <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
+            <a href="/plataforma?curtir={pid}&pagina={pagina}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
         </div></div>'''
     if not posts_html:
-        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro!</p>'
+        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens nesta página.</p>'
     
+    # Controles de Paginação (Anterior / Próxima)
+    btn_anterior = f'<a href="/plataforma?pagina={pagina - 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">← Anterior</a>' if pagina > 1 else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">← Anterior</span>'
+    btn_proxima = f'<a href="/plataforma?pagina={pagina + 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">Próxima →</a>' if pagina < total_paginas else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">Próxima →</span>'
+
+    paginacao_html = f'''<div class="flex justify-between items-center bg-gray-800 p-4 rounded-lg border border-yellow-500/30 my-6">
+        {btn_anterior}
+        <span class="text-gray-300 font-bold text-sm">Página {pagina} de {total_paginas}</span>
+        {btn_proxima}
+    </div>'''
+
     botao_admin = f'<a href="/area_privada" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm ml-2">🔒 Área Privada</a>' if email_usuario.strip().lower() == EMAIL_DONO.lower() else ""
     
     return render_template_string(f'''<!DOCTYPE html>
@@ -728,6 +758,7 @@ def plataforma():
                 </form>
             </div>
             <div class="space-y-4">{posts_html}</div>
+            {paginacao_html}
         </div>
         
         <div id="tab-jogo" class="tab-content hidden">
