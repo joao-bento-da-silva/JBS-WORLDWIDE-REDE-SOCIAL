@@ -633,16 +633,30 @@ def plataforma():
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
+        texto = request.form.get("texto_post", "").strip() 
+        arquivo = request.files.get("arquivo")
+        url_midia = None
 
         if arquivo and arquivo.filename and allowed_file(arquivo.filename):
+            nome_seguro = secure_filename(arquivo.filename)
+            caminho_temp = os.path.join("/tmp", nome_seguro)
             try:
+                arquivo.save(caminho_temp)
+                ext = nome_seguro.rsplit(".", 1)[-1].lower()
+                res_type = "video" if ext in ["mp4", "webm", "ogg", "mov", "avi", "mkv"] else "image"
                 upload_result = cloudinary.uploader.upload(
-                    arquivo,
-                    resource_type="auto"
+                    caminho_temp,
+                    resource_type=res_type
                 )
-                url_midia = upload_result.get("secure_url")
+                url_midia = upload_result.get("secure_url", "")
             except Exception as e:
                 print("Erro no Cloudinary:", e)
+            finally:
+                if os.path.exists(caminho_temp):
+                    try:
+                        os.remove(caminho_temp)
+                    except:
+                        pass
 
         if texto or url_midia:
             conn = get_db()
@@ -651,7 +665,8 @@ def plataforma():
                       (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
             conn.close()
-        return redirect(url_for("plataforma"))
+            return redirect(url_for("plataforma"))
+
     
     if "curtir" in request.args:
         pid = request.args.get("curtir")
