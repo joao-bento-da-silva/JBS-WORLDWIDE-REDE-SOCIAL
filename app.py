@@ -27,13 +27,13 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365)
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "ahwrdxaw"),
     api_key=os.environ.get("CLOUDINARY_API_KEY", "945329764752813"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "R3D3C"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "EQQEG"),
     secure=True
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Mantido o nome do arquivo DB para NÃO PERDER os cadastros existentes
-BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
+BANCO_DADOS = os.path.join(BASE_DIR, "jobosan_novo.db")
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
