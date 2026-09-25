@@ -1,9 +1,9 @@
-# ==================================================
+ # ==================================================
 # © 2026 JOBOSAN REDE SOCIAL — PORTA 5000 ✅ GARANTIDA
-# VERSÃO CORRIGIDA E SIMPLIFICADA PARA SQLITE LOCAL
+# VERSÃO CORRIGIDA COM CLOUDINARY PARA FOTOS E VÍDEOS
 # ==================================================
-from datetime import timedelta
-from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
+from datetime import datetime, timedelta
+from flask import Flask, request, session, redirect, url_for, render_template_string
 import hashlib
 import base64
 import os
@@ -11,26 +11,28 @@ import random
 import sqlite3 
 import cloudinary
 import cloudinary.uploader
-from datetime import datetime
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JOBOSAN_REDE_SOCIAL_2026_SEGURA")
+app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 315360000  # 10 anos de sessão
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365) # 1 ano de sessão
 
-# Caminho absoluto para garantir persistência real no diretório do script
+# Configuração Única do Cloudinary
+cloudinary.config(
+    cloud_name="ahwrdxaw",
+    api_key="945329764752813",
+    api_secret="R3D3C",
+    secure=True
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
 
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm", "bnj"}
-BANCO_DADOS = os.path.join(BASE_DIR, "jobosan_novo.db")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
 # 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
-SENHA_MESTRA_ACESSO = "JOBOSAN@2026#DONO"
+SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
 
 def get_db():
     conn = sqlite3.connect(BANCO_DADOS)
@@ -129,12 +131,7 @@ def responder_ia(pergunta):
         return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
-        cloudinary.config(
-    cloud_name="ahwrdxaw",
-    api_key="945329764752813",
-    api_secret="R3D3C",
-    secure=True
-)
+
 @app.route("/")
 def inicio():
     if usuario_logado():
@@ -144,7 +141,7 @@ def inicio():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOBOSAN REDE SOCIAL</title>
+    <title>JNB TECNOLOGIA</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -158,7 +155,7 @@ def inicio():
 </head>
 <body>
     <div class="caixa">
-        <h1>JOBOSAN REDE SOCIAL</h1>
+        <h1>JNB TECNOLOGIA</h1>
         <form action="/entrar" method="POST">
             <input type="email" name="email" placeholder="E-mail" required>
             <input type="password" name="senha" placeholder="Senha" required>
@@ -168,9 +165,6 @@ def inicio():
     </div>
 </body>
 </html>''')
-
-# Garanta que a sessão do Flask seja configurada para durar bastante tempo
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365) # Duração de 1 ano
 
 @app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
@@ -203,7 +197,6 @@ def cadastrar():
                 conn.commit()
                 usuario_id = c.lastrowid
                 
-                # Define a sessão permanente no login/cadastro
                 session.permanent = True
                 session["usuario_id"] = usuario_id
                 session["nome_usuario"] = nome
@@ -223,7 +216,7 @@ def cadastrar():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar — JOBOSAN REDE SOCIAL</title>
+    <title>Cadastrar — JNB TECNOLOGIA</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -249,7 +242,6 @@ def cadastrar():
 </body>
 </html>''')
 
-
 @app.route("/entrar", methods=["GET", "POST"])
 def entrar():
     if request.method == "POST":
@@ -266,9 +258,7 @@ def entrar():
                 usuario = c.fetchone()
                 
                 if usuario:
-                    # Configura a sessão permanente ANTES de gravar as variáveis
                     session.permanent = True
-                    # Funciona tanto com sqlite3.Row quanto com tupla tradicional
                     session["usuario_id"] = usuario[0] if isinstance(usuario, tuple) else usuario["id"]
                     session["nome_usuario"] = usuario[1] if isinstance(usuario, tuple) else usuario["nome"]
                     
@@ -287,13 +277,12 @@ def entrar():
                 if conn:
                     conn.close()
 
-    # Se for requisição GET (abrir a página)
     return render_template_string('''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar — JOBOSAN REDE SOCIAL</title>
+    <title>Entrar — JNB TECNOLOGIA</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
         body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -322,10 +311,6 @@ def entrar():
 def sair():
     session.clear()
     return redirect(url_for("inicio"))
-
-@app.route("/uploads/<filename>")
-def uploaded_file(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
@@ -629,15 +614,24 @@ def plataforma():
     if request.method == "POST" and "texto_post" in request.form:
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
-        nome_arq = None
+        url_midia = None
+
         if arquivo and allowed_file(arquivo.filename):
-            nome_arq = secure_filename(arquivo.filename)
-            arquivo.save(os.path.join(app.config["UPLOAD_FOLDER"], nome_arq))
-        if texto or nome_arq:
+            try:
+                # Faz o upload diretamente para o Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    arquivo,
+                    resource_type="auto"
+                )
+                url_midia = upload_result.get("secure_url")
+            except Exception as e:
+                print("Erro ao enviar para o Cloudinary:", e)
+
+        if texto or url_midia:
             conn = get_db()
             c = conn.cursor()
             c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
-                      (usuario_id, texto, nome_arq, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                      (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
             conn.close()
         return redirect(url_for("plataforma"))
@@ -673,16 +667,18 @@ def plataforma():
     
     posts_html = ""
     for p in postagens:
-        pid, texto, arquivo, data, autor, curtidas, curtiu = p
+        pid, texto, arquivo_url, data, autor, curtidas, curtiu = p
         posts_html += f'''<div id="post-{pid}" class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-4">
             <h4 class="font-bold text-yellow-400">{autor}</h4><p class="text-sm text-gray-400">{data}</p>
             {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
-        if arquivo:
-            ext = arquivo.split(".")[-1].lower()
-            if ext in ["jpg", "jpeg", "png", "gif"]:
-                posts_html += f'<img src="/uploads/{arquivo}" class="max-w-full rounded-lg my-3">'
-            elif ext in ["mp4", "mov", "avi", "webm"]:
-                posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="/uploads/{arquivo}" type="video/mp4"></video>'
+        
+        if arquivo_url:
+            # Identifica imagens vs vídeos por extensão/URL
+            if any(ext in arquivo_url.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", "image"]):
+                posts_html += f'<img src="{arquivo_url}" class="max-w-full rounded-lg my-3">'
+            else:
+                posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="{arquivo_url}"></video>'
+
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
             <a href="/plataforma?curtir={pid}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
         </div></div>'''
@@ -696,7 +692,7 @@ def plataforma():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma — JOBOSAN REDE SOCIAL</title>
+    <title>Plataforma — JNB TECNOLOGIA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>.tab-content{{display:block;}}.tab-content.hidden{{display:none !important;}}</style>
 </head>
@@ -826,18 +822,6 @@ def plataforma():
     </script>
 </body>
 </html>''')
-    
-# Configuração do Cloudinary
-cloudinary.config(
-    cloud_name="ahwrdxaw",
-    api_key="945329764752813",
-    api_secret="R3D3C",
-    secure=True
-)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
-
-
-
-
