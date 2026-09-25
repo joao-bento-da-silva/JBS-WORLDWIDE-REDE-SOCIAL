@@ -3,12 +3,15 @@
 # VERSÃO CORRIGIDA E SIMPLIFICADA PARA SQLITE LOCAL
 # ==================================================
 
-import os
 from datetime import timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
 import hashlib
 import base64
+import os
+import cloudinary
+import cloudinary.uploader
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
