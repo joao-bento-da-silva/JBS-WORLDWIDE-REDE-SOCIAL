@@ -16,7 +16,7 @@ import cloudinary.uploader
 # ⚙️ CONFIGURAÇÃO DE MARCA E NOME (ALTERE APENAS AQUI)
 # --------------------------------------------------
 NOME_APLICACAO = "Jobosan"
-CHAVE_SESSAO_PADRAO = "JOBOSAN_TECNOLOGIA_2026_SEGURA"
+CHAVE_SESSAO_PADRAO = "JOBOSAN_REDE_SOCIAL_2026_SEGURA"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", CHAVE_SESSAO_PADRAO)
@@ -760,7 +760,7 @@ def plataforma():
                             <input type="file" name="arquivo" id="arquivo_input" accept="image/*,video/*" class="hidden" onchange="atualizarNomeArquivo(this)">
                         </label>
                         <span id="nome_arquivo_selecionado" class="text-xs text-yellow-400"></span>
-                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar ✅ Permanente</button>
+                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar Permanente</button>
                     </div>
                 </form>
             </div>
