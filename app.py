@@ -1,13 +1,14 @@
 # ==================================================
-# © 2026 JNB TECNOLOGIA — PORTA 5000 ✅ GARANTIDA
+# © 2026 JOBOSAN REDE SOCIAL — PORTA 5000 ✅ GARANTIDA
 # VERSÃO CORRIGIDA E SIMPLIFICADA PARA SQLITE LOCAL
 # ==================================================
-
 from datetime import timedelta
-from flask import Flask, request, session, redirect, url_for, render_template_string
+from flask import Flask, request, session, redirect, url_for, render_template_string, send_from_directory
 import hashlib
 import base64
 import os
+import random
+import sqlite3
 import cloudinary
 import cloudinary.uploader
 from datetime import datetime
