@@ -1,6 +1,6 @@
 # ==================================================
-# © 2026 JOBOSAN REDE SOCIAL — PORTA 5000 ✅ GARANTIDA
-# VERSÃO CORRIGIDA: POSTAGEM DE TEXTO, FOTO E VÍDEO + PAGINAÇÃO (20 POSTS)
+# © 2026 JOBOZANDO REDE SOCIAL — SISTEMA PADRONIZADO ✅
+# NOME UNIFICADO: JOBOZANDO
 # ==================================================
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -12,25 +12,32 @@ import sqlite3
 import cloudinary
 import cloudinary.uploader
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("CHAVE_UNIFICADA", "JNB_TECNOLOGIA_2026_SEGURA")
-app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365) # 1 ano de sessão
+# --------------------------------------------------
+# ⚙️ CONFIGURAÇÃO DE MARCA E NOME (ALTERE APENAS AQUI)
+# --------------------------------------------------
+NOME_APLICACAO = "Jobozando"
+CHAVE_SESSAO_PADRAO = "JOBOZANDO_TECNOLOGIA_2026_SEGURA"
 
-# Configuração Única do Cloudinary
+app = Flask(__name__)
+app.secret_key = os.environ.get("CHAVE_UNIFICADA", CHAVE_SESSAO_PADRAO)
+app.config["SESSION_PERMANENT"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365)
+
+# Configuração do Cloudinary
 cloudinary.config(
-    cloud_name="ahwrdxaw",
-    api_key="945329764752813",
-    api_secret="R3D3C",
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "ahwrdxaw"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", "945329764752813"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "R3D3C"),
     secure=True
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Mantido o nome do arquivo DB para NÃO PERDER os cadastros existentes
 BANCO_DADOS = os.path.join(BASE_DIR, "jnb_novo.db")
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
-# 🔒 ÁREA PRIVADA — COLOQUE SEU E-MAIL AQUI
+# 🔒 ÁREA PRIVADA — CONFIGURAÇÕES DO DONO
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
 SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
 
@@ -120,7 +127,7 @@ def responder_ia(pergunta):
     if "brasil" in p and ("descobriu" in p or "ano" in p):
         return "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral."
     elif "quem é você" in p or "quem criou" in p:
-        return "Eu sou a IA da JNB TECNOLOGIA, criada por João Bento da Silva."
+        return f"Eu sou a IA da {NOME_APLICACAO}, criada por João Bento da Silva."
     elif "jogo" in p and "cartas" in p:
         return "🃏 Y→Y, A→Z, Z→A, B→X, X→B, C→G, G→C, D→F, F→D, E→E."
     elif "bentinho" in p or "números" in p:
@@ -128,7 +135,7 @@ def responder_ia(pergunta):
     elif "dna" in p:
         return "🧬 Cada usuário tem sua chave única. Salve o .bnj no celular!"
     elif "oi" in p or "olá" in p:
-        return "Olá! 👋 Bem-vindo à JNB TECNOLOGIA!"
+        return f"Olá! 👋 Bem-vindo ao {NOME_APLICACAO}!"
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
 
@@ -136,26 +143,26 @@ def responder_ia(pergunta):
 def inicio():
     if usuario_logado():
         return redirect(url_for("plataforma"))
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JNB TECNOLOGIA</title>
+    <title>{NOME_APLICACAO}</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
-        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
-        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
-        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
-        .link a{color:#f59e0b;text-decoration:none;}
+        *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}}
+        body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}}
+        .caixa{{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}}
+        h1{{color:#f59e0b;text-align:center;margin-bottom:30px;}}
+        input{{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}}
+        button{{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}}
+        .link{{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}}
+        .link a{{color:#f59e0b;text-decoration:none;}}
     </style>
 </head>
 <body>
     <div class="caixa">
-        <h1>JNB TECNOLOGIA</h1>
+        <h1>{NOME_APLICACAO}</h1>
         <form action="/entrar" method="POST">
             <input type="email" name="email" placeholder="E-mail" required>
             <input type="password" name="senha" placeholder="Senha" required>
@@ -211,21 +218,21 @@ def cadastrar():
                 if conn:
                     conn.close()
 
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar — JNB TECNOLOGIA</title>
+    <title>Cadastrar — {NOME_APLICACAO}</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
-        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
-        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
-        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
-        .link a{color:#f59e0b;text-decoration:none;}
+        *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}}
+        body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}}
+        .caixa{{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}}
+        h1{{color:#f59e0b;text-align:center;margin-bottom:30px;}}
+        input{{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}}
+        button{{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}}
+        .link{{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}}
+        .link a{{color:#f59e0b;text-decoration:none;}}
     </style>
 </head>
 <body>
@@ -277,21 +284,21 @@ def entrar():
                 if conn:
                     conn.close()
 
-    return render_template_string('''<!DOCTYPE html>
+    return render_template_string(f'''<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar — JNB TECNOLOGIA</title>
+    <title>Entrar — {NOME_APLICACAO}</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-        body{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .caixa{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}
-        h1{color:#f59e0b;text-align:center;margin-bottom:30px;}
-        input{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}
-        button{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-        .link{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}
-        .link a{color:#f59e0b;text-decoration:none;}
+        *{{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}}
+        body{{background:linear-gradient(180deg,#0f172a,#1e293b);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}}
+        .caixa{{background:rgba(15,23,42,0.8);padding:40px;border-radius:12px;border:1px solid #f59e0b;width:90%;max-width:400px;}}
+        h1{{color:#f59e0b;text-align:center;margin-bottom:30px;}}
+        input{{width:100%;padding:12px;margin:8px 0;background:#020617;border:1px solid #334155;color:white;border-radius:6px;}}
+        button{{width:100%;padding:12px;background:#f59e0b;color:#1e1b16;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}}
+        .link{{text-align:center;margin-top:15px;font-size:14px;color:#94a3b8;}}
+        .link a{{color:#f59e0b;text-decoration:none;}}
     </style>
 </head>
 <body>
@@ -720,14 +727,14 @@ def plataforma():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma — JNB TECNOLOGIA</title>
+    <title>Plataforma — {NOME_APLICACAO}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>.tab-content{{display:block;}}.tab-content.hidden{{display:none !important;}}</style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-6">
         <div class="flex flex-wrap justify-between items-center border-b border-gray-700 pb-4 mb-6">
-            <div><h1 class="text-2xl font-bold text-yellow-500">⚡ JNB TECNOLOGIA</h1><p class="text-gray-400">Bem-vindo, {nome_usuario}!</p></div>
+            <div><h1 class="text-2xl font-bold text-yellow-500">⚡ {NOME_APLICACAO}</h1><p class="text-gray-400">Bem-vindo, {nome_usuario}!</p></div>
             <div class="text-right">
                 <p class="text-sm text-gray-400">Pontos</p><p class="text-xl font-bold text-yellow-500">{total_pontos}</p>
                 <a href="/sair" class="text-red-400 text-sm ml-2">Sair</a> {botao_admin}
