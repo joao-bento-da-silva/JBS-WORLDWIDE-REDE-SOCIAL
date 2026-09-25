@@ -826,12 +826,7 @@ def plataforma():
     </script>
 </body>
 </html>''')
-    import os
-import cloudinary
-import cloudinary.uploader
-from datetime import datetime
-from werkzeug.utils import secure_filename
-
+    
 # Configuração do Cloudinary
 cloudinary.config(
     cloud_name="ahwrdxaw",
