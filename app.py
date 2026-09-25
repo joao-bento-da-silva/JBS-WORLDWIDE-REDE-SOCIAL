@@ -825,6 +825,233 @@ def plataforma():
     </script>
 </body>
 </html>''')
+    import os
+import cloudinary
+import cloudinary.uploader
+from datetime import datetime
+from werkzeug.utils import secure_filename
+
+# Configuração do Cloudinary
+cloudinary.config(
+    cloud_name="ahwrdxaw",
+    api_key="945329764752813",
+    api_secret="R3D3C",
+    secure=True
+)
+
+@app.route("/rede-social", methods=["GET", "POST"])
+def rede_social():
+    if "usuario_id" not in session:
+        return redirect(url_for("entrar"))
+
+    usuario_id = session["usuario_id"]
+    nome_usuario = session.get("nome", "Usuário")
+
+    conn, db_type = get_db()
+    c = conn.cursor()
+
+    try:
+        # 1. Criação das tabelas
+        if db_type == "postgres":
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS rede_postagens (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
+                    texto TEXT,
+                    data_postagem VARCHAR(50) NOT NULL
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS rede_curtidas (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
+                    postagem_id INTEGER NOT NULL,
+                    UNIQUE(usuario_id, postagem_id)
+                )
+            """)
+        else:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS rede_postagens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuario_id INTEGER NOT NULL,
+                    texto TEXT,
+                    data_postagem TEXT NOT NULL
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS rede_curtidas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuario_id INTEGER NOT NULL,
+                    postagem_id INTEGER NOT NULL,
+                    UNIQUE(usuario_id, postagem_id)
+                )
+            """)
+        conn.commit()
+
+        # 2. Processamento de Novo Post (Upload Seguro sem estourar RAM)
+        if request.method == "POST":
+            texto = request.form.get("texto", "").strip()
+            arquivo_midia = request.files.get("midia")
+            url_midia = ""
+            eh_video = False
+
+            if arquivo_midia and arquivo_midia.filename != "":
+                nome_seguro = secure_filename(arquivo_midia.filename)
+                caminho_temp = os.path.join("/tmp", nome_seguro)
+
+                try:
+                    # Grava diretamente em disco no /tmp em blocos para economizar memória RAM
+                    arquivo_midia.save(caminho_temp)
+
+                    ext = nome_seguro.lower().split('.')[-1]
+                    res_type = "video" if ext in ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'] else "auto"
+
+                    # Upload para Cloudinary usando o arquivo temporário salvo no disco
+                    upload_result = cloudinary.uploader.upload(
+                        caminho_temp,
+                        resource_type=res_type,
+                        chunk_size=6000000
+                    )
+                    url_midia = upload_result.get("secure_url", "")
+                    if upload_result.get("resource_type") == "video" or res_type == "video":
+                        eh_video = True
+                except Exception as e:
+                    print("Erro no upload do Cloudinary:", e)
+                finally:
+                    # Remove o arquivo do disco /tmp imediatamente
+                    if os.path.exists(caminho_temp):
+                        try:
+                            os.remove(caminho_temp)
+                        except Exception:
+                            pass
+
+            if texto or url_midia:
+                conteudo_post = texto
+                if url_midia:
+                    if eh_video or url_midia.lower().endswith(('.mp4', '.webm', '.ogg', '.mov')):
+                        conteudo_post += f'<br><video controls src="{url_midia}" style="max-width:100%;border-radius:10px;margin-top:10px;" preload="metadata"></video>'
+                    else:
+                        conteudo_post += f'<br><img src="{url_midia}" style="max-width:100%;border-radius:10px;margin-top:10px;" />'
+
+                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                placeholder = "%s" if db_type == "postgres" else "?"
+
+                c.execute(f"""
+                    INSERT INTO rede_postagens (usuario_id, texto, data_postagem)
+                    VALUES ({placeholder}, {placeholder}, {placeholder})
+                """, (usuario_id, conteudo_post, data_atual))
+
+                conn.commit()
+
+            return redirect(url_for("rede_social"))
+
+        # 3. Processamento de Curtidas
+        curtir = request.args.get("curtir")
+        if curtir:
+            try:
+                postagem_id = int(curtir)
+                placeholder = "%s" if db_type == "postgres" else "?"
+
+                c.execute(f"SELECT 1 FROM rede_curtidas WHERE usuario_id = {placeholder} AND postagem_id = {placeholder}",
+                          (usuario_id, postagem_id))
+                if c.fetchone():
+                    c.execute(f"DELETE FROM rede_curtidas WHERE usuario_id = {placeholder} AND postagem_id = {placeholder}",
+                              (usuario_id, postagem_id))
+                else:
+                    c.execute(f"INSERT INTO rede_curtidas (usuario_id, postagem_id) VALUES ({placeholder}, {placeholder})",
+                              (usuario_id, postagem_id))
+                conn.commit()
+            except Exception:
+                pass
+            return redirect(url_for("rede_social"))
+
+        # 4. Exibição das Postagens
+        placeholder = "%s" if db_type == "postgres" else "?"
+        query = f"""
+            SELECT 
+                p.id, 
+                p.texto, 
+                p.data_postagem,
+                COALESCE(u.nome, 'Usuário') AS nome_autor,
+                (SELECT COUNT(*) FROM rede_curtidas c WHERE c.postagem_id = p.id) AS total_curtidas,
+                (SELECT COUNT(*) FROM rede_curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = {placeholder}) AS curtiu_usuario
+            FROM rede_postagens p
+            LEFT JOIN usuarios u ON u.id = p.usuario_id
+            ORDER BY p.id DESC
+        """
+        c.execute(query, (usuario_id,))
+        lista = c.fetchall()
+
+        posts_html = ""
+        for row in lista:
+            if db_type == "postgres" or isinstance(row, dict):
+                pid = row["id"]
+                texto = row["texto"]
+                data = row["data_postagem"]
+                nome_autor = row["nome_autor"]
+                curtidas = row["total_curtidas"]
+                curtiu = bool(row["curtiu_usuario"])
+            else:
+                pid, texto, data, nome_autor, curtidas, curtiu_usuario = row
+                curtiu = bool(curtiu_usuario)
+
+            botao_curtir = "❤️ Curtido" if curtiu else "🤍 Curtir"
+
+            posts_html += f"""
+            <article style="background:rgba(17,24,39,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                    <strong style="color:#f59e0b;">{nome_autor}</strong>
+                    <small style="color:#9ca3af;">{data}</small>
+                </div>
+                <div style="color:#e5e7eb;line-height:1.6;margin-bottom:15px;">{texto or ''}</div>
+                <a href="/rede-social?curtir={pid}" style="color:#f59e0b;text-decoration:none;font-weight:bold;">
+                    {botao_curtir} · {curtidas}
+                </a>
+            </article>
+            """
+
+        if not posts_html:
+            posts_html = """
+            <div style="text-align:center;color:#9ca3af;padding:40px 10px;">
+                Ainda não existem publicações.<br>Seja a primeira pessoa a publicar!
+            </div>
+            """
+
+    finally:
+        conn.close()
+
+    conteudo_html = f"""
+    <div class="bloco">
+        <h2>🌐 Rede Social JOBOSAN</h2>
+        <p style="color:#9ca3af;margin-bottom:20px;">Olá, {nome_usuario}! Compartilhe com a comunidade</p>
+
+        <form method="POST" action="/rede-social" enctype="multipart/form-data" style="margin-bottom:30px;">
+            <textarea name="texto" rows="4" placeholder="Escreva sua mensagem ou pensamento..." style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#111827;color:#fff;box-sizing:border-box;margin-bottom:10px;"></textarea>
+
+            <div style="margin-bottom:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <label style="background:#1f2937;padding:10px 14px;border-radius:8px;cursor:pointer;color:#f59e0b;border:1px solid rgba(255,255,255,0.1);font-size:14px;font-weight:bold;display:inline-block;">
+                    📁 Anexar Foto/Vídeo (Nuvem Permanente)
+                    <input type="file" name="midia" accept="image/*,video/*" style="display:none;" onchange="document.getElementById('file-name').innerText = this.files[0] ? this.files[0].name : '';">
+                </label>
+                <span id="file-name" style="color:#9ca3af;font-size:13px;"></span>
+            </div>
+
+            <button type="submit" style="background:#10b981;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;width:100%;">📤 Publicar</button>
+        </form>
+
+        {posts_html}
+    </div>
+    """
+
+    eh_dono_val = False
+    if "eh_dono" in globals():
+        try:
+            eh_dono_val = eh_dono()
+        except Exception:
+            eh_dono_val = False
+
+    return render_template_string(LAYOUT, conteudo=conteudo_html, eh_dono=eh_dono_val)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
