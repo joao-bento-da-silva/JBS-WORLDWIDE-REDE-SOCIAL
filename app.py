@@ -1,6 +1,6 @@
 # ==================================================
-# © 2026 JOBOZANDO REDE SOCIAL — SISTEMA PADRONIZADO ✅
-# NOME UNIFICADO: JOBOZANDO
+# © 2026 JOBOSAN REDE SOCIAL — SISTEMA PADRONIZADO ✅
+# NOME UNIFICADO: JOBOSAN 
 # ==================================================
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
@@ -15,8 +15,8 @@ import cloudinary.uploader
 # --------------------------------------------------
 # ⚙️ CONFIGURAÇÃO DE MARCA E NOME (ALTERE APENAS AQUI)
 # --------------------------------------------------
-NOME_APLICACAO = "Jobozando"
-CHAVE_SESSAO_PADRAO = "JOBOZANDO_TECNOLOGIA_2026_SEGURA"
+NOME_APLICACAO = "Jobosan"
+CHAVE_SESSAO_PADRAO = "JOBOSAN_TECNOLOGIA_2026_SEGURA"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", CHAVE_SESSAO_PADRAO)
@@ -39,7 +39,7 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
 # 🔒 ÁREA PRIVADA — CONFIGURAÇÕES DO DONO
 EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
-SENHA_MESTRA_ACESSO = "JNB@2026#DONO"
+SENHA_MESTRA_ACESSO = "JOBOSAN@2026#DONO"
 
 def get_db():
     conn = sqlite3.connect(BANCO_DADOS)
