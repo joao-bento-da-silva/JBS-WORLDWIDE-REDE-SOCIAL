@@ -4,6 +4,7 @@
 # ==================================================
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
+from werkzeug.utils import secure_filename
 import hashlib
 import base64
 import os
@@ -13,7 +14,7 @@ import cloudinary
 import cloudinary.uploader
 
 # --------------------------------------------------
-# ⚙️ CONFIGURAÇÃO DE MARCA E NOME (ALTERE APENAS AQUI)
+# ⚙️ CONFIGURAÇÃO DE MARCA E NOME
 # --------------------------------------------------
 NOME_APLICACAO = "Jobosan"
 CHAVE_SESSAO_PADRAO = "JOBOSAN_REDE_SOCIAL_2026_SEGURA"
@@ -32,14 +33,13 @@ cloudinary.config(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Mantido o nome do arquivo DB para NÃO PERDER os cadastros existentes
 BANCO_DADOS = os.path.join(BASE_DIR, "jobosan_novo.db")
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
 # 🔒 ÁREA PRIVADA — CONFIGURAÇÕES DO DONO
-EMAIL_DONO = "seu_email_aqui@seu_dominio.com"
-SENHA_MESTRA_ACESSO = "JOBOSAN@2026#DONO"
+EMAIL_DONO = "joasilva19577@gmail.com"
+SENHA_MESTRA_ACESSO = "JOBOSAn@2026#DONO"
 
 def get_db():
     conn = sqlite3.connect(BANCO_DADOS)
@@ -618,7 +618,6 @@ def plataforma():
         return redirect(url_for("inicio"))
     usuario_id = session["usuario_id"]
     
-    # Sistema de Paginação (20 postagens por página)
     try:
         pagina = int(request.args.get("pagina", 1))
         if pagina < 1:
@@ -633,20 +632,19 @@ def plataforma():
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
-        texto = request.form.get("texto_post", "").strip() 
-        arquivo = request.files.get("arquivo")
-        url_midia = None
 
         if arquivo and arquivo.filename and allowed_file(arquivo.filename):
             nome_seguro = secure_filename(arquivo.filename)
-            caminho_temp = os.path.join("/tmp", nome_seguro)
+            caminho_temp = os.path.join("/tmp", nome_seguro) if os.path.exists("/tmp") else nome_seguro
             try:
                 arquivo.save(caminho_temp)
                 ext = nome_seguro.rsplit(".", 1)[-1].lower()
-                res_type = "video" if ext in ["mp4", "webm", "ogg", "mov", "avi", "mkv"] else "image"
+                res_type = "video" if ext in ["mp4", "webm", "ogg", "mov", "avi", "mkv"] else "auto"
+                
                 upload_result = cloudinary.uploader.upload(
                     caminho_temp,
-                    resource_type=res_type
+                    resource_type=res_type,
+                    chunk_size=6000000
                 )
                 url_midia = upload_result.get("secure_url", "")
             except Exception as e:
@@ -667,7 +665,6 @@ def plataforma():
             conn.close()
             return redirect(url_for("plataforma"))
 
-    
     if "curtir" in request.args:
         pid = request.args.get("curtir")
         conn = get_db()
@@ -690,14 +687,12 @@ def plataforma():
         return redirect(url_for("inicio"))
     nome_usuario, total_pontos, dna_chave, email_usuario = usuario_dados
     
-    # Contagem total de postagens para calcular o total de páginas
     c.execute("SELECT COUNT(*) FROM postagens")
     total_posts_banco = c.fetchone()[0]
     total_paginas = (total_posts_banco + itens_por_pagina - 1) // itens_por_pagina
     if total_paginas < 1:
         total_paginas = 1
 
-    # Busca apenas 20 postagens da página atual
     c.execute("""SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
                (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
                EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
@@ -714,7 +709,7 @@ def plataforma():
             {f'<p class="my-3 whitespace-pre-wrap">{texto}</p>' if texto else ''}'''
         
         if arquivo_url:
-            if any(ext in arquivo_url.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", "image"]):
+            if any(ext in arquivo_url.lower() for ext in [".jpg", ".jpeg", ".png", ".gif"]) or "image" in arquivo_url.lower():
                 posts_html += f'<img src="{arquivo_url}" class="max-w-full rounded-lg my-3">'
             else:
                 posts_html += f'<video controls class="max-w-full rounded-lg my-3"><source src="{arquivo_url}"></video>'
@@ -725,7 +720,6 @@ def plataforma():
     if not posts_html:
         posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens nesta página.</p>'
     
-    # Controles de Paginação (Anterior / Próxima)
     btn_anterior = f'<a href="/plataforma?pagina={pagina - 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">← Anterior</a>' if pagina > 1 else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">← Anterior</span>'
     btn_proxima = f'<a href="/plataforma?pagina={pagina + 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">Próxima →</a>' if pagina < total_paginas else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">Próxima →</span>'
 
@@ -764,7 +758,7 @@ def plataforma():
         
         <div id="tab-rede" class="tab-content">
             <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
-                <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
+                <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequada serão apagadas e usuário banido.</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
                 <form method="POST" action="/plataforma" enctype="multipart/form-data">
