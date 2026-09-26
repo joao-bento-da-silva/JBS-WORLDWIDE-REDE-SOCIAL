@@ -1,4 +1,4 @@
-# ==================================================
+ # ==================================================
 # © 2026 JOBOSAN — SISTEMA COMPLETO FUNCIONAL ✅
 # REDE SOCIAL · CADASTRO PERMANENTE · MÍDIA · JOGOS · IA · DNA
 # PORTA 5000 ✅
@@ -834,9 +834,6 @@ def plataforma():
         </div>
         <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
             <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg font-bold" onclick="switchTab('rede')">Rede Social</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('
-
-')">Rede Social</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogos')">🎮 Jogos</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
