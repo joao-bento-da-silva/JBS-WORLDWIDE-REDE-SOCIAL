@@ -1,4 +1,4 @@
-# ==================================================
+  # ==================================================
 # © 2026 JOBOSAN REDE SOCIAL — SISTEMA PADRONIZADO ✅
 # NOME UNIFICADO: JOBOSAN 
 # ==================================================
@@ -628,45 +628,124 @@ def plataforma():
     itens_por_pagina = 20
     offset = (pagina - 1) * itens_por_pagina
 
-    # --- PROCESSAMENTO DE POSTAGEM COM UPLOAD SEGURO ---
+    # ==========================================================
+    # 📸 PROCESSAMENTO DE POSTAGEM — UPLOAD DE FOTO/VÍDEO
+    # ==========================================================
     if request.method == "POST":
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
 
-        if arquivo and arquivo.filename and allowed_file(arquivo.filename):
+        # ------------------------------------------------------
+        # VERIFICA SE FOI ENVIADO UM ARQUIVO
+        # ------------------------------------------------------
+        if arquivo and arquivo.filename:
+            if not allowed_file(arquivo.filename):
+                return '''
+                <div style="background:#0f172a;color:white;min-height:100vh;padding:50px;text-align:center;font-family:Arial;">
+                    <h2 style="color:#ef4444;">❌ Tipo de arquivo não permitido</h2>
+                    <p style="margin:20px 0;">Use PNG, JPG, JPEG, GIF, MP4, MOV, AVI ou WEBM.</p>
+                    <a href="/plataforma" style="color:#f59e0b;font-size:18px;">← Voltar</a>
+                </div>
+                ''', 400
+
+            # --------------------------------------------------
+            # NOME TEMPORÁRIO SEGURO E ÚNICO
+            # --------------------------------------------------
+            extensao = arquivo.filename.rsplit(".", 1)[1].lower()
             nome_seguro = secure_filename(arquivo.filename)
-            caminho_temp = os.path.join("/tmp", nome_seguro) if os.path.exists("/tmp") else nome_seguro
+
+            if not nome_seguro:
+                nome_seguro = "midia"
+
+            import uuid
+            nome_temporario = f"jobosan_{uuid.uuid4().hex}.{extensao}"
+
+            pasta_temp = "/tmp"
+            if not os.path.exists(pasta_temp):
+                pasta_temp = BASE_DIR
+
+            caminho_temp = os.path.join(pasta_temp, nome_temporario)
+
             try:
-                # Salva o arquivo temporariamente no disco para não estourar a memória RAM
+                # ----------------------------------------------
+                # SALVA TEMPORARIAMENTE
+                # ----------------------------------------------
                 arquivo.save(caminho_temp)
-                
-                # Upload em blocos para garantir que vídeos grandes sejam aceitos pelo Cloudinary
-                upload_result = cloudinary.uploader.upload(
-                    caminho_temp,
-                    resource_type="auto",
-                    chunk_size=6000000
-                )
-                url_midia = upload_result.get("secure_url", "")
+
+                if not os.path.exists(caminho_temp):
+                    raise Exception("O arquivo temporário não foi criado.")
+
+                tamanho = os.path.getsize(caminho_temp)
+                if tamanho <= 0:
+                    raise Exception("O arquivo recebido está vazio.")
+
+                # ----------------------------------------------
+                # UPLOAD PARA CLOUDINARY
+                # ----------------------------------------------
+                extensoes_video = {"mp4", "mov", "avi", "webm"}
+
+                if extensao in extensoes_video:
+                    upload_result = cloudinary.uploader.upload_large(
+                        caminho_temp,
+                        resource_type="video",
+                        chunk_size=6000000,
+                        folder="jobosan/postagens"
+                    )
+                else:
+                    upload_result = cloudinary.uploader.upload(
+                        caminho_temp,
+                        resource_type="image",
+                        folder="jobosan/postagens"
+                    )
+
+                url_midia = upload_result.get("secure_url")
+
+                if not url_midia:
+                    raise Exception("O Cloudinary não retornou a URL da mídia.")
+
+                print("✅ JOBOSAN — MÍDIA ENVIADA:", url_midia)
+
             except Exception as e:
-                print("Erro no upload do Cloudinary:", e)
+                print("❌ JOBOSAN — ERRO NO UPLOAD:", repr(e))
+                return f'''
+                <div style="background:#0f172a;color:white;min-height:100vh;padding:50px;text-align:center;font-family:Arial;">
+                    <h2 style="color:#ef4444;">❌ Erro ao enviar a foto/vídeo</h2>
+                    <p style="color:#cbd5e1;margin:20px auto;max-width:700px;">A mídia não conseguiu chegar ao armazenamento.</p>
+                    <p style="color:#94a3b8;font-size:13px;word-break:break-word;">Verifique as configurações do Cloudinary no Render.</p>
+                    <br>
+                    <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">← Voltar para a plataforma</a>
+                </div>
+                ''', 500
+
             finally:
-                # Limpa o arquivo temporário do servidor
                 if os.path.exists(caminho_temp):
                     try:
                         os.remove(caminho_temp)
-                    except:
-                        pass
+                    except Exception as e:
+                        print("⚠️ Não foi possível apagar temporário:", repr(e))
 
+        # ------------------------------------------------------
+        # SALVA POSTAGEM NO SQLITE
+        # ------------------------------------------------------
         if texto or url_midia:
             conn = get_db()
-            c = conn.cursor()
-            c.execute("INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
-                      (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            conn.commit()
-            conn.close()
+            try:
+                c = conn.cursor()
+                c.execute(
+                    """
+                    INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
             return redirect(url_for("plataforma"))
 
+    # Lógica de Curtidas
     if "curtir" in request.args:
         pid = request.args.get("curtir")
         conn = get_db()
@@ -881,6 +960,7 @@ def plataforma():
     </script>
 </body>
 </html>''')
+
 
 
 if __name__ == "__main__":
