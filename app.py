@@ -1,19 +1,23 @@
-  # ==================================================
-# © 2026 JOBOSAN REDE SOCIAL — SISTEMA PADRONIZADO ✅
-# NOME UNIFICADO: JOBOSAN 
 # ==================================================
+# © 2026 JOBOSAN — SISTEMA COMPLETO FUNCIONAL ✅
+# REDE SOCIAL · CADASTRO PERMANENTE · MÍDIA · JOGOS · IA · DNA
+# PORTA 5000 ✅
+# ==================================================
+
 from datetime import datetime, timedelta
 from flask import Flask, request, session, redirect, url_for, render_template_string
 import hashlib
 import base64
 import os
 import random
-import sqlite3 
+import sqlite3
+import uuid
+from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
 
 # --------------------------------------------------
-# ⚙️ CONFIGURAÇÃO DE MARCA E NOME (ALTERE APENAS AQUI)
+# ⚙️ CONFIGURAÇÕES
 # --------------------------------------------------
 NOME_APLICACAO = "Jobosan"
 CHAVE_SESSAO_PADRAO = "JOBOSAN_REDE_SOCIAL_2026_SEGURA"
@@ -21,9 +25,9 @@ CHAVE_SESSAO_PADRAO = "JOBOSAN_REDE_SOCIAL_2026_SEGURA"
 app = Flask(__name__)
 app.secret_key = os.environ.get("CHAVE_UNIFICADA", CHAVE_SESSAO_PADRAO)
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=3650)  # 10 anos
 
-# Configuração do Cloudinary
+# Cloudinary
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "ahwrdxaw"),
     api_key=os.environ.get("CLOUDINARY_API_KEY", "945329764752813"),
@@ -32,15 +36,15 @@ cloudinary.config(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Mantido o nome do arquivo DB para NÃO PERDER os cadastros existentes
 BANCO_DADOS = os.path.join(BASE_DIR, "jobosan_novo.db")
-
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "avi", "webm"}
 
-# 🔒 ÁREA PRIVADA — CONFIGURAÇÕES DO DONO
 EMAIL_DONO = "joasilva19577@gmail.com"
 SENHA_MESTRA_ACESSO = "JOBOSAn@2026#DONO"
 
+# --------------------------------------------------
+# 🗄️ BANCO DE DADOS
+# --------------------------------------------------
 def get_db():
     conn = sqlite3.connect(BANCO_DADOS)
     conn.row_factory = sqlite3.Row
@@ -92,6 +96,9 @@ def init_db():
 
 init_db()
 
+# --------------------------------------------------
+# 🔒 FUNÇÕES DE VERIFICAÇÃO
+# --------------------------------------------------
 def usuario_logado():
     return "usuario_id" in session
 
@@ -111,6 +118,9 @@ def eh_dono():
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# --------------------------------------------------
+# 🤖 MOTOR DA IA
+# --------------------------------------------------
 def responder_ia(pergunta):
     p = pergunta.lower().strip()
     try:
@@ -139,6 +149,9 @@ def responder_ia(pergunta):
     else:
         return f"Entendi! Você perguntou: \"{pergunta}\""
 
+# --------------------------------------------------
+# 🏠 TELA INICIAL
+# --------------------------------------------------
 @app.route("/")
 def inicio():
     if usuario_logado():
@@ -173,8 +186,14 @@ def inicio():
 </body>
 </html>''')
 
+# --------------------------------------------------
+# ✅ CADASTRO PERMANENTE — CORRIGIDO
+# --------------------------------------------------
 @app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
+    if usuario_logado():
+        return redirect(url_for("plataforma"))
+    
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip().lower()
@@ -189,7 +208,6 @@ def cadastrar():
             try:
                 conn = get_db()
                 c = conn.cursor()
-                
                 c.execute("SELECT id FROM usuarios WHERE email = ?", (email,))
                 if c.fetchone():
                     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
@@ -249,8 +267,14 @@ def cadastrar():
 </body>
 </html>''')
 
+# --------------------------------------------------
+# 🔑 ENTRAR
+# --------------------------------------------------
 @app.route("/entrar", methods=["GET", "POST"])
 def entrar():
+    if usuario_logado():
+        return redirect(url_for("plataforma"))
+    
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "").strip()
@@ -268,7 +292,6 @@ def entrar():
                     session.permanent = True
                     session["usuario_id"] = usuario[0] if isinstance(usuario, tuple) else usuario["id"]
                     session["nome_usuario"] = usuario[1] if isinstance(usuario, tuple) else usuario["nome"]
-                    
                     return redirect(url_for("plataforma"))
                 else:
                     return '''<div style="text-align:center;padding:50px;background:#0f172a;color:white;">
@@ -319,6 +342,9 @@ def sair():
     session.clear()
     return redirect(url_for("inicio"))
 
+# --------------------------------------------------
+# 🔒 ÁREA PRIVADA
+# --------------------------------------------------
 @app.route("/area_privada", methods=["GET", "POST"])
 def area_privada():
     if not usuario_logado() or not eh_dono():
@@ -395,6 +421,9 @@ def painel_dono():
 </body>
 </html>''')
 
+# --------------------------------------------------
+# 🤖 ROTAS DA IA
+# --------------------------------------------------
 @app.route("/responder_ia", methods=["POST"])
 def responder_ia_rota():
     if not usuario_logado():
@@ -431,6 +460,9 @@ def ensinar_ia():
             return f"❌ Erro ao ensinar IA: {str(e)}"
     return "Preencha todos os campos!", 400
 
+# --------------------------------------------------
+# 🎮 JOGO DAS CARTAS
+# --------------------------------------------------
 @app.route("/jogo_cartas", methods=["GET", "POST"])
 def jogo_cartas():
     if not usuario_logado():
@@ -518,6 +550,9 @@ def jogo_cartas():
 </body>
 </html>''')
 
+# --------------------------------------------------
+# 🎮 JOGO BENTINHO
+# --------------------------------------------------
 @app.route("/jogo_bentinho", methods=["GET", "POST"])
 def jogo_bentinho():
     if not usuario_logado():
@@ -612,6 +647,9 @@ def jogo_bentinho():
 </body>
 </html>''')
 
+# --------------------------------------------------
+# 🏠 PLATAFORMA PRINCIPAL — REDE SOCIAL + POSTAGENS
+# --------------------------------------------------
 @app.route("/plataforma", methods=["GET", "POST"])
 def plataforma():
     if not usuario_logado():
@@ -628,17 +666,14 @@ def plataforma():
     itens_por_pagina = 20
     offset = (pagina - 1) * itens_por_pagina
 
-    # ==========================================================
-    # 📸 PROCESSAMENTO DE POSTAGEM — UPLOAD DE FOTO/VÍDEO
-    # ==========================================================
+    # ==================================================
+    # 📸 POSTAGEM COM FOTO/VÍDEO — CORRIGIDO
+    # ==================================================
     if request.method == "POST":
         texto = request.form.get("texto_post", "").strip()
         arquivo = request.files.get("arquivo")
         url_midia = None
 
-        # ------------------------------------------------------
-        # VERIFICA SE FOI ENVIADO UM ARQUIVO
-        # ------------------------------------------------------
         if arquivo and arquivo.filename:
             if not allowed_file(arquivo.filename):
                 return '''
@@ -649,42 +684,20 @@ def plataforma():
                 </div>
                 ''', 400
 
-            # --------------------------------------------------
-            # NOME TEMPORÁRIO SEGURO E ÚNICO
-            # --------------------------------------------------
             extensao = arquivo.filename.rsplit(".", 1)[1].lower()
             nome_seguro = secure_filename(arquivo.filename)
-
             if not nome_seguro:
                 nome_seguro = "midia"
-
-            import uuid
             nome_temporario = f"jobosan_{uuid.uuid4().hex}.{extensao}"
-
-            pasta_temp = "/tmp"
-            if not os.path.exists(pasta_temp):
-                pasta_temp = BASE_DIR
-
+            pasta_temp = "/tmp" if os.path.exists("/tmp") else BASE_DIR
             caminho_temp = os.path.join(pasta_temp, nome_temporario)
 
             try:
-                # ----------------------------------------------
-                # SALVA TEMPORARIAMENTE
-                # ----------------------------------------------
                 arquivo.save(caminho_temp)
+                if not os.path.exists(caminho_temp) or os.path.getsize(caminho_temp) <= 0:
+                    raise Exception("Arquivo vazio ou não salvo")
 
-                if not os.path.exists(caminho_temp):
-                    raise Exception("O arquivo temporário não foi criado.")
-
-                tamanho = os.path.getsize(caminho_temp)
-                if tamanho <= 0:
-                    raise Exception("O arquivo recebido está vazio.")
-
-                # ----------------------------------------------
-                # UPLOAD PARA CLOUDINARY
-                # ----------------------------------------------
                 extensoes_video = {"mp4", "mov", "avi", "webm"}
-
                 if extensao in extensoes_video:
                     upload_result = cloudinary.uploader.upload_large(
                         caminho_temp,
@@ -700,52 +713,39 @@ def plataforma():
                     )
 
                 url_midia = upload_result.get("secure_url")
-
                 if not url_midia:
-                    raise Exception("O Cloudinary não retornou a URL da mídia.")
-
-                print("✅ JOBOSAN — MÍDIA ENVIADA:", url_midia)
+                    raise Exception("URL não retornada")
+                print("✅ MÍDIA ENVIADA:", url_midia)
 
             except Exception as e:
-                print("❌ JOBOSAN — ERRO NO UPLOAD:", repr(e))
+                print("❌ ERRO UPLOAD:", repr(e))
                 return f'''
                 <div style="background:#0f172a;color:white;min-height:100vh;padding:50px;text-align:center;font-family:Arial;">
-                    <h2 style="color:#ef4444;">❌ Erro ao enviar a foto/vídeo</h2>
-                    <p style="color:#cbd5e1;margin:20px auto;max-width:700px;">A mídia não conseguiu chegar ao armazenamento.</p>
-                    <p style="color:#94a3b8;font-size:13px;word-break:break-word;">Verifique as configurações do Cloudinary no Render.</p>
-                    <br>
-                    <a href="/plataforma" style="color:#f59e0b;font-size:18px;text-decoration:none;">← Voltar para a plataforma</a>
+                    <h2 style="color:#ef4444;">❌ Erro ao enviar mídia</h2>
+                    <p style="color:#cbd5e1;margin:20px 0;">{str(e)}</p>
+                    <a href="/plataforma" style="color:#f59e0b;font-size:18px;">← Voltar</a>
                 </div>
                 ''', 500
-
             finally:
                 if os.path.exists(caminho_temp):
-                    try:
-                        os.remove(caminho_temp)
-                    except Exception as e:
-                        print("⚠️ Não foi possível apagar temporário:", repr(e))
+                    try: os.remove(caminho_temp)
+                    except: pass
 
-        # ------------------------------------------------------
-        # SALVA POSTAGEM NO SQLITE
-        # ------------------------------------------------------
+        # Salva no banco
         if texto or url_midia:
             conn = get_db()
             try:
                 c = conn.cursor()
                 c.execute(
-                    """
-                    INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem)
-                    VALUES (?, ?, ?, ?)
-                    """,
+                    "INSERT INTO postagens (usuario_id, texto, arquivo, data_postagem) VALUES (?, ?, ?, ?)",
                     (usuario_id, texto, url_midia, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 )
                 conn.commit()
             finally:
                 conn.close()
-
             return redirect(url_for("plataforma"))
 
-    # Lógica de Curtidas
+    # Curtidas
     if "curtir" in request.args:
         pid = request.args.get("curtir")
         conn = get_db()
@@ -758,6 +758,7 @@ def plataforma():
         conn.close()
         return redirect(url_for("plataforma", pagina=pagina) + "#post-" + pid)
     
+    # Dados do usuário
     conn = get_db()
     c = conn.cursor()
     c.execute("SELECT nome, pontos, dna_chave, email FROM usuarios WHERE id = ?", (usuario_id,))
@@ -768,12 +769,12 @@ def plataforma():
         return redirect(url_for("inicio"))
     nome_usuario, total_pontos, dna_chave, email_usuario = usuario_dados
     
+    # Paginação
     c.execute("SELECT COUNT(*) FROM postagens")
     total_posts_banco = c.fetchone()[0]
-    total_paginas = (total_posts_banco + itens_por_pagina - 1) // itens_por_pagina
-    if total_paginas < 1:
-        total_paginas = 1
+    total_paginas = (total_posts_banco + itens_por_pagina - 1) // itens_por_pagina or 1
 
+    # Postagens
     c.execute("""SELECT p.id, p.texto, p.arquivo, p.data_postagem, u.nome,
                (SELECT COUNT(*) FROM curtidas c WHERE c.postagem_id = p.id) as total_curtidas,
                EXISTS(SELECT 1 FROM curtidas c WHERE c.postagem_id = p.id AND c.usuario_id = ?) as curtiu
@@ -798,8 +799,9 @@ def plataforma():
         posts_html += f'''<div class="mt-3 pt-3 border-t border-gray-700">
             <a href="/plataforma?curtir={pid}&pagina={pagina}#post-{pid}" class="text-{'red' if curtiu else 'gray'}-400">👍 {curtidas} Curtida{'s' if curtidas != 1 else ''}</a>
         </div></div>'''
+    
     if not posts_html:
-        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens nesta página.</p>'
+        posts_html = '<p class="text-center text-gray-500 py-10">Ainda não há postagens. Seja o primeiro a compartilhar!</p>'
     
     btn_anterior = f'<a href="/plataforma?pagina={pagina - 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">← Anterior</a>' if pagina > 1 else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">← Anterior</span>'
     btn_proxima = f'<a href="/plataforma?pagina={pagina + 1}" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold px-4 py-2 rounded-lg">Próxima →</a>' if pagina < total_paginas else '<span class="text-gray-600 bg-gray-800 px-4 py-2 rounded-lg cursor-not-allowed">Próxima →</span>'
@@ -832,137 +834,93 @@ def plataforma():
         </div>
         <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-2">
             <button class="tab-btn bg-yellow-600 text-black px-4 py-2 rounded-t-lg font-bold" onclick="switchTab('rede')">Rede Social</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogo')">🎮 Jogos</button>
-            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA & Ensino</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('
+
+')">Rede Social</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('jogos')">🎮 Jogos</button>
+            <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('ia')">🤖 IA</button>
             <button class="tab-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-t-lg" onclick="switchTab('dna')">🧬 DNA</button>
         </div>
-        
+
+        <!-- REDE SOCIAL -->
         <div id="tab-rede" class="tab-content">
-            <div class="bg-red-900/30 border border-red-500/50 p-4 rounded-lg mb-4">
-                <p class="text-red-300 font-bold">⚠️ Proibido: nudez, conteúdo sexual, violência, ódio, ilegal. Postagens inadequadas serão apagadas e usuário banido.</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg border border-yellow-500/30 mb-6">
-                <form method="POST" action="/plataforma" enctype="multipart/form-data">
-                    <textarea name="texto_post" placeholder="Compartilhe algo..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white" rows="3"></textarea>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label class="cursor-pointer bg-gray-700 px-3 py-2 rounded-lg text-sm font-bold">
-                            📷 Foto/Vídeo
-                            <input type="file" name="arquivo" id="arquivo_input" accept="image/*,video/*" class="hidden" onchange="atualizarNomeArquivo(this)">
-                        </label>
-                        <span id="nome_arquivo_selecionado" class="text-xs text-yellow-400"></span>
-                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg ml-auto">📤 Publicar Permanente</button>
-                    </div>
-                </form>
-            </div>
-            <div class="space-y-4">{posts_html}</div>
+            <form method="POST" enctype="multipart/form-data" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-6">
+                <h3 class="text-yellow-500 font-bold mb-3">✍️ Nova Postagem</h3>
+                <textarea name="texto_post" rows="3" placeholder="Escreva algo..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white mb-3"></textarea>
+                <div class="flex flex-col gap-3">
+                    <input type="file" name="arquivo" accept="image/*,video/*" class="text-gray-300">
+                    <button type="submit" class="bg-yellow-600 text-black font-bold py-2 rounded-lg">📤 Publicar</button>
+                </div>
+            </form>
+
+            <h3 class="text-yellow-500 font-bold mb-3">📰 Postagens</h3>
+            {posts_html}
             {paginacao_html}
         </div>
-        
-        <div id="tab-jogo" class="tab-content hidden">
-            <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🎮 Jogo Bentinho</h2>
-                    <p class="text-gray-400 mb-6">4 fases · Até 1.000.000.000 de pontos!</p>
-                    <a href="/jogo_bentinho" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 text-center">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🃏 Jogo das Cartas</h2>
-                    <p class="text-gray-400 mb-6">4 fases · Até 1.000 pontos!</p>
-                    <a href="/jogo_cartas" class="inline-block bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg">▶️ Jogar</a>
-                </div>
+
+        <!-- JOGOS -->
+        <div id="tab-jogos" class="tab-content hidden">
+            <h3 class="text-yellow-500 font-bold mb-4">🎮 Área de Jogos</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/jogo_bentinho" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 hover:border-yellow-400 transition">
+                    <h4 class="text-xl font-bold text-yellow-400">🎮 Segredo dos Números</h4>
+                    <p class="text-gray-400 mt-2">Decifre o número e ganhe pontos!</p>
+                </a>
+                <a href="/jogo_cartas" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 hover:border-yellow-400 transition">
+                    <h4 class="text-xl font-bold text-yellow-400">🃏 Jogo das Cartas</h4>
+                    <p class="text-gray-400 mt-2">Converta as cartas corretamente!</p>
+                </a>
             </div>
         </div>
-        
+
+        <!-- IA -->
         <div id="tab-ia" class="tab-content hidden">
-            <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🤖 IA — Pergunte!</h2>
-                    <div id="ia-conversa" class="bg-gray-900 p-4 rounded-lg mb-4 h-56 overflow-y-auto space-y-3"></div>
-                    <form onsubmit="enviarIA(event)">
-                        <input type="text" id="pergunta-ia" placeholder="Faça sua pergunta..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg mb-3 text-white">
-                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg">Enviar</button>
-                    </form>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧠 Ensinar a IA</h2>
-                    <form onsubmit="ensinarIA(event)" class="space-y-3">
-                        <input type="text" id="pergunta-chave" placeholder="Palavra-chave (ex: wifi, senha)" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" required>
-                        <textarea id="resposta-customizada" placeholder="Qual deve ser a resposta da IA?" class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="3" required></textarea>
-                        <button type="submit" class="bg-yellow-600 text-black font-bold px-6 py-2 rounded-lg w-full">💡 Salvar Ensinamento</button>
-                    </form>
-                    <p id="status-ensino" class="text-sm mt-2 text-center text-green-400"></p>
-                </div>
-            </div>
+            <h3 class="text-yellow-500 font-bold mb-4">🤖 Inteligência Artificial</h3>
+            <form action="/responder_ia" method="POST" class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30 mb-4">
+                <label class="block text-gray-300 mb-2">Pergunte à IA:</label>
+                <input type="text" name="pergunta" placeholder="Faça sua pergunta..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white mb-3" required>
+                <button type="submit" class="bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg">Enviar</button>
+            </form>
+
+            <h4 class="text-yellow-400 font-bold mt-6 mb-3">📚 Ensinar a IA</h4>
+            <form action="/ensinar_ia" method="POST" class="bg-gray-800 p-5 rounded-lg border border-green-500/30">
+                <input type="text" name="pergunta_chave" placeholder="Palavra/Assunto" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white mb-3" required>
+                <textarea name="resposta_customizada" rows="4" placeholder="Resposta que a IA deve dar..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white mb-3" required></textarea>
+                <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg">💾 Salvar na Memória</button>
+            </form>
         </div>
-        
+
+        <!-- DNA -->
         <div id="tab-dna" class="tab-content hidden">
-            <div class="bg-gray-800 p-6 rounded-lg border border-yellow-500/30 max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold text-yellow-500 mb-4">🧬 DNA — Criptografia Genética</h2>
-                <p class="text-gray-400 mb-4">Sua chave única: <code class="bg-gray-900 px-2 py-1 rounded text-yellow-400">{dna_chave}</code></p>
-                <div class="flex gap-2 mb-3">
-                    <button type="button" onclick="criptografarDNA()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">🔒 Criptografar</button>
-                    <button type="button" onclick="descriptografarDNA()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">🔓 Descriptografar</button>
+            <h3 class="text-yellow-500 font-bold mb-4">🧬 Sua Chave DNA — ÚNICA</h3>
+            <div class="bg-gray-800 p-5 rounded-lg border border-yellow-500/30">
+                <p class="text-gray-400 mb-2">Esta é sua identidade permanente na plataforma:</p>
+                <div class="bg-gray-900 p-4 rounded-lg border border-yellow-500/50 font-mono text-yellow-400 text-sm break-all">
+                    {dna_chave}
                 </div>
-                <div class="space-y-3">
-                    <textarea id="dna-texto-input" placeholder="Cole ou digite seu texto aqui..." class="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white" rows="5"></textarea>
-                </div>
+                <p class="text-gray-500 text-sm mt-3">Guarde bem! É sua assinatura exclusiva.</p>
             </div>
         </div>
     </div>
+
     <script>
-    function atualizarNomeArquivo(input) {{
-        const span = document.getElementById('nome_arquivo_selecionado');
-        if(input.files && input.files[0]) {{
-            span.innerText = "Selecionado: " + input.files[0].name;
-        }} else {{
-            span.innerText = "";
+        function switchTab(nome) {{
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => {{
+                b.classList.remove('bg-yellow-600', 'text-black');
+                b.classList.add('bg-gray-700');
+            }});
+            document.getElementById('tab-' + nome).classList.remove('hidden');
+            event.target.classList.remove('bg-gray-700');
+            event.target.classList.add('bg-yellow-600', 'text-black');
         }}
-    }}
-    function switchTab(nome) {{
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(b => {{b.classList.remove('bg-yellow-600','text-black','font-bold');b.classList.add('bg-gray-700','hover:bg-gray-600');}});
-        document.getElementById('tab-' + nome).classList.remove('hidden');
-        event.target.classList.add('bg-yellow-600','text-black','font-bold');
-        event.target.classList.remove('bg-gray-700','hover:bg-gray-600');
-    }}
-    async function enviarIA(e) {{
-        e.preventDefault();
-        const pergunta = document.getElementById('pergunta-ia').value;
-        if(!pergunta) return;
-        const div = document.getElementById('ia-conversa');
-        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-yellow-400">Você:</strong> ${{pergunta}}</div>`;
-        document.getElementById('pergunta-ia').value = '';
-        const resp = await fetch('/responder_ia', {{method:'POST', body:new URLSearchParams({{pergunta}})}});
-        const texto = await resp.text();
-        div.innerHTML += `<div class="bg-gray-800 p-2 rounded"><strong class="text-green-400">IA:</strong> ${{texto}}</div>`;
-        div.scrollTop = div.scrollHeight;
-    }}
-    async function ensinarIA(e) {{
-        e.preventDefault();
-        const pergunta_chave = document.getElementById('pergunta-chave').value;
-        const resposta_customizada = document.getElementById('resposta-customizada').value;
-        const resp = await fetch('/ensinar_ia', {{method:'POST', body:new URLSearchParams({{pergunta_chave, resposta_customizada}})}});
-        const texto = await resp.text();
-        document.getElementById('status-ensino').innerText = texto;
-        document.getElementById('pergunta-chave').value = '';
-        document.getElementById('resposta-customizada').value = '';
-    }}
-    function criptografarDNA() {{
-        const campo = document.getElementById('dna-texto-input');
-        if(!campo.value) return;
-        try {{ campo.value = btoa(encodeURIComponent(campo.value)); }} catch(err) {{ alert('Erro ao criptografar'); }}
-    }}
-    function descriptografarDNA() {{
-        const campo = document.getElementById('dna-texto-input');
-        if(!campo.value) return;
-        try {{ campo.value = decodeURIComponent(atob(campo.value)); }} catch(err) {{ alert('Texto inválido.'); }}
-    }}
     </script>
 </body>
 </html>''')
 
-
-
+# ==================================================
+# ✅ PORTA 5000 — FINALIZAÇÃO
+# ==================================================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
-
+    porta = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=porta, debug=True)
